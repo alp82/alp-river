@@ -6,7 +6,7 @@
 
 Multi-stage agent refinement for Claude Code, scaled by automatic complexity classification. Small changes pass quickly. Bigger ones add stages: clarification, planning, adversarial challenge, implementation, broad review, specialist review, self-heal.
 
-The whole pipeline ships in one folder. Doctrine, 26 subagents, 6 slash commands, 8 quality hooks. Drop the plugin in, the pipeline activates. Remove it, everything goes quiet.
+The whole pipeline ships in one folder. Doctrine, 26 subagents, 6 slash commands, 8 quality hooks.
 
 ## How the river flows
 
@@ -82,15 +82,6 @@ In Claude Code:
 
 To pull updates later: `/plugin marketplace update alperortac` then re-install.
 
-### Local development
-
-Clone the repo and pass `--plugin-dir`:
-
-```bash
-git clone https://github.com/alp82/alp-river.git
-claude --plugin-dir ./alp-river
-```
-
 ## Slash commands
 
 ```
@@ -113,6 +104,15 @@ alp-river/
 │   └── *.sh               <- inject-doctrine, auto-format, block-git-writes, ...
 ├── agents/                <- 26 subagent definitions
 └── commands/              <- 6 slash commands
+```
+
+## Local development
+
+Clone the repo and pass `--plugin-dir`:
+
+```bash
+git clone https://github.com/alp82/alp-river.git
+claude --plugin-dir ./alp-river
 ```
 
 ## Author
