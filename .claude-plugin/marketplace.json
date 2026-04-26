@@ -1,0 +1,31 @@
+{
+  "name": "alperortac",
+  "owner": {
+    "name": "Alper Ortac"
+  },
+  "metadata": {
+    "description": "Personal Claude Code plugins by Alper Ortac.",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "alp-river",
+      "source": "./",
+      "description": "Multi-stage agent refinement for Claude Code, scaled by automatic complexity classification.",
+      "homepage": "https://github.com/alp82/alp-river",
+      "repository": "https://github.com/alp82/alp-river",
+      "license": "MIT",
+      "author": {
+        "name": "Alper Ortac"
+      },
+      "keywords": [
+        "claude-code",
+        "agents",
+        "subagents",
+        "pipeline",
+        "complexity-classification",
+        "code-review"
+      ]
+    }
+  ]
+}
