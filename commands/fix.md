@@ -1,0 +1,112 @@
+---
+description: Bug fix and small change pipeline with quality gates
+argument-hint: Describe the bug or change
+---
+
+# Fix Pipeline
+
+Task: $ARGUMENTS
+
+**USER_CONTEXT** auto-injects via the PreToolUse(Agent) hook for judgment-call agents.
+
+**Input slots**: fill each agent's input template verbatim from predecessor output.
+
+## Step 0: Intent
+
+**Level 1** (always): Restate what you understand the user wants in one sentence. Wait for confirmation.
+
+**Level 2** (escalate only when the user's answer shifts scope or the request has multiple plausible readings): Launch `interviewer`. Capture `<CONFIRMED_INTENT>`.
+
+Most fix-sized tasks stay at Level 1.
+
+## Step 1: Classify
+
+Launch `complexity-classifier`:
+- Input: `<CONFIRMED_INTENT>`
+
+If COMPLEXITY is L or XL: tell the user "classifies as L/XL — re-run under `/feature` for the full pipeline." **STOP** this command.
+
+S and M continue here.
+
+## Step 2: Pre-flight
+
+**S tasks**:
+- Launch `reuse-scanner` in parallel with formulating your implementation.
+
+**M tasks**:
+- Launch `reuse-scanner`, `health-checker`, `prototype-identifier`, `researcher` in parallel.
+- Each receives `<CONFIRMED_INTENT>` + `<TARGET_AREA>`.
+
+**Prototype gate (M)**: if `PROTOTYPES_NEEDED: yes`, tell the user "prototyping required — this is L-territory; re-run under `/feature`. Preflight findings carry over." **STOP.**
+
+**Health gate (M)**: follow RECOMMENDATION.
+- `cleanup-first` → present CLEANUP_TARGETS, wait for user decision.
+- `proceed-with-adjacent-cleanup` → carry into implementation.
+- `proceed` → continue.
+
+Apply reuse-scanner QUICK_WINS when they fit the radius and budget.
+
+## Step 3: Clarify (M only, when ambiguity remains)
+
+If the pre-flight results leave material ambiguities, launch `requirements-clarifier` with `<CONFIRMED_INTENT>`, `<CLASSIFICATION>`, `<PREFLIGHT>`. Present QUESTIONS, ACCEPTANCE_CRITERIA_PROPOSED, ASSUMPTIONS_TO_CONFIRM. Wait for answers. Capture `<CLARIFY_OUTPUT>`.
+
+Skip when the task is clear from pre-flight alone.
+
+## Step 4: Re-classify (M, conditional)
+
+If clarifier returned `SCOPE_SHIFT: up`, rerun `complexity-classifier` with `<CONFIRMED_INTENT>`, `<CLARIFY_OUTPUT>`, `<PRIOR_CLASSIFICATION>`.
+
+If `SCOPE_MOVED: yes` and new COMPLEXITY is L or XL: tell the user "reclassifies as L/XL — re-run under `/feature`." **STOP.**
+
+## Step 5: Implement
+
+**S tasks**: main agent implements directly, informed by reuse findings.
+
+**M tasks**: main agent implements, reading relevant files first. Leverage reuse findings. No planner or challenger on the M path.
+
+## Step 6: Broad pass
+
+**S tasks**: no subagent gates. The Stop hook runs the project's test suite automatically. Skip to Step 8.
+
+**M tasks**: launch concurrently (parallel, fail-fast):
+- `test-verifier` — inputs `<DIFF>`, `<CHANGED_FILES>`.
+- `quality-reviewer` (sonnet default, no override for M) — inputs `<DIFF>`, `<CHANGED_FILES>`, `<APPROVED_PLAN>: none`.
+- `acceptance-reviewer` — inputs `<CONFIRMED_INTENT>`, `<CLARIFY_OUTPUT>` or `"none"`, `<APPROVED_PLAN>: none`, `<DIFF>`, `<CHANGED_FILES>`.
+
+If `test-verifier` fails, jump to Step 7 with the test failure plus any other findings. Skip Step 7's specialist pass.
+
+## Step 7: Specialist pass (M, conditional)
+
+Gate each specialist on broad-pass finding OR diff touching its domain. M tasks rarely trigger many — most are small enough that quality-reviewer's broad pass is enough.
+
+- `security-reviewer` — auth/permissions/session/input-handling code
+- `performance-reviewer` — db/query/hot-path code
+- UI specialists (`accessibility-reviewer`, `design-consistency-reviewer`, `ux-reviewer`) — UI diff
+
+Visual-verifier stays out of the M pipeline.
+
+## Step 8: Self-heal
+
+**S tasks**: the Stop hook handles test failure retries (1 retry per session).
+
+**M tasks**: aggregate findings. Launch `fixer` (sonnet default):
+- Input: `<FINDINGS>`, `<DIFF>`, `<CHANGED_FILES>`, `<APPROVED_PLAN>: none`, `<ROUND>`.
+
+Use the returned `RE_RUN_SET` to re-fire exactly those gates with the post-fix diff.
+
+- Round 1: fix + rerun.
+- Round 2: present to user, apply directed fixes, rerun.
+- Round 3+: stop, surface.
+
+Summary cites post-fix gate results.
+
+## Step 9: Summary
+
+Brief report:
+- What was fixed (1-2 sentences)
+- Files changed
+- Post-fix gate results
+- Commit-split suggestion if adjacent cleanup happened (primary + `chore:` adjacent)
+- REMAINING `[out-of-scope]` items
+
+End with the literal line `<!-- pipeline-complete -->`.

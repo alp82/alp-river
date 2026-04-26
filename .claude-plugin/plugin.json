@@ -1,0 +1,8 @@
+{
+  "name": "alp-river",
+  "description": "Complexity-aware multi-stage development pipeline. Routes work through classification, planning, challenge, implementation, and gated review based on task size.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Alper Ortac"
+  }
+}
