@@ -73,19 +73,23 @@ flowchart TB
 
 ## Install
 
-For now, pass `--plugin-dir` to Claude Code:
+In Claude Code:
+
+```
+/plugin marketplace add alp82/alp-river
+/plugin install alp-river@alperortac
+```
+
+To pull updates later: `/plugin marketplace update alperortac` then re-install.
+
+### Local development
+
+Clone the repo and pass `--plugin-dir`:
 
 ```bash
-claude --plugin-dir ~/dev/projects/alp-river
+git clone https://github.com/alp82/alp-river.git
+claude --plugin-dir ./alp-river
 ```
-
-Or alias it:
-
-```fish
-alias claude="claude --plugin-dir ~/dev/projects/alp-river"
-```
-
-Marketplace install: TBD.
 
 ## Slash commands
 

@@ -1,8 +1,11 @@
 {
   "name": "alp-river",
-  "description": "Complexity-aware multi-stage development pipeline. Routes work through classification, planning, challenge, implementation, and gated review based on task size.",
+  "description": "Multi-stage agent refinement for Claude Code, scaled by automatic complexity classification.",
   "version": "0.1.0",
   "author": {
     "name": "Alper Ortac"
-  }
+  },
+  "homepage": "https://github.com/alp82/alp-river",
+  "repository": "https://github.com/alp82/alp-river",
+  "license": "MIT"
 }
