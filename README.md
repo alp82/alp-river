@@ -16,45 +16,59 @@ A SessionStart hook reads `AGENTS.md` and injects it into every Claude session a
 
 ## S - small
 
-Direct implementation through the quality hooks. Main agent handles it without delegation.
+Main agent implements directly. Quality hooks fire on edits.
 
 ```mermaid
-flowchart LR
-    intent --> classify --> implement --> hooks[quality hooks]
+flowchart TB
+    intent --> classify[complexity-classifier]
+    classify --> impl[main agent implements]
+    impl --> hooks[quality hooks]
 ```
 
 ## M - medium
 
-Adds pre-flight scans (reuse, health, prototype, research), post-implementation review, and self-heal.
+Pre-flight scans run in parallel. Implementation, then broad review fan-out, then self-heal.
 
 ```mermaid
-flowchart LR
-    intent --> classify --> preflight[pre-flight] --> implement
-    implement --> review[broad review] --> heal[self-heal]
+flowchart TB
+    intent --> classify[complexity-classifier]
+    classify --> reuse[reuse-scanner] & health[health-checker] & proto[prototype-identifier] & rsrch[researcher]
+    reuse & health & proto & rsrch --> impl[main agent implements]
+    impl --> test[test-verifier] & quality[quality-reviewer] & accept[acceptance-reviewer]
+    test & quality & accept --> heal[fixer]
 ```
 
 ## L - large
 
-Adds clarification, planning, and adversarial plan challenge before implementation. Implementer subagent takes the build.
+Adds clarification, planning, and adversarial challenge. Implementer subagent takes the build. Plan-adherence-reviewer joins the broad review.
 
 ```mermaid
-flowchart LR
-    intent --> classify --> preflight --> clarify --> plan
-    plan --> challenge --> implement --> review --> heal[self-heal]
+flowchart TB
+    intent --> classify[complexity-classifier]
+    classify --> reuse[reuse-scanner] & health[health-checker] & proto[prototype-identifier] & rsrch[researcher]
+    reuse & health & proto & rsrch --> clari[requirements-clarifier]
+    clari --> plan[planner]
+    plan --> chal[plan-challenger]
+    chal --> impl[implementer]
+    impl --> test[test-verifier] & quality[quality-reviewer] & accept[acceptance-reviewer] & adher[plan-adherence-reviewer]
+    test & quality & accept & adher --> heal[fixer]
 ```
 
 ## XL - extra large
 
-Plan presents 2-3 alternative approaches with diagrams. Challenger reviews each. User picks one. Visual verifier runs if UI changes.
+Planner presents 2-3 approaches. Challenger reviews each. User picks. Visual verifier joins for UI changes.
 
 ```mermaid
-flowchart LR
-    intent --> classify --> preflight --> clarify
-    clarify --> plan["plan (2-3 approaches)"]
-    plan --> challenge["challenger reviews each"]
-    challenge --> pick[user picks]
-    pick --> implement --> review["broad + visual review"]
-    review --> heal[self-heal]
+flowchart TB
+    intent --> classify[complexity-classifier]
+    classify --> reuse[reuse-scanner] & health[health-checker] & proto[prototype-identifier] & rsrch[researcher]
+    reuse & health & proto & rsrch --> clari[requirements-clarifier]
+    clari --> plan["planner: 2-3 approaches"]
+    plan --> chal["plan-challenger reviews each"]
+    chal --> pick[user picks approach]
+    pick --> impl[implementer]
+    impl --> test[test-verifier] & quality[quality-reviewer] & accept[acceptance-reviewer] & adher[plan-adherence-reviewer] & visual[visual-verifier]
+    test & quality & accept & adher & visual --> heal[fixer]
 ```
 
 ## Install
