@@ -8,6 +8,30 @@ Multi-stage agent refinement for Claude Code, scaled by automatic complexity cla
 
 The whole pipeline ships in one folder. Doctrine, 26 subagents, 6 slash commands, 8 quality hooks.
 
+## Install
+
+In Claude Code:
+
+```
+/plugin marketplace add alp82/alp-river
+/plugin install alp-river@alperortac
+```
+
+To pull updates later: `/plugin marketplace update alperortac` then re-install.
+
+## How to use
+
+Describe what you want. The classifier grades the task and the right stages fire — doctrine is already loaded, nothing to enable.
+
+The river pauses at two checkpoints:
+
+- **Clarifier questions** (L/XL) — answer briefly; the planner waits.
+- **Plan selection** (XL) — pick one of the proposed approaches.
+
+Everything else runs to completion. Reviewer findings feed the fixer automatically.
+
+Override the grade with natural language: *treat this as L*, *skip clarify*, *go straight to plan*.
+
 ## How the river flows
 
 A complexity classifier reads each task and grades it **S**, **M**, **L**, or **XL**. The grade decides which stages run.
@@ -70,17 +94,6 @@ flowchart TB
     impl --> test[test-verifier] & quality[quality-reviewer] & accept[acceptance-reviewer] & adher[plan-adherence-reviewer] & visual[visual-verifier]
     test & quality & accept & adher & visual --> heal[fixer]
 ```
-
-## Install
-
-In Claude Code:
-
-```
-/plugin marketplace add alp82/alp-river
-/plugin install alp-river@alperortac
-```
-
-To pull updates later: `/plugin marketplace update alperortac` then re-install.
 
 ## Slash commands
 
