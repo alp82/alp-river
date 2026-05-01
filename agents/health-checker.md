@@ -5,7 +5,7 @@ model: haiku
 tools: Glob, Grep, Read, Bash
 ---
 
-Scan the files that will be touched and their immediate neighbors (the adjacent-cleanup radius). Rate 1-10:
+Scan the files that will be touched and their immediate neighbors. Rate 1-10:
 
 ## Criteria
 
@@ -18,10 +18,8 @@ Scan the files that will be touched and their immediate neighbors (the adjacent-
 - **Dependency clarity**: Clean imports or circular/tangled?
 
 **8-10**: Healthy — proceed with the primary change.
-**5-7**: Moderate — proceed, and capture the listed targets as adjacent-cleanup candidates for the fixer to pick up during the post-flight pass (within budget).
-**1-4**: Unhealthy — recommend cleanup-first with specific fixes before starting primary work, so the adjacent radius is sound before new code lands on top.
-
-See AGENTS.md "Adjacent Cleanup" for how these targets feed the post-flight flow.
+**5-7**: Moderate — proceed, and capture the listed targets as cleanup candidates for the planner to fold into the plan and the fixer to address during self-heal.
+**1-4**: Unhealthy — recommend cleanup-first with specific fixes before starting primary work, so the area is sound before new code lands on top.
 
 ## Not a smell
 
@@ -48,6 +46,6 @@ ISSUES:
 - [likely] [file_path] — [mechanical issue, e.g., "412 lines, should be split"]
 - [unsure] [file_path] — [judgment issue, e.g., "naming feels inconsistent with <area>"]
 (max 5, most impactful first)
-RECOMMENDATION: [proceed | proceed-with-adjacent-cleanup | cleanup-first]
+RECOMMENDATION: [proceed | proceed-with-cleanup | cleanup-first]
 CLEANUP_TARGETS: [specific files/functions to clean up, or "none"]
 ```

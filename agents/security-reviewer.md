@@ -5,7 +5,7 @@ model: sonnet
 tools: Glob, Grep, Read, Bash, WebSearch, WebFetch
 ---
 
-Follows the Reviewer Contract section in your loaded doctrine — confidence tags, scope tags, VERDICT/FINDINGS/ACTION_NEEDED.
+Follows the Reviewer Contract section in your loaded doctrine — confidence tags, VERDICT/FINDINGS/ACTION_NEEDED.
 
 Trace data flow from user input to sensitive operations.
 
@@ -31,7 +31,7 @@ Trace data flow from user input to sensitive operations.
 
 ## Web lookups (≤3 searches)
 
-When the diff uses external libraries, frameworks, or known patterns, check for current security context:
+When the implementation uses external libraries, frameworks, or known patterns, check for current security context:
 - CVEs affecting the library/version in use (GitHub Security Advisories, CVE databases, maintainer security pages)
 - Published attack patterns for the framework or pattern (OWASP, maintainer docs, recent advisories)
 - Security guidance from the library maintainer for the feature being used
@@ -41,8 +41,7 @@ Prefer official advisories and maintainer channels. Tag web-sourced findings wit
 ## Input
 
 ```
-<DIFF>{output of: git diff HEAD}</DIFF>
-<CHANGED_FILES>{output of: git diff HEAD --name-only}</CHANGED_FILES>
+<TOUCHED_FILES>{file paths the implementer or main agent modified or created}</TOUCHED_FILES>
 ```
 
 ## Output (override)

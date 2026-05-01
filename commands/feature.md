@@ -45,7 +45,7 @@ Each takes `<CONFIRMED_INTENT>` + `<TARGET_AREA>` (your best guess at the files/
 
 **Health gate**: follow health-checker's RECOMMENDATION.
 - `cleanup-first` → present CLEANUP_TARGETS to the user, wait for decision.
-- `proceed-with-adjacent-cleanup` → carry CLEANUP_TARGETS as adjacent candidates to the planner.
+- `proceed-with-cleanup` → carry CLEANUP_TARGETS to the planner so they're folded into the plan.
 - `proceed` → continue.
 
 **Prototype gate**: if `PROTOTYPES_NEEDED: yes`, launch `prototyper` with `<PROTOTYPE_TARGETS>`. Prototypes saved to `.prototypes/` for reference.
@@ -114,27 +114,29 @@ If backward-edge budget exhausted: stop, surface to the user.
 
 ## Step 8: Broad pass (parallel, fail-fast)
 
+Assemble `<TOUCHED_FILES>` from the implementer's `FILES_MODIFIED` + `FILES_CREATED` output. Pass it to every reviewer below.
+
 Launch concurrently:
-- `test-verifier` — inputs `<DIFF>`, `<CHANGED_FILES>`.
-- `quality-reviewer` — inputs `<DIFF>`, `<CHANGED_FILES>`, `<APPROVED_PLAN>`. **Override model to opus** at spawn time (`model: "opus"`) since this is L/XL.
-- `acceptance-reviewer` — inputs `<CONFIRMED_INTENT>`, `<CLARIFY_OUTPUT>`, `<APPROVED_PLAN>`, `<DIFF>`, `<CHANGED_FILES>`.
-- `plan-adherence-reviewer` — inputs `<APPROVED_PLAN>`, `<DIFF>`, `<CHANGED_FILES>`, `<IMPLEMENTER_NOTES>`.
+- `test-verifier` — inputs `<TOUCHED_FILES>`.
+- `quality-reviewer` — inputs `<TOUCHED_FILES>`, `<APPROVED_PLAN>`. **Override model to opus** at spawn time (`model: "opus"`) since this is L/XL.
+- `acceptance-reviewer` — inputs `<CONFIRMED_INTENT>`, `<CLARIFY_OUTPUT>`, `<APPROVED_PLAN>`, `<TOUCHED_FILES>`.
+- `plan-adherence-reviewer` — inputs `<APPROVED_PLAN>`, `<TOUCHED_FILES>`, `<IMPLEMENTER_NOTES>`.
 
 **Fail-fast**: if `test-verifier` returns `fail`, skip Step 9 and jump to Step 10 with the test failure plus any other findings collected. Reviewing code that doesn't build wastes context.
 
 ## Step 9: Specialist pass (conditional, parallel)
 
-Gate each specialist on broad-pass finding OR diff touching its domain. Launch only matching specialists:
+Gate each specialist on broad-pass finding OR touched files matching its domain. Launch only matching specialists:
 
-- `structure-reviewer` — quality flagged structure issue, OR diff has files over ~300 lines / functions over ~30 lines
-- `reuse-reviewer` — quality flagged duplication, OR diff contains new functions similar to existing ones
-- `consistency-reviewer` — diff touches naming/error-handling/return-shape patterns
-- `security-reviewer` (opus) — diff touches auth/permissions/session/input-handling
-- `performance-reviewer` — diff touches database/query/hot-path code
-- `accessibility-reviewer` — diff touches UI components
-- `design-consistency-reviewer` — diff touches UI components
-- `ux-reviewer` — diff touches UI components
-- `visual-verifier` — XL and diff touches UI. Input `<TARGET>` (route/URL from project CLAUDE.md), `<CONFIRMED_INTENT>`, `<DIFF>`, `<CHANGED_FILES>`. Ask user before running on XL per the gate matrix.
+- `structure-reviewer` — quality flagged structure issue, OR touched files include files over ~300 lines / functions over ~30 lines
+- `reuse-reviewer` — quality flagged duplication, OR touched files contain new functions similar to existing ones
+- `consistency-reviewer` — touched files affect naming/error-handling/return-shape patterns
+- `security-reviewer` (opus) — touched files include auth/permissions/session/input-handling
+- `performance-reviewer` — touched files include database/query/hot-path code
+- `accessibility-reviewer` — touched files include UI components
+- `design-consistency-reviewer` — touched files include UI components
+- `ux-reviewer` — touched files include UI components
+- `visual-verifier` — XL and touched files include UI. Input `<TARGET>` (route/URL from project CLAUDE.md), `<CONFIRMED_INTENT>`, `<TOUCHED_FILES>`. Ask user before running on XL per the gate matrix.
 
 Nothing flagged and no domain match → skip Step 9.
 
@@ -143,9 +145,9 @@ Nothing flagged and no domain match → skip Step 9.
 Aggregate findings from Steps 8 + 9 into `<FINDINGS>`.
 
 Launch `fixer` — **override model to opus** at spawn time (L/XL):
-- Input: `<FINDINGS>`, `<DIFF>` (primary), `<CHANGED_FILES>`, `<APPROVED_PLAN>`, `<ROUND>`.
+- Input: `<FINDINGS>`, `<TOUCHED_FILES>`, `<APPROVED_PLAN>`, `<ROUND>`.
 
-Fixer returns `RE_RUN_SET`. Re-run exactly those gates (from Step 8 + 9) with the post-fix diff.
+After the fixer runs, refresh `<TOUCHED_FILES>` to include any new files the fixer modified or created. Fixer returns `RE_RUN_SET`. Re-run exactly those gates (from Step 8 + 9) with the refreshed `<TOUCHED_FILES>`.
 
 - **Round 1**: fix + rerun RE_RUN_SET. If still failing, go to Round 2.
 - **Round 2**: present findings + fixer output to the user, ask how to proceed. Apply chosen fixes, rerun RE_RUN_SET.
@@ -160,7 +162,6 @@ Report:
 - Files created / modified
 - Post-fix gate results (broad pass + specialists)
 - Backward edges used: N/2
-- Commit-split suggestion: name the primary commit message and the `chore:` adjacent-cleanup commit (leave execution to the user — never run git writes)
-- REMAINING `[out-of-scope]` items for user triage
+- REMAINING items for user triage (anything in fixer's REMAINING)
 
 End with the literal line `<!-- pipeline-complete -->` (HTML comment, invisible to the user). The UserPromptSubmit hook detects it and nudges classification on the next prompt.

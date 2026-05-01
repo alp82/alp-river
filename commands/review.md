@@ -1,21 +1,19 @@
 ---
-description: Review current changes for quality, bugs, duplication, and dead code
+description: Review specified files for quality, bugs, duplication, and dead code
+argument-hint: Space-separated file paths to review
 ---
 
 # Code Review
 
-Review the current uncommitted changes (or staged changes if specified).
+Files to review: $ARGUMENTS
 
-## Context
-- Current diff: !`git diff HEAD`
-- Current branch: !`git branch --show-current`
-- Changed files: !`git diff HEAD --name-only`
+If `$ARGUMENTS` is empty, ask the user which files to review and stop.
 
 ## Process
 
 **Memory**: Apply AGENTS.md "Subagent Context Inheritance" to the `quality-reviewer` call below.
 
-Launch the `quality-reviewer` agent with the diff and changed files above. It checks bugs, duplication, dead code, and convention adherence in a single pass.
+Launch the `quality-reviewer` agent with `<TOUCHED_FILES>` set to the file paths above and `<APPROVED_PLAN>: none`. It checks bugs, duplication, dead code, and convention adherence in a single pass.
 
 ## Report
 
@@ -23,8 +21,8 @@ Present the quality-reviewer's output verbatim — the full `VERDICT`, `FINDINGS
 
 Then append:
 
-1. **Bottom line** — one sentence on whether the change is safe to commit.
+1. **Bottom line** — one sentence on the change's quality.
 2. **Next command** —
-   - `VERDICT: pass` → state the change is safe to commit; leave the commit decision and any git operations to the user.
-   - `VERDICT: warn` → name the one or two issues worth addressing; user's call.
+   - `VERDICT: pass` → done.
+   - `VERDICT: warn` → name the one or two issues worth addressing.
    - `VERDICT: fail` → suggest `/fix`, point at `ACTION_NEEDED`.

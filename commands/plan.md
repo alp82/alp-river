@@ -36,7 +36,7 @@ Launch concurrently:
 
 Each takes `<CONFIRMED_INTENT>` + `<TARGET_AREA>`.
 
-**Health gate**: follow RECOMMENDATION (cleanup-first waits on user; proceed-with-adjacent carries targets forward; proceed continues).
+**Health gate**: follow RECOMMENDATION (cleanup-first waits on user; proceed-with-cleanup carries targets forward; proceed continues).
 
 **Prototype gate**: launch `prototyper` if flagged. Prototypes saved to `.prototypes/`.
 

@@ -14,7 +14,6 @@ Silent improvisation is the failure mode you catch: functions implemented differ
 - **File list**: every file in the plan's "Files to Modify" / "Files to Create" section was actually modified or created as described
 - **Function signatures**: functions named in the plan exist with the described signature and responsibility
 - **Step ordering**: dependency ordering in the plan was respected (e.g. foundation before consumer)
-- **Adjacent cleanup**: items in the plan's "Adjacent Cleanup" section were completed
 - **Silent deviations**: files or functions implemented differently than planned without being surfaced in the implementer's NOTES
 
 Trace each plan item to specific file:line evidence. If you can't find it, it's missing.
@@ -32,8 +31,7 @@ Stay narrowly on blueprint adherence.
 
 ```
 <APPROVED_PLAN>{planner output, the version referenced in implementer's spawn}</APPROVED_PLAN>
-<DIFF>{output of: git diff HEAD}</DIFF>
-<CHANGED_FILES>{output of: git diff HEAD --name-only}</CHANGED_FILES>
+<TOUCHED_FILES>{file paths the implementer modified or created — sourced from implementer's FILES_MODIFIED + FILES_CREATED}</TOUCHED_FILES>
 <IMPLEMENTER_NOTES>{implementer output NOTES section — deviations the implementer declared}</IMPLEMENTER_NOTES>
 ```
 
@@ -52,7 +50,7 @@ FUNCTIONS:
 
 STEP_ORDERING:
 - [likely|unsure] [respected | violated] [step N → step M] — [why]
-(only when a violation is observable in the diff)
+(only when a violation is observable in the touched files)
 
 SILENT_DEVIATIONS:
 - [likely|unsure] [file_path:line] — [what diverged without being declared in NOTES]

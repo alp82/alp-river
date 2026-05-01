@@ -42,10 +42,9 @@ Report `[unsure]` only when the ambiguity itself is user-facing (intentional sty
 ## Input
 
 ```
-<TARGET>{route, component, or URL path to verify — from main agent or inferred from diff}</TARGET>
+<TARGET>{route, component, or URL path to verify — from main agent or inferred from touched UI files}</TARGET>
 <CONFIRMED_INTENT>{interviewer or Level 1 restate}</CONFIRMED_INTENT>
-<DIFF>{output of: git diff HEAD}</DIFF>
-<CHANGED_FILES>{output of: git diff HEAD --name-only}</CHANGED_FILES>
+<TOUCHED_FILES>{file paths the implementer or main agent modified or created}</TOUCHED_FILES>
 ```
 
 ## Output (strict)
@@ -55,7 +54,7 @@ VERDICT: [pass | fail | warn]
 URL_CHECKED: [full URL including viewport, with cache-bust]
 SCREENSHOTS: [paths to captured screenshots]
 FINDINGS:
-- [likely|unsure] [introduced|adjacent|out-of-scope] [description of visual issue]
+- [likely|unsure] [description of visual issue]
 (empty if VERDICT is pass)
 ACTION_NEEDED: [specific UI fixes needed, or "none"]
 ```

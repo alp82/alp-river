@@ -5,7 +5,7 @@ model: sonnet
 tools: Bash, Read, Glob, Grep
 ---
 
-Follows the Reviewer Contract section in your loaded doctrine — confidence tags, scope tags, VERDICT/FINDINGS/ACTION_NEEDED.
+Follows the Reviewer Contract section in your loaded doctrine — confidence tags, VERDICT/FINDINGS/ACTION_NEEDED.
 
 ## Rules
 
@@ -17,8 +17,7 @@ Follows the Reviewer Contract section in your loaded doctrine — confidence tag
 ## Input
 
 ```
-<DIFF>{output of: git diff HEAD}</DIFF>
-<CHANGED_FILES>{output of: git diff HEAD --name-only}</CHANGED_FILES>
+<TOUCHED_FILES>{file paths the implementer or main agent modified or created}</TOUCHED_FILES>
 ```
 
 ## Output (override)
@@ -30,9 +29,7 @@ VERDICT: [pass | fail | warn]
 TEST_COMMAND: [the command that was run]
 RESULTS: [pass count / fail count / skip count]
 FINDINGS:
-- [likely|unsure] [introduced] [description of failure or missing coverage]
-- [likely|unsure] [adjacent] [description of pre-existing failure in radius]
-- [likely|unsure] [out-of-scope] [description of pre-existing failure outside radius]
+- [likely|unsure] [description of failure or missing coverage]
 (empty if VERDICT is pass)
 ACTION_NEEDED: [what needs to be fixed or tested, or "none"]
 ```

@@ -3,7 +3,7 @@
 ## Principles
 - Never guess, never assume, never improvise unagreed solutions.
 - Extracting actual intent is more important than moving fast.
-- Leave touched code better than you found it. Adjacent refactors and improvements within the touched area are expected — see "Adjacent Cleanup" for radius and budget. Unrelated changes get their own task.
+- Leave touched code better than you found it. Unrelated changes get their own task.
 - No TODOs, placeholders, or incomplete implementations.
 - No backwards compatibility. Obsolete code gets deleted, not preserved.
 - No unnecessary comments, docstrings, or type annotations on unchanged code.
@@ -72,7 +72,7 @@ Parallel fan-out on the confirmed scope:
 - `prototype-identifier` — external APIs / SDK novelty
 - `researcher` — library/framework/domain knowledge (skip if interviewer flagged no external deps)
 
-**Health gate**: cleanup-first → wait user; proceed-with-adjacent → carry targets forward; proceed → continue.
+**Health gate**: cleanup-first → wait user; proceed-with-cleanup → carry targets forward; proceed → continue.
 **Prototype gate**: launch `prototyper` (sonnet) if flagged, writing to `.prototypes/`.
 
 ### Step 3: Clarify (L/XL; M when ambiguity remains after pre-flight)
@@ -111,29 +111,26 @@ Parallel:
 - `plan-adherence-reviewer` — file list, function signatures, step order (L/XL only)
 
 ### Step 9: Specialist pass (conditional)
-Gate each specialist on broad-pass finding OR diff touches their domain:
+Gate each specialist on broad-pass finding OR touched files matching its domain:
 
 | Specialist | Trigger |
 |------------|---------|
 | `structure-reviewer` | quality flagged structure |
 | `reuse-reviewer` | quality flagged duplication |
-| `consistency-reviewer` | diff touches patterns / naming |
-| `security-reviewer` (opus) | diff touches auth / permissions |
-| `performance-reviewer` | diff touches db / queries |
-| `accessibility-reviewer` | diff touches UI |
-| `design-consistency-reviewer` | diff touches UI |
-| `ux-reviewer` | diff touches UI |
+| `consistency-reviewer` | touched files affect patterns / naming |
+| `security-reviewer` (opus) | touched files include auth / permissions |
+| `performance-reviewer` | touched files include db / queries |
+| `accessibility-reviewer` | touched files include UI |
+| `design-consistency-reviewer` | touched files include UI |
+| `ux-reviewer` | touched files include UI |
 | `visual-verifier` | XL + UI (dev server at URL from project CLAUDE.md) |
 
 Nothing flagged and no domain match → skip Step 9.
 
 ### Step 10: Self-heal
-Launch `fixer` (opus on L/XL, sonnet on M) with aggregated findings.
-- `[introduced]` → always fix
-- `[adjacent]` → within 50% / ≤100-line budget
-- `[out-of-scope]` → surface in REMAINING
+Launch `fixer` (opus on L/XL, sonnet on M) with aggregated findings. Fixer addresses every reported finding; anything that can't be fixed in scope goes into REMAINING.
 
-**Post-fix RE-RUN set** = gates that flagged `[introduced]`/`[adjacent]` + gates whose axis the fixer's diff touched.
+**Post-fix RE-RUN set** = gates that flagged anything the fixer addressed + gates whose domain the fixer's edits touched.
 
 - Round 1: fix + rerun
 - Round 2: present to user → directed fix + rerun
@@ -146,7 +143,6 @@ Summary in Step 11 cites post-fix gate results only.
 - Files created / modified
 - Post-fix gate results
 - Backward edges used: N/2
-- Commit-split suggestion (primary + adjacent cleanup)
 - REMAINING items for user triage
 
 Emit `<!-- pipeline-complete -->` at the end.
@@ -204,32 +200,7 @@ Discard: raw exploration output, full file contents already acted on, superseded
 - Failing tests → fix the code, keeping assertions and coverage intact.
 - Delete dead code: unused functions, stale imports, obsolete files.
 - Search for existing patterns before writing new ones. Reuse beats reinvention.
-- Improve the area you're touching: dead code, stale abstractions, obvious simplifications. See "Adjacent Cleanup" for the rules.
-
-## Adjacent Cleanup
-
-The scope of any change is "requested work + adjacent cleanup within the touched area." Rot in places you actively touch is your responsibility; rot in untouched areas is a separate task.
-
-**Radius.** Adjacent = files changed by the task + files that directly import or call them. Cleanup stays inside that radius.
-
-**Quick-wins only.** In scope: dead code removal, stale imports, obvious renames, splitting oversized functions, tightening types, flattening deep nesting, removing redundant branches. Architectural changes, API redesigns, and cross-cutting refactors belong in their own task — surface them to the user rather than absorbing them.
-
-**Budget.** Keep cumulative adjacent-cleanup diff ≤ 50% of the primary diff or ≤ ~100 lines, whichever is larger. When you hit the cap, move remaining cleanup candidates into follow-up findings for the user to triage.
-
-**Separation.** Adjacent cleanup lands in its own commit(s), distinct from the primary change. Keep revert safe and bisect clean.
-
-**How reviewers surface findings.** Each finding carries a scope tag:
-- `[introduced]` — issue introduced by this change. Fixer addresses.
-- `[adjacent]` — pre-existing issue inside the radius. Fixer addresses within budget; overflow becomes follow-up.
-- `[out-of-scope]` — pre-existing issue outside the radius, noticed in passing. Surfaced to the user as a follow-up task. Reviewers stay focused on the touched area; these turn up when noticed, not by hunting.
-
-Surface every pre-existing issue you notice. In-radius findings get fixed (within budget); out-of-radius findings get named so the user can decide what to do with them.
-
-**Worked example.** Task: add a `sort` param to `GET /items`.
-- Primary diff: ~40 lines in `items/controller.ts`.
-- Radius: `items/controller.ts` (changed) + `items/service.ts` (direct call) + `items/types.ts` (imported).
-- In-scope adjacent cleanup: delete unused `itemsLegacySort` helper in `items/service.ts` (~15 lines — well under the 50% / 100-line budget). Lands in a separate commit from the primary change.
-- Out-of-scope (surfaced, not touched): `orders/controller.ts` uses the same pagination pattern and would benefit from the same `sort` param — noted as a follow-up task for the user to triage.
+- Improve the area you're touching: dead code, stale abstractions, obvious simplifications.
 
 ## Reviewer Contract
 
@@ -241,20 +212,15 @@ Tag each finding `[likely]` or `[unsure]` per the "Confidence Tagging" rules abo
 
 **Reporting threshold:** report `[likely]` findings unconditionally. Report `[unsure]` only when impact is high — correctness, security, or data risk (quality-reviewer priority tiers 1-2). Skip speculative low-impact findings.
 
-### Scope tags (reviewer surfacing rules)
-
-Each finding tagged `[introduced]`, `[adjacent]`, or `[out-of-scope]` per "Adjacent Cleanup" above. VERDICT reflects only `[introduced]`; others are informational.
-
 ### Standard inputs
 
 Every reviewer receives inputs via a tagged-slot template defined in its own file. Every template defines at minimum:
 
 ```
-<DIFF>{output of: git diff HEAD}</DIFF>
-<CHANGED_FILES>{output of: git diff HEAD --name-only}</CHANGED_FILES>
+<TOUCHED_FILES>{file paths the implementer modified or created — sourced from implementer's FILES_MODIFIED + FILES_CREATED, or from main-agent session edits on S/M tasks}</TOUCHED_FILES>
 ```
 
-Reviewers that need more declare the additional slots in their template (acceptance-reviewer: `<CONFIRMED_INTENT>` + `<APPROVED_PLAN>`; structure/consistency/reuse-reviewer: `<APPROVED_PLAN>` for scope judgment; plan-adherence-reviewer: `<APPROVED_PLAN>`).
+Reviewers Read those files directly to inspect current state. Reviewers that need more declare the additional slots in their template (acceptance-reviewer: `<CONFIRMED_INTENT>` + `<APPROVED_PLAN>`; structure/consistency/reuse-reviewer: `<APPROVED_PLAN>` for scope judgment; plan-adherence-reviewer: `<APPROVED_PLAN>`).
 
 **First step for every reviewer**: parse required slots. On any missing required slot, emit `INPUT_ERROR: missing <slot>` and stop — do not attempt a partial review.
 
@@ -265,9 +231,7 @@ Main agent fills slots verbatim from predecessor output. No paraphrase.
 ```
 VERDICT: [pass | fail | warn]
 FINDINGS:
-- [likely|unsure] [introduced] [file_path:line] — [issue and why it matters]
-- [likely|unsure] [adjacent] [file_path:line] — [pre-existing, in radius]
-- [likely|unsure] [out-of-scope] [file_path:line] — [pre-existing, outside radius]
+- [likely|unsure] [file_path:line] — [issue and why it matters]
 (empty if pass, max 5 issues, [likely] findings first)
 ACTION_NEEDED: [specific fixes, or "none"]
 ```
@@ -277,7 +241,7 @@ A reviewer MAY:
 - Specialize the finding description shape (e.g. security includes attack vector + CVE; performance includes measurement approach).
 
 A reviewer MUST NOT:
-- Drop VERDICT or the scope tag convention.
+- Drop VERDICT.
 - Lower the reporting threshold.
 - Pad findings to hit a target count. Two real issues beats eight noisy ones.
 - Report style taste, naming preferences, or subjective opinions as bugs — out of scope.
@@ -290,7 +254,7 @@ A reviewer MUST NOT:
 VERDICT: warn
 EXAMPLES_COMPARED: src/features/reports/controller.ts, src/features/users/controller.ts
 FINDINGS:
-- [likely] [introduced] src/features/items/controller.ts:22 — returns `{ data, meta }` but every other controller returns the bare array. Align with reports/users.
-- [likely] [adjacent] src/features/items/service.ts:8 — `get_item` (snake_case) diverges from camelCase used elsewhere in the module.
-ACTION_NEEDED: Change return shape to bare array; rename `get_item` to `getItem` within radius.
+- [likely] src/features/items/controller.ts:22 — returns `{ data, meta }` but every other controller returns the bare array. Align with reports/users.
+- [likely] src/features/items/service.ts:8 — `get_item` (snake_case) diverges from camelCase used elsewhere in the module.
+ACTION_NEEDED: Change return shape to bare array; rename `get_item` to `getItem`.
 ```

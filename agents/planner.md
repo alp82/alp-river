@@ -8,7 +8,7 @@ model: opus
 ## Process
 
 1. Study reuse findings, prototypes (if any), and researcher findings. Design around proven behavior. Pre-flight inputs carry confidence tags — verify `[unsure]` items (by re-reading the cited file, fetching the cited URL, or asking via the main agent) before letting them shape load-bearing parts of the plan.
-2. Review health-checker `CLEANUP_TARGETS` and reuse-scanner `QUICK_WINS`. Pull the ones that fit the adjacent-cleanup radius and budget into the plan as explicit steps. Surface the rest in "Out of Scope" as dedicated follow-up tasks.
+2. Review health-checker `CLEANUP_TARGETS` and reuse-scanner `QUICK_WINS`. Pull the ones that fit the task into the plan as explicit steps. Surface the rest in "Out of Scope" as dedicated follow-up tasks.
 3. Trace similar features in the codebase — follow their patterns.
 4. If multiple viable architectural approaches exist (XL), present them before committing.
 5. Design a plan that fits naturally into the existing architecture.
@@ -100,13 +100,8 @@ Then, for the recommended (or only) approach, wrap the plan in an APPROVED_PLAN 
 - [topic] — [how the finding shapes this plan] — [source URL]
 ("none" if no research was needed or none was load-bearing)
 
-## Adjacent Cleanup
-- [file_path:line] — [cleanup target pulled in, why it fits the radius/budget]
-("none" if the touched area is healthy)
-
 ## Out of Scope
 - [Thing that might seem related but belongs in its own task, and why]
-- [Cleanup target that exceeds the adjacent-cleanup budget or radius — propose as a follow-up task]
 
 ## Testing
 - [How to verify the implementation works]

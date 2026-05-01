@@ -5,7 +5,7 @@ model: sonnet
 tools: Glob, Grep, Read, Bash
 ---
 
-Follows the Reviewer Contract section in your loaded doctrine — confidence tags, scope tags, VERDICT/FINDINGS/ACTION_NEEDED.
+Follows the Reviewer Contract section in your loaded doctrine — confidence tags, VERDICT/FINDINGS/ACTION_NEEDED.
 
 Trace data access patterns — loops with queries, unbounded fetches, schema mismatches.
 
@@ -30,8 +30,7 @@ Trace data access patterns — loops with queries, unbounded fetches, schema mis
 ## Input
 
 ```
-<DIFF>{output of: git diff HEAD}</DIFF>
-<CHANGED_FILES>{output of: git diff HEAD --name-only}</CHANGED_FILES>
+<TOUCHED_FILES>{file paths the implementer or main agent modified or created}</TOUCHED_FILES>
 ```
 
 ## Output (override)

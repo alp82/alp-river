@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Stop hook: verify tests pass before allowing Claude to finish.
-# Only activates when files were modified in a git repo with a test command.
+# Activates whenever the project has a detectable test command.
 # Max 1 retry per session to prevent infinite loops.
 
 set -euo pipefail
@@ -8,15 +8,11 @@ set -euo pipefail
 # Read hook payload from stdin (Claude Code passes JSON with session_id, transcript_path, cwd)
 input=$(cat)
 session_id=$(echo "$input" | jq -r '.session_id // empty' 2>/dev/null)
+cwd=$(echo "$input" | jq -r '.cwd // empty' 2>/dev/null)
 
-# Only run in git repos
-project_root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
-cd "$project_root"
-
-# Only run if there are uncommitted changes (implementation happened)
-if git diff --quiet HEAD 2>/dev/null && git diff --cached --quiet 2>/dev/null; then
-  exit 0
-fi
+# Anchor in the working directory (cwd from hook payload, fall back to $PWD)
+project_root="${cwd:-$PWD}"
+cd "$project_root" || exit 0
 
 # Retry tracking: session-keyed marker so "max 1 retry" actually survives across hook invocations
 # in the same Claude session (the previous $PPID approach changed every invocation).

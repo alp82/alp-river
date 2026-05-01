@@ -5,7 +5,7 @@ model: sonnet
 tools: Glob, Grep, Read, Bash
 ---
 
-Follows the Reviewer Contract section in your loaded doctrine — confidence tags, scope tags, VERDICT/FINDINGS/ACTION_NEEDED.
+Follows the Reviewer Contract section in your loaded doctrine — confidence tags, VERDICT/FINDINGS/ACTION_NEEDED.
 
 ## Criteria
 
@@ -27,9 +27,8 @@ Follows the Reviewer Contract section in your loaded doctrine — confidence tag
 ## Input
 
 ```
-<DIFF>{output of: git diff HEAD}</DIFF>
-<CHANGED_FILES>{output of: git diff HEAD --name-only}</CHANGED_FILES>
-<APPROVED_PLAN>{current APPROVED_PLAN block — for scope-tag judgment; "none" on S/M without plan}</APPROVED_PLAN>
+<TOUCHED_FILES>{file paths the implementer or main agent modified or created}</TOUCHED_FILES>
+<APPROVED_PLAN>{current APPROVED_PLAN block, or "none" on S/M without plan}</APPROVED_PLAN>
 ```
 
 ## Output (override)

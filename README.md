@@ -15,9 +15,15 @@ In Claude Code:
 ```
 /plugin marketplace add alp82/alp-river
 /plugin install alp-river@alperortac
+/reload-plugins
 ```
 
-To pull updates later: `/plugin marketplace update alperortac` then re-install.
+To pull updates later:
+```
+/plugin marketplace update alperortac
+/plugin install alp-river@alperortac
+/reload-plugins
+```
 
 ## How to use
 

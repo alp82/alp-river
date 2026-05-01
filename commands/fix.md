@@ -41,7 +41,7 @@ S and M continue here.
 
 **Health gate (M)**: follow RECOMMENDATION.
 - `cleanup-first` → present CLEANUP_TARGETS, wait for user decision.
-- `proceed-with-adjacent-cleanup` → carry into implementation.
+- `proceed-with-cleanup` → carry CLEANUP_TARGETS into implementation.
 - `proceed` → continue.
 
 Apply reuse-scanner QUICK_WINS when they fit the radius and budget.
@@ -68,20 +68,20 @@ If `SCOPE_MOVED: yes` and new COMPLEXITY is L or XL: tell the user "reclassifies
 
 **S tasks**: no subagent gates. The Stop hook runs the project's test suite automatically. Skip to Step 8.
 
-**M tasks**: launch concurrently (parallel, fail-fast):
-- `test-verifier` — inputs `<DIFF>`, `<CHANGED_FILES>`.
-- `quality-reviewer` (sonnet default, no override for M) — inputs `<DIFF>`, `<CHANGED_FILES>`, `<APPROVED_PLAN>: none`.
-- `acceptance-reviewer` — inputs `<CONFIRMED_INTENT>`, `<CLARIFY_OUTPUT>` or `"none"`, `<APPROVED_PLAN>: none`, `<DIFF>`, `<CHANGED_FILES>`.
+**M tasks**: assemble `<TOUCHED_FILES>` from your own Edit/Write calls during Step 5. Launch concurrently (parallel, fail-fast):
+- `test-verifier` — inputs `<TOUCHED_FILES>`.
+- `quality-reviewer` (sonnet default, no override for M) — inputs `<TOUCHED_FILES>`, `<APPROVED_PLAN>: none`.
+- `acceptance-reviewer` — inputs `<CONFIRMED_INTENT>`, `<CLARIFY_OUTPUT>` or `"none"`, `<APPROVED_PLAN>: none`, `<TOUCHED_FILES>`.
 
 If `test-verifier` fails, jump to Step 7 with the test failure plus any other findings. Skip Step 7's specialist pass.
 
 ## Step 7: Specialist pass (M, conditional)
 
-Gate each specialist on broad-pass finding OR diff touching its domain. M tasks rarely trigger many — most are small enough that quality-reviewer's broad pass is enough.
+Gate each specialist on broad-pass finding OR touched files matching its domain. M tasks rarely trigger many — most are small enough that quality-reviewer's broad pass is enough.
 
 - `security-reviewer` — auth/permissions/session/input-handling code
 - `performance-reviewer` — db/query/hot-path code
-- UI specialists (`accessibility-reviewer`, `design-consistency-reviewer`, `ux-reviewer`) — UI diff
+- UI specialists (`accessibility-reviewer`, `design-consistency-reviewer`, `ux-reviewer`) — UI files
 
 Visual-verifier stays out of the M pipeline.
 
@@ -90,9 +90,9 @@ Visual-verifier stays out of the M pipeline.
 **S tasks**: the Stop hook handles test failure retries (1 retry per session).
 
 **M tasks**: aggregate findings. Launch `fixer` (sonnet default):
-- Input: `<FINDINGS>`, `<DIFF>`, `<CHANGED_FILES>`, `<APPROVED_PLAN>: none`, `<ROUND>`.
+- Input: `<FINDINGS>`, `<TOUCHED_FILES>`, `<APPROVED_PLAN>: none`, `<ROUND>`.
 
-Use the returned `RE_RUN_SET` to re-fire exactly those gates with the post-fix diff.
+After the fixer runs, refresh `<TOUCHED_FILES>` to include any new files the fixer touched. Use the returned `RE_RUN_SET` to re-fire exactly those gates with the refreshed `<TOUCHED_FILES>`.
 
 - Round 1: fix + rerun.
 - Round 2: present to user, apply directed fixes, rerun.
@@ -106,7 +106,6 @@ Brief report:
 - What was fixed (1-2 sentences)
 - Files changed
 - Post-fix gate results
-- Commit-split suggestion if adjacent cleanup happened (primary + `chore:` adjacent)
-- REMAINING `[out-of-scope]` items
+- REMAINING items for user triage (anything in fixer's REMAINING)
 
 End with the literal line `<!-- pipeline-complete -->`.

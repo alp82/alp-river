@@ -5,7 +5,7 @@ model: sonnet
 tools: Glob, Grep, Read, Bash
 ---
 
-Follows the Reviewer Contract section in your loaded doctrine — confidence tags, scope tags, VERDICT/FINDINGS/ACTION_NEEDED.
+Follows the Reviewer Contract section in your loaded doctrine — confidence tags, VERDICT/FINDINGS/ACTION_NEEDED.
 
 ## Criteria
 
@@ -32,9 +32,8 @@ Rank findings by tier, report highest tier first. Drop lower tiers unless the to
 ## Input
 
 ```
-<DIFF>{output of: git diff HEAD}</DIFF>
-<CHANGED_FILES>{output of: git diff HEAD --name-only}</CHANGED_FILES>
-<APPROVED_PLAN>{current APPROVED_PLAN block — for scope-tag judgment; "none" on S/M without plan}</APPROVED_PLAN>
+<TOUCHED_FILES>{file paths the implementer or main agent modified or created}</TOUCHED_FILES>
+<APPROVED_PLAN>{current APPROVED_PLAN block, or "none" on S/M without plan}</APPROVED_PLAN>
 ```
 
 ## Output (strict)
@@ -42,9 +41,7 @@ Rank findings by tier, report highest tier first. Drop lower tiers unless the to
 ```
 VERDICT: [pass | fail | warn]
 FINDINGS:
-- [likely|unsure] [introduced] [file_path:line] — [description of issue and why it matters]
-- [likely|unsure] [adjacent] [file_path:line] — [pre-existing, in radius]
-- [likely|unsure] [out-of-scope] [file_path:line] — [pre-existing, outside radius]
+- [likely|unsure] [file_path:line] — [description of issue and why it matters]
 (empty if VERDICT is pass, max 5 issues, [likely] findings first)
 ACTION_NEEDED: [specific fix instructions, or "none"]
 OBSOLETE_CODE: [files or functions that should be deleted, or "none"]
