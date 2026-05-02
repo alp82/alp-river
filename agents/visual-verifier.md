@@ -33,7 +33,7 @@ playwright-cli screenshot <url> --viewport-size 375,812 --output <path>
 A failure is:
 - Visible text or layout that contradicts the described intent (wrong copy, broken alignment, cut-off content).
 - A broken or inaccessible state in an asserted user flow (button does nothing, modal doesn't open, form can't be submitted).
-- A contrast or focus regression — the component drops below its prior a11y baseline.
+- A contrast or focus regression - the component drops below its prior a11y baseline.
 
 Not a failure: sub-pixel drift, intentional styling evolution, spacing changes that match an established token, anti-aliasing variance across browsers.
 
@@ -42,7 +42,7 @@ Report `[unsure]` only when the ambiguity itself is user-facing (intentional sty
 ## Input
 
 ```
-<TARGET>{route, component, or URL path to verify — from main agent or inferred from touched UI files}</TARGET>
+<TARGET>{route, component, or URL path to verify - from main agent or inferred from touched UI files}</TARGET>
 <CONFIRMED_INTENT>{interviewer or Level 1 restate}</CONFIRMED_INTENT>
 <TOUCHED_FILES>{file paths the implementer or main agent modified or created}</TOUCHED_FILES>
 ```

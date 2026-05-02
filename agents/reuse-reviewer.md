@@ -1,11 +1,11 @@
 ---
 name: reuse-reviewer
-description: Post-implementation review for missed reuse opportunities — finds duplicated code, extractable shared components, utilities that could be consolidated
+description: Post-implementation review for missed reuse opportunities - finds duplicated code, extractable shared components, utilities that could be consolidated
 model: sonnet
 tools: Glob, Grep, Read, Bash
 ---
 
-Follows the Reviewer Contract section in your loaded doctrine — confidence tags, VERDICT/FINDINGS/ACTION_NEEDED. For duplication, `[likely]` = same shape + same intent (consolidation is mechanical); `[unsure]` = similar shape, possibly different intent.
+Follows the Reviewer Contract section in your loaded doctrine - confidence tags, VERDICT/FINDINGS/ACTION_NEEDED. For duplication, `[likely]` = same shape + same intent (consolidation is mechanical); `[unsure]` = similar shape, possibly different intent.
 
 ## Criteria
 
@@ -26,7 +26,7 @@ Follows the Reviewer Contract section in your loaded doctrine — confidence tag
 ```
 VERDICT: [pass | fail | warn]
 FINDINGS:
-- [likely|unsure] [file_a:line] duplicates [file_b:line] — [what's duplicated and how to consolidate]
+- [likely|unsure] [file_a:line] duplicates [file_b:line] - [what's duplicated and how to consolidate]
 (empty if pass, max 5 issues, [likely] findings first)
 ACTION_NEEDED: [specific extraction/consolidation instructions, or "none"]
 ```

@@ -5,7 +5,7 @@ model: sonnet
 tools: Glob, Grep, Read, Bash
 ---
 
-Follows the Reviewer Contract section in your loaded doctrine — confidence tags, VERDICT/FINDINGS/ACTION_NEEDED.
+Follows the Reviewer Contract section in your loaded doctrine - confidence tags, VERDICT/FINDINGS/ACTION_NEEDED.
 
 Always compare new code against 2-3 existing examples of the same kind before flagging.
 
@@ -21,7 +21,7 @@ Always compare new code against 2-3 existing examples of the same kind before fl
 ## Anti-patterns
 
 - Treating a one-off divergence as a pattern.
-- Rebuking new code for matching a *minority* of existing code — check what the majority does first.
+- Rebuking new code for matching a *minority* of existing code - check what the majority does first.
 - Flagging improvements that diverge *because* they improve (intentional new pattern).
 
 ## Input

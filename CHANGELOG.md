@@ -2,39 +2,43 @@
 
 All notable changes to alp-river. Versions match `.claude-plugin/plugin.json`.
 
+## 0.1.5 - 2026-05-02
+
+**`/compact` doesn't reset you anymore.** After compacting, the rules and your in-progress work (intent, classification, plan) are still there. Was supposed to work since 0.1.0 but quietly didn't.
+
+**No more weird Step 3 → Step 5 gaps.** The old Step 4 was a rare conditional that mostly didn't fire, leaving a visible gap when you watched the pipeline run. It's now part of Step 3, so the steps go 0, 1, 2, 3, 4... in order.
+
 ## 0.1.4 - 2026-05-02
 
-**Clarification loops.** Intent and clarification iterate until you're satisfied. Single-pass Q&A misses the follow-up ambiguity that surfaces from your earlier answers - now each stage keeps going until nothing new comes up. Cap 5 rounds, free of the rework budget.
-
-**Research before asking.** The agents look at the codebase and web first. If your question can be answered by reading a file or looking up a doc, they do that instead of asking you. Each round shows you what was checked.
-
-**Orchestrator stays out of the codebase.** The main agent does the first restatement from text alone. Any deeper recon escalates to a subagent rather than dragging the orchestrator into the files.
+- **Intent and clarification keep asking until nothing new comes up.** They loop instead of doing a single pass. Capped at 5 rounds; doesn't count against the rework budget.
+- **Agents look stuff up before bothering you.** They check the codebase and the web first, only asking what those sources don't answer. Each round shows what they checked.
+- **Main agent doesn't read your code during intent confirmation.** The first restatement is from the request alone. If deeper digging is needed, a subagent does it.
 
 ## 0.1.3 - 2026-05-02
 
-**Two-pass code review.** The post-implementation review now runs as two passes asking different questions:
+**Code review now runs in two passes:**
 
-- **Correctness asks: *does this work?*** - bugs, type holes, dead code, project-convention violations.
-- **Quality asks: *is this the right way to do it?*** - the senior-engineer pass. Did the implementer pick the right tool at the right altitude with the right amount of code? Catches hacky shortcuts when a clean path exists (parsing CLI output when an SDK is already a dependency, hand-rolling retries when the library provides them), bloat (unnecessary abstraction layers, config knobs nothing reads, defensive branches for scenarios that can't happen), and wrong-altitude solutions (reinventing stdlib, wrapping typed libraries in stringly-typed structures).
+- **Correctness asks: *does this work?*** Bugs, type holes, dead code, convention violations.
+- **Quality asks: *is this the right way?*** The senior-engineer pass. Catches hacky shortcuts when a clean path was right there (parsing CLI output when an SDK is already imported), bloat (config knobs nothing reads, defensive code for cases that can't happen), and reinvention (rolling your own when the stdlib does it).
 
-Each reviewer stops sandbagging the other. Correctness no longer hides real bugs behind "this could be cleaner" notes; quality no longer waters down its judgment by chasing typos.
+Splitting them this way stops one from softening the other.
 
 ## 0.1.2 - 2026-05-02
 
-**Outcome over mechanics.** Intent confirmation restates the outcome you want - what is true when this ships - not the mechanics. File paths, schema fields, function names, API routes, component names: those belong in the plan, not the read-back. If the agent can't restate the goal without naming specifics, it has over-interpreted and pulls back.
+The intent restatement says what should be true when the task is done, not how it'll be done. File paths, function names, and API routes belong in the plan, not in the read-back.
 
 ## 0.1.1 - 2026-05-01
 
-- Reviewers operate on the set of touched files directly, instead of receiving a pre-computed diff. Cleaner inputs, simpler invocation.
-- Review scope tightened: adjacent-cleanup is its own task and no longer leaks into reviewer findings.
-- Health checker and fixer logic simplified.
-- Local-development workspace config added.
+- Reviewers read the changed files directly. No more pre-built diff.
+- Adjacent cleanup is its own thing now, not mixed into reviewer findings.
+- Health-checker and fixer cleaned up.
+- Workspace config added for local dev.
 
 ## 0.1.0 - 2026-04-26
 
 Initial release.
 
-- Multi-stage pipeline scaled by automatic complexity classification (S / M / L / XL).
-- 27 subagents covering intent, classification, pre-flight, planning, implementation, broad review, specialist review, and self-heal.
+- A staged pipeline. Bigger tasks (L / XL) get deeper review; smaller ones (S / M) skip the gates that wouldn't add value.
+- 27 subagents covering intent, classification, pre-flight, planning, implementation, review, and self-heal.
 - 6 slash commands: `/feature`, `/fix`, `/plan`, `/investigate`, `/review`, `/verify`.
-- 8 quality hooks including session-start doctrine injection, pre-compact canonical-state re-injection, and per-agent context injection for judgment-call subagents.
+- 8 hooks for session start, code formatting, test verification, agent context, and notifications.

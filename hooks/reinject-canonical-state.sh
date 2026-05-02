@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# PreCompact hook: re-anchor doctrine + canonical pipeline state from the
-# transcript so both survive compaction. SessionStart's additionalContext
-# does not auto-re-inject after compaction, so we re-emit AGENTS.md here
-# alongside the structured workflow state (last APPROVED_PLAN,
-# CONFIRMED_INTENT, CLARIFY_OUTPUT, CLASSIFICATION) extracted from the
-# transcript.
+# SessionStart:compact hook: re-anchor doctrine + canonical pipeline state
+# from the transcript after compaction. PreCompact stdout only reaches the
+# debug log, so re-injection has to happen on the post-compact SessionStart
+# fire, which does inject stdout/additionalContext into the conversation.
+# Re-emits AGENTS.md alongside the structured workflow state
+# (last APPROVED_PLAN, CONFIRMED_INTENT, CLARIFY_OUTPUT, CLASSIFICATION)
+# extracted from the transcript.
 
 set -euo pipefail
 
@@ -148,7 +149,7 @@ Preserve manually: current workflow step, gate results so far, unresolved self-h
 
 # Emit as additionalContext; fall back to plain stdout if jq encoding fails.
 if encoded=$(jq -cn --arg ctx "$out" \
-  '{hookSpecificOutput: {hookEventName: "PreCompact", additionalContext: $ctx}}' 2>/dev/null); then
+  '{hookSpecificOutput: {hookEventName: "SessionStart", additionalContext: $ctx}}' 2>/dev/null); then
   printf '%s\n' "$encoded"
 else
   printf '%s\n' "$out"

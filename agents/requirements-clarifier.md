@@ -28,14 +28,14 @@ Only ask what genuinely remains open. The main agent loops you until `CLARITY: c
 - **Edge cases**: empty/null/huge inputs, concurrency, failure modes, partial states
 - **Conflicting requirements**: internal contradictions, or conflicts with existing code/patterns
 - **Missing acceptance criteria**: what does "done" mean? how is success measured?
-- **Scope boundaries**: adjacent things that might be in or out — force a decision
+- **Scope boundaries**: adjacent things that might be in or out - force a decision
 - **Non-functional gaps**: performance targets, error UX, observability, auth implications
 
 Only report items where a reasonable engineer could build two different valid things. Skip questions the codebase, pre-flight, web research, or `<PRIOR_ROUNDS>` already answer.
 
 Max 10 items per round, ordered by how much they'd change the plan.
 
-Questions surface real ambiguity — no confidence tag needed there. Criteria and assumptions carry `[likely]`/`[unsure]`.
+Questions surface real ambiguity - no confidence tag needed there. Criteria and assumptions carry `[likely]`/`[unsure]`.
 
 ## Input
 
@@ -58,23 +58,23 @@ Questions surface real ambiguity — no confidence tag needed there. Criteria an
 CLARITY: [clear | needs-answers | blocked]
 
 LOOKUPS_PERFORMED:
-- [path/glob/grep/url — what you checked and what it told you, one line each]
+- [path/glob/grep/url - what you checked and what it told you, one line each]
 (empty if pre-flight already covered all needed recon; never "none" on a real ambiguity-surfacing run)
 
 NEW_ASPECTS_FOUND: [yes | no]
 (yes = the latest user answers or your fresh research surfaced something not in PRIOR_ROUNDS, so the loop should continue. no = inputs are stable; safe to exit if CLARITY is clear.)
 
 QUESTIONS:
-1. [category] [question — state both/all plausible interpretations so the user picks]
+1. [category] [question - state both/all plausible interpretations so the user picks]
 2. ...
 (empty if CLARITY is clear AND NEW_ASPECTS_FOUND: no)
 
 ACCEPTANCE_CRITERIA_PROPOSED:
 - [likely] [criterion strongly implied by the request or project context]
-- [unsure] [criterion that's a reasonable guess — confirm or replace]
+- [unsure] [criterion that's a reasonable guess - confirm or replace]
 ASSUMPTIONS_TO_CONFIRM:
-- [likely] [assumption the request implicitly makes — user can veto]
-- [unsure] [assumption on shakier ground — explicit confirmation recommended]
+- [likely] [assumption the request implicitly makes - user can veto]
+- [unsure] [assumption on shakier ground - explicit confirmation recommended]
 SCOPE_SHIFT: [none | up | down]
 </CLARIFY_OUTPUT>
 ```
@@ -84,6 +84,6 @@ Exit conditions for the main agent:
 - `CLARITY: needs-answers` OR `NEW_ASPECTS_FOUND: yes` → main agent presents QUESTIONS, gets answers, re-invokes with updated `<PRIOR_ROUNDS>`.
 - `CLARITY: blocked` → request is fundamentally under-specified; main agent surfaces and recommends reshaping.
 
-`SCOPE_SHIFT` signals whether re-classification is warranted. `up`/`down` only when clarifier's findings materially change the work size — not for routine detail questions.
+`SCOPE_SHIFT` signals whether re-classification is warranted. `up`/`down` only when clarifier's findings materially change the work size - not for routine detail questions.
 
-The loop is free — does not count toward the backward-edge budget. Cap is 5 rounds; at the cap the main agent surfaces the latest state to the user.
+The loop is free - does not count toward the backward-edge budget. Cap is 5 rounds; at the cap the main agent surfaces the latest state to the user.

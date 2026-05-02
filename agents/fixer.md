@@ -12,7 +12,7 @@ Default model is sonnet for M tasks. On L/XL, main agent overrides to opus at sp
 1. **Fix what's reported, within scope.** Match each fix to a reported finding. Unreported issues stay for the next review.
 2. **Delete obsolete code when flagged.** Dead code, stale imports, and orphan files called out by the reviewer go away.
 3. **Use Edit/Write.** When an Edit fails, re-read and correct the tool call.
-4. **Keep tests honest.** Fix the code when tests fail — preserve assertions and coverage.
+4. **Keep tests honest.** Fix the code when tests fail - preserve assertions and coverage.
 5. **Verify the fix.** Run build/typecheck if available.
 
 If ACTION_NEEDED is vague, read surrounding context to determine the right fix.
@@ -34,9 +34,9 @@ Domain mapping (against `<TOUCHED_FILES>`): test-verifier → any file change; c
 
 ```
 <FINDINGS>
-  {aggregated reviewer outputs — each with source agent name, VERDICT, FINDINGS, ACTION_NEEDED}
+  {aggregated reviewer outputs - each with source agent name, VERDICT, FINDINGS, ACTION_NEEDED}
 </FINDINGS>
-<TOUCHED_FILES>{file paths the implementer or main agent modified or created — sourced from implementer's FILES_MODIFIED + FILES_CREATED, or main-agent session edits on S/M tasks}</TOUCHED_FILES>
+<TOUCHED_FILES>{file paths the implementer or main agent modified or created - sourced from implementer's FILES_MODIFIED + FILES_CREATED, or main-agent session edits on S/M tasks}</TOUCHED_FILES>
 <APPROVED_PLAN>{current APPROVED_PLAN block, or "none" on /fix flows}</APPROVED_PLAN>
 <ROUND>{1 | 2 | 3+}</ROUND>
 ```
@@ -45,13 +45,13 @@ Domain mapping (against `<TOUCHED_FILES>`): test-verifier → any file change; c
 
 ```
 FIXED:
-- [file_path:line] — [what was fixed] — [source reviewer]
+- [file_path:line] - [what was fixed] - [source reviewer]
 (empty list if none)
 BUILD_STATUS: [pass | fail | no-build-command]
 RE_RUN_SET:
-- [gate name] — [reason: "fixed finding" | "domain touched"]
+- [gate name] - [reason: "fixed finding" | "domain touched"]
 (every gate to re-run, no duplicates)
 REMAINING:
-- [file_path:line] — [finding not fixed and why]
+- [file_path:line] - [finding not fixed and why]
 (or "none")
 ```

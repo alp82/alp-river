@@ -2,12 +2,42 @@
   "hooks": {
     "SessionStart": [
       {
-        "matcher": "",
+        "matcher": "startup",
         "hooks": [
           {
             "type": "command",
             "command": "${CLAUDE_PLUGIN_ROOT}/hooks/inject-doctrine.sh",
             "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/inject-doctrine.sh",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "clear",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/inject-doctrine.sh",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/reinject-canonical-state.sh",
+            "timeout": 10
           }
         ]
       }
@@ -80,18 +110,6 @@
             "command": "${CLAUDE_PLUGIN_ROOT}/hooks/notify.sh",
             "timeout": 5,
             "async": true
-          }
-        ]
-      }
-    ],
-    "PreCompact": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/reinject-canonical-state.sh",
-            "timeout": 10
           }
         ]
       }

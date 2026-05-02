@@ -1,22 +1,22 @@
 ---
 name: accessibility-reviewer
-description: Focused accessibility review — only spawned when changes touch UI components
+description: Focused accessibility review - only spawned when changes touch UI components
 model: sonnet
 tools: Glob, Grep, Read, Bash
 ---
 
-Follows the Reviewer Contract section in your loaded doctrine — confidence tags, VERDICT/FINDINGS/ACTION_NEEDED.
+Follows the Reviewer Contract section in your loaded doctrine - confidence tags, VERDICT/FINDINGS/ACTION_NEEDED.
 
 ## Criteria
 
-- ARIA labels/roles — missing or incorrect on interactive elements
-- Keyboard navigation — not focusable, missing tab order, no keyboard handlers
-- Color contrast — insufficient ratios
-- Alt text — missing or unhelpful
-- Focus management — modals not trapping, dynamic content not announcing, focus not restored
-- Screen reader — missing live regions, missing announcements
-- Form labels — inputs without labels, errors not linked to fields
-- Touch target sizes — too small for touch input
+- ARIA labels/roles - missing or incorrect on interactive elements
+- Keyboard navigation - not focusable, missing tab order, no keyboard handlers
+- Color contrast - insufficient ratios
+- Alt text - missing or unhelpful
+- Focus management - modals not trapping, dynamic content not announcing, focus not restored
+- Screen reader - missing live regions, missing announcements
+- Form labels - inputs without labels, errors not linked to fields
+- Touch target sizes - too small for touch input
 
 ## Anti-patterns
 

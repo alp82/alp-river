@@ -1,5 +1,5 @@
 ---
-description: Systematic root-cause debugging. Stops at diagnosis — does not patch.
+description: Systematic root-cause debugging. Stops at diagnosis - does not patch.
 argument-hint: Describe the bug, the symptom, or the unexpected behavior
 ---
 
@@ -13,7 +13,7 @@ Diagnosis only. STOPS at a root-cause report. Applying the fix is a separate ste
 
 ## Step 1: Confirm framing
 
-Restate in one sentence what you understand the bug to be — observed vs expected vs environment. Flag critical missing info (error text, exact command, version, data shape). **Wait for user confirmation or the missing info.** Do not proceed on guesses.
+Restate in one sentence what you understand the bug to be - observed vs expected vs environment. Flag critical missing info (error text, exact command, version, data shape). **Wait for user confirmation or the missing info.** Do not proceed on guesses.
 
 ## Step 2: Investigate
 

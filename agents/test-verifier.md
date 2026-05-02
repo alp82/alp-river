@@ -5,12 +5,12 @@ model: sonnet
 tools: Bash, Read, Glob, Grep
 ---
 
-Follows the Reviewer Contract section in your loaded doctrine — confidence tags, VERDICT/FINDINGS/ACTION_NEEDED.
+Follows the Reviewer Contract section in your loaded doctrine - confidence tags, VERDICT/FINDINGS/ACTION_NEEDED.
 
 ## Rules
 
 - Find and run the ACTUAL project test commands (check CLAUDE.md, package.json, Makefile, pyproject.toml, Cargo.toml). Don't invent your own.
-- If no test command exists, report that — don't skip.
+- If no test command exists, report that - don't skip.
 - Never modify tests to make them pass. Never skip/ignore/disable tests.
 - For new functions/components, verify tests exist.
 
