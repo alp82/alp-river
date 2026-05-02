@@ -4,24 +4,24 @@ All notable changes to alp-river. Versions match `.claude-plugin/plugin.json`.
 
 ## 0.1.4 - 2026-05-02
 
-Intent and clarification stages now keep iterating until you're satisfied - single-pass questioning was missing follow-up ambiguity that surfaced from your earlier answers. Each stage loops until nothing new comes up, capped at 5 rounds. Looping is free; it doesn't burn the rework budget.
+**Clarification loops.** Intent and clarification iterate until you're satisfied. Single-pass Q&A misses the follow-up ambiguity that surfaces from your earlier answers - now each stage keeps going until nothing new comes up. Cap 5 rounds, free of the rework budget.
 
-The agents asking the questions now research the codebase and the web first. If your question can be answered by reading a file or looking up a doc, they do that instead of asking you. Each round shows you what was checked, so you can tell whether they actually looked.
+**Research before asking.** The agents look at the codebase and web first. If your question can be answered by reading a file or looking up a doc, they do that instead of asking you. Each round shows you what was checked.
 
-The main agent stays text-only at the first restatement. Any deeper recon escalates to the interviewer subagent rather than dragging the orchestrator into the codebase.
+**Orchestrator stays out of the codebase.** The main agent does the first restatement from text alone. Any deeper recon escalates to a subagent rather than dragging the orchestrator into the files.
 
 ## 0.1.3 - 2026-05-02
 
-Split the post-implementation review into two passes that ask different questions:
+**Two-pass code review.** The post-implementation review now runs as two passes asking different questions:
 
-- **Correctness review** - *does this work?* Bugs, type holes, dead code, project-convention violations.
-- **Quality review** - *is this the right way to do it?* The senior-engineer code-review pass: did the implementer pick the right tool at the right altitude with the right amount of code? Catches hacky shortcuts when a clean path exists (parsing CLI output when an SDK is already a dependency, hand-rolling retries when the library provides them), bloat (unnecessary abstraction layers, config knobs nothing reads, defensive branches for scenarios that can't happen), and wrong-altitude solutions (reinventing stdlib, wrapping typed libraries in stringly-typed structures).
+- **Correctness asks: *does this work?*** - bugs, type holes, dead code, project-convention violations.
+- **Quality asks: *is this the right way to do it?*** - the senior-engineer pass. Did the implementer pick the right tool at the right altitude with the right amount of code? Catches hacky shortcuts when a clean path exists (parsing CLI output when an SDK is already a dependency, hand-rolling retries when the library provides them), bloat (unnecessary abstraction layers, config knobs nothing reads, defensive branches for scenarios that can't happen), and wrong-altitude solutions (reinventing stdlib, wrapping typed libraries in stringly-typed structures).
 
-Splitting them stops findings from bleeding across concerns: the correctness reviewer no longer sandbags real bugs behind "this could be cleaner" notes, and the quality reviewer no longer waters down its judgment by chasing typos.
+Each reviewer stops sandbagging the other. Correctness no longer hides real bugs behind "this could be cleaner" notes; quality no longer waters down its judgment by chasing typos.
 
 ## 0.1.2 - 2026-05-02
 
-Intent confirmation now restates the **outcome** you want - what is true when this ships - and is forbidden from naming files, schema fields, function names, API routes, or component names. Those are implementation details that belong in the plan, not the read-back. If the agent can't restate the goal without naming specifics, it has over-interpreted and pulls back.
+**Outcome over mechanics.** Intent confirmation restates the outcome you want - what is true when this ships - not the mechanics. File paths, schema fields, function names, API routes, component names: those belong in the plan, not the read-back. If the agent can't restate the goal without naming specifics, it has over-interpreted and pulls back.
 
 ## 0.1.1 - 2026-05-01
 

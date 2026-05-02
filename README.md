@@ -10,9 +10,9 @@ The whole pipeline ships in one folder. Doctrine, 27 subagents, 6 slash commands
 
 ## Latest updates
 
-- **0.1.4** - Intent and clarification keep iterating until you're satisfied - no more single-pass questioning that misses follow-up ambiguity. The agents research the codebase and web before asking, so questions only surface what those sources can't already answer.
-- **0.1.3** - Post-implementation review split into two passes asking different questions: a correctness review (*does this work?* - bugs, type holes, dead code) and a quality review (*is this the right way to do it?* - hacky shortcuts when a clean path exists, bloat, wrong tool for the job).
-- **0.1.2** - Intent confirmation now restates the outcome you want, not the mechanics - file paths and function names belong in the plan, not the read-back.
+- **0.1.4: clarification loops** - Intent and clarification iterate until you're satisfied. Single-pass Q&A misses the follow-up ambiguity that surfaces from your earlier answers. Agents also research codebase + web first, so questions only surface what those sources can't already answer.
+- **0.1.3: two-pass code review** - Correctness asks *does this work?* (bugs, type holes, dead code). Quality asks *is this the right way to do it?* (hacky shortcuts when a clean path exists, bloat, wrong tool for the job). Each reviewer stops sandbagging the other.
+- **0.1.2: outcome over mechanics** - Intent confirmation restates the outcome you want, not the mechanics. File paths, function names, schemas: those belong in the plan, not the read-back.
 
 Full history in [CHANGELOG.md](CHANGELOG.md).
 
