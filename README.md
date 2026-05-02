@@ -10,9 +10,9 @@ The whole pipeline ships in one folder. Doctrine, 27 subagents, 6 slash commands
 
 ## Latest updates
 
-- **0.1.4: clarification loops** - Intent and clarification iterate until you're satisfied. Single-pass Q&A misses the follow-up ambiguity that surfaces from your earlier answers. Agents also research codebase + web first, so questions only surface what those sources can't already answer.
-- **0.1.3: two-pass code review** - Correctness asks *does this work?* (bugs, type holes, dead code). Quality asks *is this the right way to do it?* (hacky shortcuts when a clean path exists, bloat, wrong tool for the job). Each reviewer stops sandbagging the other.
-- **0.1.2: outcome over mechanics** - Intent confirmation restates the outcome you want, not the mechanics. File paths, function names, schemas: those belong in the plan, not the read-back.
+- **0.1.5: `/compact` doesn't reset you anymore** - After compacting, the rules and your in-progress work (intent, classification, plan) stick around. Was meant to work since 0.1.0 but quietly didn't. Pipeline numbering also stopped skipping mid-flow - the steps now read 0, 1, 2, 3, 4... in order.
+- **0.1.4: clarification loops** - Intent and clarification keep asking until nothing new comes up, instead of stopping after one pass. Agents check the codebase and web first, so they only ask what those sources don't answer.
+- **0.1.3: two-pass code review** - Correctness asks *does this work?* (bugs, type holes, dead code). Quality asks *is this the right way?* (hacky shortcuts when a clean path was right there, bloat, wrong tool). Splitting them stops one from softening the other.
 
 Full history in [CHANGELOG.md](CHANGELOG.md).
 
@@ -52,7 +52,7 @@ Override the grade with natural language: *treat this as L*, *skip clarify*, *go
 
 A complexity classifier reads each task and grades it **S**, **M**, **L**, or **XL**. The grade decides which stages run.
 
-A SessionStart hook reads `AGENTS.md` and injects it into every Claude session as foundational context. Doctrine is always loaded, no per-file imports, no skill matching. A PreCompact hook re-emits doctrine plus the canonical workflow state (intent, classification, approved plan) so it survives compaction.
+A SessionStart hook reads `AGENTS.md` and injects it into every Claude session as foundational context. Doctrine is always loaded, no per-file imports, no skill matching. After `/compact`, it fires again to restore doctrine plus the canonical workflow state (intent, classification, approved plan).
 
 In every diagram below, **dotted edges are conditional** (a gate fires the agent only when its trigger matches).
 
@@ -284,7 +284,7 @@ alp-river/
 ├── .claude-plugin/plugin.json
 ├── AGENTS.md              <- doctrine + reviewer contract
 ├── hooks/
-│   ├── hooks.json         <- 8 events: SessionStart, PreCompact, PreToolUse, ...
+│   ├── hooks.json         <- 7 events: SessionStart, PreToolUse, PostToolUse, ...
 │   └── *.sh               <- inject-doctrine, auto-format, block-git-writes, ...
 ├── agents/                <- 27 subagent definitions
 └── commands/              <- 6 slash commands
