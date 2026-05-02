@@ -57,7 +57,7 @@ Every implementation task runs through a staged pipeline. Depth scales with comp
 
 Before classification, confirm direction — a misread request misclassifies every gate downstream.
 
-- **Level 1 (always)**: Main agent restates the request in one sentence and waits for user confirmation.
+- **Level 1 (always)**: Main agent restates the **outcome** the user wants — what needs to be true when this is done, in user-observable terms. Keep it concise; clarity wins over brevity, so use a couple of sentences, a small ASCII diagram, or a brief example if that lands the point better than prose. **No file paths, schema fields, function names, API routes, or component names** — those are implementation details that belong in the plan, not the intent. If you can't restate without naming specifics, you've over-interpreted; pull back to the goal. Wait for user confirmation.
 - **Level 2 (escalate when request has multiple readings OR user's Level 1 answer shifts scope)**: Launch `interviewer` (opus) to probe scope, users, success criteria, and priority trade-offs. Wait for user confirmation.
 
 Emit `<CONFIRMED_INTENT>` — every downstream agent reads it.

@@ -15,7 +15,7 @@ Feature request: $ARGUMENTS
 
 ## Step 0: Intent
 
-**Level 1** (always): Restate the request in one sentence. Wait for user confirmation.
+**Level 1** (always): Restate the **outcome** the user wants — what needs to be true when this is done, in user-observable terms. Keep it concise; clarity wins over brevity, so use a couple of sentences, a small ASCII diagram, or a brief example if that lands the point better than prose. **No file paths, schema fields, function names, API routes, or component names** — those belong in the plan, not the intent. If you can't restate without naming specifics, you've over-interpreted; pull back to the goal. Wait for user confirmation.
 
 **Level 2** (escalate when the request has multiple plausible readings OR the Level 1 answer shifted scope): Launch `interviewer`:
 
