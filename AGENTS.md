@@ -3,6 +3,8 @@
 ## Principles
 - Never guess, never assume, never improvise unagreed solutions.
 - Extracting actual intent is more important than moving fast.
+- Research before asking. Subagents exhaust filesystem, tools, and web first; questions only surface what those sources don't already answer.
+- Clarify in loops, not single passes. Intent and clarification stages re-run with prior rounds folded in until the latest exchange surfaces no new aspects. Loops within one step are free and do not count as backward edges.
 - Leave touched code better than you found it. Unrelated changes get their own task.
 - No TODOs, placeholders, or incomplete implementations.
 - No backwards compatibility. Obsolete code gets deleted, not preserved.
@@ -57,8 +59,8 @@ Every implementation task runs through a staged pipeline. Depth scales with comp
 
 Before classification, confirm direction — a misread request misclassifies every gate downstream.
 
-- **Level 1 (always)**: Main agent restates the **outcome** the user wants — what needs to be true when this is done, in user-observable terms. Keep it concise; clarity wins over brevity, so use a couple of sentences, a small ASCII diagram, or a brief example if that lands the point better than prose. **No file paths, schema fields, function names, API routes, or component names** — those are implementation details that belong in the plan, not the intent. If you can't restate without naming specifics, you've over-interpreted; pull back to the goal. Wait for user confirmation.
-- **Level 2 (escalate when request has multiple readings OR user's Level 1 answer shifts scope)**: Launch `interviewer` (opus) to probe scope, users, success criteria, and priority trade-offs. Wait for user confirmation.
+- **Level 1 (always)**: Main agent restates the **outcome** the user wants — what needs to be true when this is done, in user-observable terms. Keep it concise; clarity wins over brevity, so use a couple of sentences, a small ASCII diagram, or a brief example if that lands the point better than prose. **No file paths, schema fields, function names, API routes, or component names** — those are implementation details that belong in the plan, not the intent. If you can't restate without naming specifics, you've over-interpreted; pull back to the goal. **Main agent stays text-only — no codebase reads, no web lookups.** Wait for user confirmation.
+- **Level 2 (escalate when request has multiple readings, Level 1 answer shifts scope, OR restating would require recon)**: enter the **interview loop**. Launch `interviewer` (opus) to research the target area (filesystem + web when relevant), then probe scope, users, success criteria, and priority trade-offs. Each round, present QUESTIONS to the user, capture answers, append to `<PRIOR_ROUNDS>`, re-launch. Exit when `VERDICT: confirmed` AND `NEW_ASPECTS_FOUND: no`. Cap at 5 rounds — at the cap, present the latest direction and ask the user to confirm or reshape.
 
 Emit `<CONFIRMED_INTENT>` — every downstream agent reads it.
 
@@ -76,7 +78,7 @@ Parallel fan-out on the confirmed scope:
 **Prototype gate**: launch `prototyper` (sonnet) if flagged, writing to `.prototypes/`.
 
 ### Step 3: Clarify (L/XL; M when ambiguity remains after pre-flight)
-Launch `requirements-clarifier` (opus) with intent + pre-flight outputs. Surface QUESTIONS, ACCEPTANCE_CRITERIA_PROPOSED, ASSUMPTIONS_TO_CONFIRM as a numbered list. Wait for user answers. Emit `<CLARIFY_OUTPUT>`.
+Enter the **clarify loop**. Launch `requirements-clarifier` (opus) with intent + pre-flight outputs. Surface QUESTIONS, ACCEPTANCE_CRITERIA_PROPOSED, ASSUMPTIONS_TO_CONFIRM as a numbered list. Wait for user answers, append to `<PRIOR_ROUNDS>`, re-launch. Exit when `CLARITY: clear` AND `NEW_ASPECTS_FOUND: no`. Cap at 5 rounds — at the cap, present the latest state and ask the user to confirm or reshape. Emit `<CLARIFY_OUTPUT>`.
 
 ### Step 4: Re-classify (conditional)
 When clarify answers or interviewer output materially shifted scope, rerun classifier on intent + clarify. Scope up → add gates for the new tier going forward. Scope down → keep current gates (no retroactive downgrade). **Counts toward backward-edge budget.**
@@ -161,9 +163,26 @@ Every subsequent request is a new task. Re-enter Step 0. S follow-ups can skip L
 
 Commands override the model at spawn time (`Agent` tool's `model` parameter) when the tier depends on complexity.
 
+## Clarification Loops
+
+Step 0 Level 2 (interviewer) and Step 3 (clarifier) run as loops, not single passes. Depth scales with the unknowns still lurking — keep going until the user is satisfied and no new aspects emerge.
+
+**Exit criteria** — exit when ALL hold:
+1. Agent's VERDICT is `confirmed` (interviewer) or `clear` (clarifier).
+2. Agent's `NEW_ASPECTS_FOUND: no`.
+3. User has no further additions.
+
+**Cap**: 5 rounds per stage. At the cap, present the latest state and ask the user to confirm explicitly or reshape the request. Do not loop silently.
+
+**Round inputs**: re-invocations carry `<PRIOR_ROUNDS>` — a compressed log of prior questions and the user's answers (one line per Q&A, no reasoning). The agent uses it to detect whether the latest answer raised new aspects vs. reaffirmed prior ones, and to avoid re-asking what's already settled.
+
+**Research first**: before formulating questions in any round, the agent exhausts filesystem (Glob/Grep/Read), prior pre-flight findings, and web sources when the request mentions external surface. It reports what it checked in `LOOKUPS_PERFORMED`. If the codebase or research already answers a candidate question, drop it.
+
+**Loops are free**: clarification loops refine intent within a step. They do NOT count toward the backward-edge budget.
+
 ## Backward-Edge Budget
 
-Cap: **2 cumulative backward edges per task.**
+Cap: **2 cumulative backward edges per task.** Backward edges revisit a prior step; they're distinct from in-step loops.
 
 Counts toward the budget:
 - `plan-challenger` verdict `revise` → planner rerun
@@ -174,6 +193,10 @@ Counts toward the budget:
 Does **not** count (separate budget of 2):
 - fixer self-heal rounds
 - reviewer reruns during self-heal
+
+Does **not** count (free, no cap beyond per-stage limits):
+- intent loop (Step 0 Level 2 re-runs)
+- clarify loop (Step 3 re-runs)
 
 At the cap, stop and surface state to the user — don't loop silently.
 

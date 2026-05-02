@@ -15,9 +15,15 @@ Design only. STOPS at an approved plan. Applying it is a separate step via `/fea
 
 ## Step 0: Intent
 
-**Level 1** (always): Restate the **outcome** the user wants — what needs to be true when this is done, in user-observable terms. Keep it concise; clarity wins over brevity, so use a couple of sentences, a small ASCII diagram, or a brief example if that lands the point better than prose. **No file paths, schema fields, function names, API routes, or component names** — those belong in the plan, not the intent. If you can't restate without naming specifics, you've over-interpreted; pull back to the goal. Wait for confirmation.
+**Level 1** (always): Restate the **outcome** the user wants — what needs to be true when this is done, in user-observable terms. Keep it concise; clarity wins over brevity, so use a couple of sentences, a small ASCII diagram, or a brief example if that lands the point better than prose. **No file paths, schema fields, function names, API routes, or component names** — those belong in the plan, not the intent. If you can't restate without naming specifics, you've over-interpreted; pull back to the goal. **Main agent stays text-only — no codebase reads, no web lookups.** Wait for confirmation.
 
-**Level 2** (escalate when request has multiple readings OR Level 1 answer shifts scope): Launch `interviewer`. Capture `<CONFIRMED_INTENT>`.
+**Level 2** (escalate when request has multiple readings, Level 1 answer shifts scope, OR restating would require recon): enter the **interview loop**.
+
+- Round 1: Launch `interviewer` with `<RAW_REQUEST>`, `<L1_CONFIRMATION>`, `<PRIOR_ROUNDS>: none`.
+- Each round, read `VERDICT`, `NEW_ASPECTS_FOUND`, `QUESTIONS`. Exit when `confirmed` AND `NEW_ASPECTS_FOUND: no`; capture `<CONFIRMED_INTENT>` and `EXTERNAL_DEPS_FLAG`. Otherwise present QUESTIONS, capture answers, append one-line entries to `<PRIOR_ROUNDS>` (`R{n}.Q{i}: ... | A: ...`), re-launch.
+- Cap: 5 rounds. At the cap, present the latest state and ask the user to confirm explicitly or reshape.
+
+The interview loop is free — does NOT count toward the backward-edge budget.
 
 ## Step 1: Classify
 
@@ -42,9 +48,13 @@ Each takes `<CONFIRMED_INTENT>` + `<TARGET_AREA>`.
 
 ## Step 3: Clarify
 
-Launch `requirements-clarifier` with `<CONFIRMED_INTENT>`, `<CLASSIFICATION>`, `<PREFLIGHT>`. Present QUESTIONS, ACCEPTANCE_CRITERIA_PROPOSED, ASSUMPTIONS_TO_CONFIRM. Wait for answers. Capture `<CLARIFY_OUTPUT>`.
+Enter the **clarify loop**.
 
-Confirm acceptance criteria before proceeding.
+- Round 1: Launch `requirements-clarifier` with `<CONFIRMED_INTENT>`, `<CLASSIFICATION>`, `<PREFLIGHT>`, `<PRIOR_ROUNDS>: none`.
+- Each round, read `CLARITY`, `NEW_ASPECTS_FOUND`, `QUESTIONS`, `ACCEPTANCE_CRITERIA_PROPOSED`, `ASSUMPTIONS_TO_CONFIRM`, `SCOPE_SHIFT`. Exit when `clear` AND `NEW_ASPECTS_FOUND: no`; confirm acceptance criteria with the user, then capture `<CLARIFY_OUTPUT>`. On `blocked`, surface to the user. Otherwise present the items, wait for answers, append one-line entries to `<PRIOR_ROUNDS>` (`R{n}.Q{i}: ... | A: ...`), re-launch.
+- Cap: 5 rounds. At the cap, present the latest state and ask the user to confirm explicitly or reshape.
+
+The clarify loop is free — does NOT count toward the backward-edge budget.
 
 ## Step 4: Re-classify (conditional)
 

@@ -15,14 +15,18 @@ Feature request: $ARGUMENTS
 
 ## Step 0: Intent
 
-**Level 1** (always): Restate the **outcome** the user wants — what needs to be true when this is done, in user-observable terms. Keep it concise; clarity wins over brevity, so use a couple of sentences, a small ASCII diagram, or a brief example if that lands the point better than prose. **No file paths, schema fields, function names, API routes, or component names** — those belong in the plan, not the intent. If you can't restate without naming specifics, you've over-interpreted; pull back to the goal. Wait for user confirmation.
+**Level 1** (always): Restate the **outcome** the user wants — what needs to be true when this is done, in user-observable terms. Keep it concise; clarity wins over brevity, so use a couple of sentences, a small ASCII diagram, or a brief example if that lands the point better than prose. **No file paths, schema fields, function names, API routes, or component names** — those belong in the plan, not the intent. If you can't restate without naming specifics, you've over-interpreted; pull back to the goal. **Main agent stays text-only — no codebase reads, no web lookups.** Wait for user confirmation.
 
-**Level 2** (escalate when the request has multiple plausible readings OR the Level 1 answer shifted scope): Launch `interviewer`:
+**Level 2** (escalate when the request has multiple plausible readings, the Level 1 answer shifted scope, OR restating would require recon): enter the **interview loop**.
 
-- Input: `<RAW_REQUEST>`, `<L1_CONFIRMATION>`
-- If `VERDICT: needs-answers` → present QUESTIONS to the user, wait for answers, re-run if needed.
-- On `confirmed`, capture `<CONFIRMED_INTENT>` block for downstream use.
-- Note the `EXTERNAL_DEPS_FLAG` — passed to researcher in Step 2.
+- Round 1: Launch `interviewer` with `<RAW_REQUEST>`, `<L1_CONFIRMATION>`, `<PRIOR_ROUNDS>: none`.
+- Each round:
+  - Read `LOOKUPS_PERFORMED`, `VERDICT`, `NEW_ASPECTS_FOUND`, and `QUESTIONS` from the output.
+  - If `VERDICT: confirmed` AND `NEW_ASPECTS_FOUND: no` → exit. Capture the final `<CONFIRMED_INTENT>` block and `EXTERNAL_DEPS_FLAG`.
+  - Otherwise → present QUESTIONS to the user, capture answers, append a one-line entry per Q&A to `<PRIOR_ROUNDS>` (format: `R{n}.Q{i}: ... | A: ...`), re-launch `interviewer` with the updated `<PRIOR_ROUNDS>`.
+- Cap: 5 rounds. At the cap, present the latest CONFIRMED_INTENT and remaining QUESTIONS to the user, ask them to confirm explicitly or reshape the request, and proceed only on explicit confirmation.
+
+The interview loop is free — does NOT count toward the backward-edge budget.
 
 ## Step 1: Classify
 
@@ -54,12 +58,17 @@ If quick wins were found, apply them before Step 5 (they precede the plan).
 
 ## Step 3: Clarify
 
-Launch `requirements-clarifier`:
-- Input: `<CONFIRMED_INTENT>`, `<CLASSIFICATION>`, `<PREFLIGHT>` (reuse/health/prototypes/research).
+Enter the **clarify loop**.
 
-Present QUESTIONS, ACCEPTANCE_CRITERIA_PROPOSED, ASSUMPTIONS_TO_CONFIRM as a numbered list. **Wait for answers.**
+- Round 1: Launch `requirements-clarifier` with `<CONFIRMED_INTENT>`, `<CLASSIFICATION>`, `<PREFLIGHT>` (reuse/health/prototypes/research), `<PRIOR_ROUNDS>: none`.
+- Each round:
+  - Read `LOOKUPS_PERFORMED`, `CLARITY`, `NEW_ASPECTS_FOUND`, `QUESTIONS`, `ACCEPTANCE_CRITERIA_PROPOSED`, `ASSUMPTIONS_TO_CONFIRM`, `SCOPE_SHIFT` from the output.
+  - If `CLARITY: clear` AND `NEW_ASPECTS_FOUND: no` → confirm the proposed acceptance criteria with the user, then exit. Capture `<CLARIFY_OUTPUT>`.
+  - If `CLARITY: blocked` → surface to the user; recommend reshaping. Stop the loop.
+  - Otherwise → present QUESTIONS, ACCEPTANCE_CRITERIA_PROPOSED, ASSUMPTIONS_TO_CONFIRM as a numbered list. **Wait for answers.** Append one-line entries per Q&A to `<PRIOR_ROUNDS>` (format: `R{n}.Q{i}: ... | A: ...`), re-launch with the updated `<PRIOR_ROUNDS>`.
+- Cap: 5 rounds. At the cap, present the latest state and ask the user to confirm explicitly or reshape; proceed only on explicit confirmation.
 
-On `CLARITY: clear`, still confirm the proposed acceptance criteria before proceeding. Capture `<CLARIFY_OUTPUT>`.
+The clarify loop is free — does NOT count toward the backward-edge budget.
 
 ## Step 4: Re-classify (conditional)
 

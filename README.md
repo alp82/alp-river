@@ -32,8 +32,8 @@ Each stage is run by a dedicated agent: classifier judges scope, scanners pre-fl
 
 You stay in the loop at a few well-defined moments:
 
-- **Intent confirmation** (always) - confirm or correct the one-sentence read; an interviewer digs deeper when your request has multiple readings.
-- **Clarifier questions** (M/L/XL when ambiguity remains) - answer briefly; the planner waits.
+- **Intent confirmation** (always) - confirm or correct the one-sentence read; an interviewer digs deeper when your request has multiple readings, looping with you (cap 5 rounds) until intent settles and no new aspects emerge.
+- **Clarifier questions** (M/L/XL when ambiguity remains) - the clarifier researches the codebase first, then asks only what's still open. Loops with you (cap 5 rounds) until clarity is reached, then the planner runs.
 - **Plan selection** (XL) - pick one of the proposed approaches.
 
 Everything else runs to completion. Reviewer findings feed the fixer automatically.
