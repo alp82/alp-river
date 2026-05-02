@@ -12,12 +12,12 @@ The main agent stays text-only at the first restatement. Any deeper recon escala
 
 ## 0.1.3 - 2026-05-02
 
-Split the post-implementation review into two specialised passes:
+Split the post-implementation review into two passes that ask different questions:
 
-- **Correctness review** - bugs, type holes, dead code, project-convention adherence.
-- **Quality review** - engineering judgment: hacky shortcuts, bloat, wrong tool for the job, unelegant solutions.
+- **Correctness review** - *does this work?* Bugs, type holes, dead code, project-convention violations.
+- **Quality review** - *is this the right way to do it?* The senior-engineer code-review pass: did the implementer pick the right tool at the right altitude with the right amount of code? Catches hacky shortcuts when a clean path exists (parsing CLI output when an SDK is already a dependency, hand-rolling retries when the library provides them), bloat (unnecessary abstraction layers, config knobs nothing reads, defensive branches for scenarios that can't happen), and wrong-altitude solutions (reinventing stdlib, wrapping typed libraries in stringly-typed structures).
 
-Both run together on the broad pass so findings stop bleeding between concerns.
+Splitting them stops findings from bleeding across concerns: the correctness reviewer no longer sandbags real bugs behind "this could be cleaner" notes, and the quality reviewer no longer waters down its judgment by chasing typos.
 
 ## 0.1.2 - 2026-05-02
 
