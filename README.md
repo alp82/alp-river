@@ -27,12 +27,15 @@ To pull updates later:
 
 ## How to use
 
-Describe what you want. The classifier grades the task and the right stages fire — doctrine is already loaded, nothing to enable.
+Describe what you want. The classifier grades the task and the right specialists fire - doctrine is already loaded, nothing to enable.
 
-The river pauses at two checkpoints:
+Each stage is run by a dedicated agent: classifier judges scope, scanners pre-flight the area, clarifier surfaces ambiguity, planner designs the approach, challenger pokes holes, implementer builds, reviewers cross-check, fixer heals findings.
 
-- **Clarifier questions** (L/XL) — answer briefly; the planner waits.
-- **Plan selection** (XL) — pick one of the proposed approaches.
+You stay in the loop at a few well-defined moments:
+
+- **Intent confirmation** (always) - confirm or correct the one-sentence read; an interviewer digs deeper when your request has multiple readings.
+- **Clarifier questions** (M/L/XL when ambiguity remains) - answer briefly; the planner waits.
+- **Plan selection** (XL) - pick one of the proposed approaches.
 
 Everything else runs to completion. Reviewer findings feed the fixer automatically.
 
@@ -106,7 +109,7 @@ flowchart TB
 ```
 /alp-river:feature      Full pipeline (L/XL - clarify, plan, challenge, build, review)
 /alp-river:fix          Lighter pipeline for fixes and small changes (S/M)
-/alp-river:plan         Design-only - stops before implementation
+/alp-river:plan         Design-only - each stage driven by a specialist agent
 /alp-river:investigate  Root-cause debugging - stops at diagnosis, no patch
 /alp-river:review       Review current changes for bugs, dead code, security, conventions
 /alp-river:verify       Visual verification of UI changes via playwright-cli

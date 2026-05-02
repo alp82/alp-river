@@ -1,5 +1,5 @@
 ---
-description: Design-only workflow — classify, pre-flight, clarify, plan, challenge. Stops before implementation.
+description: Design-only workflow — classify, pre-flight, clarify, plan, challenge. Each stage driven by a specialist agent.
 argument-hint: Describe the change to plan
 ---
 
