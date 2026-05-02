@@ -26,7 +26,7 @@ fi
 if [ -f "$session_marker" ]; then
   retry_count=$(cat "$session_marker")
   if [ "$retry_count" -ge 1 ]; then
-    # Already retried once — let Claude finish, the quality-reviewer will catch it
+    # Already retried once — let Claude finish, the correctness-reviewer will catch it
     exit 0
   fi
 fi

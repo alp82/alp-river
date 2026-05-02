@@ -34,7 +34,7 @@ case "$subagent_type" in
     ;;
   requirements-clarifier|reuse-scanner|researcher|visual-verifier)
     ;;
-  quality-reviewer|acceptance-reviewer|plan-adherence-reviewer)
+  correctness-reviewer|quality-reviewer|acceptance-reviewer|plan-adherence-reviewer)
     ;;
   structure-reviewer|consistency-reviewer|reuse-reviewer)
     ;;

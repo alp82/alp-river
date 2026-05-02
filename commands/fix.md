@@ -70,14 +70,15 @@ If `SCOPE_MOVED: yes` and new COMPLEXITY is L or XL: tell the user "reclassifies
 
 **M tasks**: assemble `<TOUCHED_FILES>` from your own Edit/Write calls during Step 5. Launch concurrently (parallel, fail-fast):
 - `test-verifier` — inputs `<TOUCHED_FILES>`.
-- `quality-reviewer` (sonnet default, no override for M) — inputs `<TOUCHED_FILES>`, `<APPROVED_PLAN>: none`.
+- `correctness-reviewer` (sonnet default, no override for M) — inputs `<TOUCHED_FILES>`, `<APPROVED_PLAN>: none`.
+- `quality-reviewer` (opus default — judgment-heavy, runs at the same tier on M and L/XL) — inputs `<TOUCHED_FILES>`, `<APPROVED_PLAN>: none`.
 - `acceptance-reviewer` — inputs `<CONFIRMED_INTENT>`, `<CLARIFY_OUTPUT>` or `"none"`, `<APPROVED_PLAN>: none`, `<TOUCHED_FILES>`.
 
 If `test-verifier` fails, jump to Step 7 with the test failure plus any other findings. Skip Step 7's specialist pass.
 
 ## Step 7: Specialist pass (M, conditional)
 
-Gate each specialist on broad-pass finding OR touched files matching its domain. M tasks rarely trigger many — most are small enough that quality-reviewer's broad pass is enough.
+Gate each specialist on broad-pass finding OR touched files matching its domain. M tasks rarely trigger many — most are small enough that the broad pass is enough.
 
 - `security-reviewer` — auth/permissions/session/input-handling code
 - `performance-reviewer` — db/query/hot-path code

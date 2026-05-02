@@ -11,18 +11,20 @@ If `$ARGUMENTS` is empty, ask the user which files to review and stop.
 
 ## Process
 
-**Memory**: Apply AGENTS.md "Subagent Context Inheritance" to the `quality-reviewer` call below.
+**Memory**: Apply AGENTS.md "Subagent Context Inheritance" to both reviewer calls below.
 
-Launch the `quality-reviewer` agent with `<TOUCHED_FILES>` set to the file paths above and `<APPROVED_PLAN>: none`. It checks bugs, duplication, dead code, and convention adherence in a single pass.
+Launch concurrently with `<TOUCHED_FILES>` set to the file paths above and `<APPROVED_PLAN>: none`:
+- `correctness-reviewer` — bugs, type holes, dead code, convention adherence
+- `quality-reviewer` — engineering judgment: hacky shortcuts, bloat, wrong tool, unelegant solutions
 
 ## Report
 
-Present the quality-reviewer's output verbatim — the full `VERDICT`, `FINDINGS`, `ACTION_NEEDED`, and `OBSOLETE_CODE` block. Do not reformat or summarize the findings themselves.
+Present each reviewer's output verbatim under its own heading — full `VERDICT`, `FINDINGS`, `ACTION_NEEDED`, and (for correctness) `OBSOLETE_CODE`. Do not reformat or summarize the findings themselves.
 
 Then append:
 
-1. **Bottom line** — one sentence on the change's quality.
+1. **Bottom line** — one sentence on the change's overall state, calling out the worse of the two verdicts.
 2. **Next command** —
-   - `VERDICT: pass` → done.
-   - `VERDICT: warn` → name the one or two issues worth addressing.
-   - `VERDICT: fail` → suggest `/fix`, point at `ACTION_NEEDED`.
+   - Both `pass` → done.
+   - Any `warn` → name the one or two issues worth addressing.
+   - Any `fail` → suggest `/fix`, point at the relevant `ACTION_NEEDED`.

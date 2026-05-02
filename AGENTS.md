@@ -106,7 +106,8 @@ Implementer VERDICT:
 ### Step 8: Broad pass (M/L/XL, fail-fast)
 Parallel:
 - `test-verifier` — fails fast; if red, skip Step 9 and jump to self-heal
-- `quality-reviewer` — correctness, dead code (opus on L/XL, sonnet on M)
+- `correctness-reviewer` — correctness, type holes, dead code (opus on L/XL, sonnet on M)
+- `quality-reviewer` — engineering judgment: hacky shortcuts, bloat, wrong tool, unelegant (opus across)
 - `acceptance-reviewer` — intent fulfillment + acceptance criteria
 - `plan-adherence-reviewer` — file list, function signatures, step order (L/XL only)
 
@@ -115,8 +116,8 @@ Gate each specialist on broad-pass finding OR touched files matching its domain:
 
 | Specialist | Trigger |
 |------------|---------|
-| `structure-reviewer` | quality flagged structure |
-| `reuse-reviewer` | quality flagged duplication |
+| `structure-reviewer` | broad pass flagged structure / boundaries |
+| `reuse-reviewer` | broad pass flagged duplication |
 | `consistency-reviewer` | touched files affect patterns / naming |
 | `security-reviewer` (opus) | touched files include auth / permissions |
 | `performance-reviewer` | touched files include db / queries |
@@ -154,8 +155,8 @@ Every subsequent request is a new task. Re-enter Step 0. S follow-ups can skip L
 
 | Tier | Agents |
 |------|--------|
-| **opus** | classifier, interviewer, clarifier, planner, plan-challenger, implementer, acceptance-reviewer, security-reviewer, investigator; fixer + quality-reviewer on L/XL |
-| **sonnet** | reuse-scanner, structure-reviewer, consistency-reviewer, reuse-reviewer, test-verifier, visual-verifier, a11y-reviewer, design-consistency-reviewer, ux-reviewer, plan-adherence-reviewer, prototyper; fixer + quality-reviewer on M |
+| **opus** | classifier, interviewer, clarifier, planner, plan-challenger, implementer, acceptance-reviewer, security-reviewer, investigator, quality-reviewer; fixer + correctness-reviewer on L/XL |
+| **sonnet** | reuse-scanner, structure-reviewer, consistency-reviewer, reuse-reviewer, test-verifier, visual-verifier, a11y-reviewer, design-consistency-reviewer, ux-reviewer, plan-adherence-reviewer, prototyper; fixer + correctness-reviewer on M |
 | **haiku** | health-checker, prototype-identifier, researcher |
 
 Commands override the model at spawn time (`Agent` tool's `model` parameter) when the tier depends on complexity.
@@ -204,13 +205,13 @@ Discard: raw exploration output, full file contents already acted on, superseded
 
 ## Reviewer Contract
 
-Shared rules for every specialized reviewer (security, performance, accessibility, design-consistency, ux, consistency, structure). Each reviewer's own file carries only its Criteria list and any specialization — the rest lives here.
+Shared rules for every specialized reviewer (correctness, quality, security, performance, accessibility, design-consistency, ux, consistency, structure, reuse). Each reviewer's own file carries only its Criteria list and any specialization — the rest lives here.
 
 ### Confidence tagging (reviewer reporting threshold)
 
 Tag each finding `[likely]` or `[unsure]` per the "Confidence Tagging" rules above.
 
-**Reporting threshold:** report `[likely]` findings unconditionally. Report `[unsure]` only when impact is high — correctness, security, or data risk (quality-reviewer priority tiers 1-2). Skip speculative low-impact findings.
+**Reporting threshold:** report `[likely]` findings unconditionally. Report `[unsure]` only when impact is high — correctness, security, or data risk (correctness-reviewer priority tiers 1-2). Skip speculative low-impact findings.
 
 ### Standard inputs
 

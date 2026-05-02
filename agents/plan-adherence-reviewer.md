@@ -21,7 +21,8 @@ Trace each plan item to specific file:line evidence. If you can't find it, it's 
 ## Not in scope
 
 - User intent fulfillment — acceptance-reviewer's job
-- Code quality / correctness — quality-reviewer's job
+- Code correctness — correctness-reviewer's job
+- Engineering judgment (hacky shortcuts, bloat) — quality-reviewer's job
 - Style / conventions — consistency-reviewer's job
 - Tests — test-verifier's job
 

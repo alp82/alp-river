@@ -118,7 +118,8 @@ Assemble `<TOUCHED_FILES>` from the implementer's `FILES_MODIFIED` + `FILES_CREA
 
 Launch concurrently:
 - `test-verifier` — inputs `<TOUCHED_FILES>`.
-- `quality-reviewer` — inputs `<TOUCHED_FILES>`, `<APPROVED_PLAN>`. **Override model to opus** at spawn time (`model: "opus"`) since this is L/XL.
+- `correctness-reviewer` — inputs `<TOUCHED_FILES>`, `<APPROVED_PLAN>`. **Override model to opus** at spawn time (`model: "opus"`) since this is L/XL.
+- `quality-reviewer` — inputs `<TOUCHED_FILES>`, `<APPROVED_PLAN>`. Default model is opus; no override needed.
 - `acceptance-reviewer` — inputs `<CONFIRMED_INTENT>`, `<CLARIFY_OUTPUT>`, `<APPROVED_PLAN>`, `<TOUCHED_FILES>`.
 - `plan-adherence-reviewer` — inputs `<APPROVED_PLAN>`, `<TOUCHED_FILES>`, `<IMPLEMENTER_NOTES>`.
 
@@ -128,8 +129,8 @@ Launch concurrently:
 
 Gate each specialist on broad-pass finding OR touched files matching its domain. Launch only matching specialists:
 
-- `structure-reviewer` — quality flagged structure issue, OR touched files include files over ~300 lines / functions over ~30 lines
-- `reuse-reviewer` — quality flagged duplication, OR touched files contain new functions similar to existing ones
+- `structure-reviewer` — broad pass flagged structure / boundaries, OR touched files include files over ~300 lines / functions over ~30 lines
+- `reuse-reviewer` — broad pass flagged duplication, OR touched files contain new functions similar to existing ones
 - `consistency-reviewer` — touched files affect naming/error-handling/return-shape patterns
 - `security-reviewer` (opus) — touched files include auth/permissions/session/input-handling
 - `performance-reviewer` — touched files include database/query/hot-path code
