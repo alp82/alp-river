@@ -13,7 +13,8 @@
 #   User-aware Y + Project-aware Y: most agents (see case arms and READ_MAP)
 #   User-aware N + Project-aware Y: health-checker, prototype-identifier,
 #                                   researcher, prototyper  (user_aware=0)
-#   User-aware Y + Project-aware N: visual-verifier, plan-adherence-reviewer
+#   User-aware Y + Project-aware N: visual-verifier, plan-adherence-reviewer,
+#                                   setup-agent
 #   User-aware N + Project-aware N: complexity-classifier, test-verifier,
 #                                   accessibility-reviewer  (exit 0)
 #
@@ -42,7 +43,7 @@ fi
 user_aware=1
 case "$subagent_type" in
   # User-aware: yes. Project-aware: depends on READ_MAP.
-  interviewer|planner|plan-challenger|implementer|fixer|investigator)
+  interviewer|planner|plan-challenger|implementer|fixer|investigator|setup-agent)
     ;;
   requirements-clarifier|reuse-scanner|visual-verifier)
     ;;

@@ -6,10 +6,11 @@
 
 Multi-stage agent refinement for Claude Code, scaled by automatic complexity classification. Small changes pass quickly. Bigger ones add stages: clarification, planning, adversarial challenge, implementation, broad review, specialist review, self-heal.
 
-The whole pipeline ships in one folder. Doctrine, 27 subagents, 6 slash commands, 8 quality hooks.
+The whole pipeline ships in one folder. Doctrine, 28 subagents, 7 slash commands, 8 quality hooks.
 
 ## Latest updates
 
+- **0.2.1: `/alp-river:setup` writes the project docs for you** - One command interviews you about the project and fills in `docs/INTENT.md`, `docs/STACK.md`, and `docs/GLOSSARY.md`. Recommendations come from looking at the codebase first, so most answers are pick-from-options. Existing docs are merged, not overwritten.
 - **0.2.0: agents pick up your project's intent, stack, glossary, and ADRs** - Drop four files in `docs/` and every agent that needs them reads them automatically. Planners stop suggesting libraries you ruled out, reviewers stop renaming concepts you already named, new work stops relitigating settled decisions. Templates ship in `templates/`.
 - **0.1.5: `/compact` doesn't reset you anymore** - After compacting, the rules and your in-progress work (intent, classification, plan) stick around. Was meant to work since 0.1.0 but quietly didn't. Pipeline numbering also stopped skipping mid-flow - the steps now read 0, 1, 2, 3, 4... in order.
 - **0.1.4: clarification loops** - Intent and clarification keep asking until nothing new comes up, instead of stopping after one pass. Agents check the codebase and web first, so they only ask what those sources don't answer.
@@ -191,7 +192,7 @@ flowchart TB
 
 ## Agents
 
-27 subagents, grouped by stage. Italic = conditional / gated. Tier shows the model that runs by default.
+28 subagents, grouped by stage. Italic = conditional / gated. Tier shows the model that runs by default.
 
 ### Intent
 
@@ -267,9 +268,16 @@ Each specialist fires only when its trigger matches: a broad-pass finding in its
 |-------|------|------|
 | investigator | opus | Root-cause debugging - forms hypotheses, attempts minimal repro, traces to the actual cause. Stops at diagnosis; outputs complexity + severity for routing to /fix or /feature. Used by `/investigate`. |
 
+### Setup (separate flow)
+
+| Agent | Tier | Role |
+|-------|------|------|
+| setup-agent | opus | Interactive bootstrap of docs/INTENT.md, docs/STACK.md, docs/GLOSSARY.md via 5-invocation guided interview. Used by `/alp-river:setup`. |
+
 ## Slash commands
 
 ```
+/alp-river:setup        Interactive bootstrap of docs/INTENT.md, docs/STACK.md, docs/GLOSSARY.md
 /alp-river:feature      Full pipeline (L/XL - clarify, plan, challenge, build, review)
 /alp-river:fix          Lighter pipeline for fixes and small changes (S/M)
 /alp-river:plan         Design-only - each stage driven by a specialist agent
@@ -287,8 +295,8 @@ alp-river/
 ├── hooks/
 │   ├── hooks.json         <- 7 events: SessionStart, PreToolUse, PostToolUse, ...
 │   └── *.sh               <- inject-doctrine, auto-format, block-git-writes, ...
-├── agents/                <- 27 subagent definitions
-├── commands/              <- 6 slash commands
+├── agents/                <- 28 subagent definitions
+├── commands/              <- 7 slash commands
 └── templates/             <- copy into your project's docs/ for project-context injection
 ```
 

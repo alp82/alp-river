@@ -2,6 +2,10 @@
 
 All notable changes to alp-river. Versions match `.claude-plugin/plugin.json`.
 
+## 0.2.1 - 2026-05-04
+
+**`/alp-river:setup` writes the project docs for you.** One command interviews you about the project and fills in `docs/INTENT.md`, `docs/STACK.md`, and `docs/GLOSSARY.md`. Recommendations come from looking at the codebase first, so most answers are pick-from-options. Existing docs are merged, not overwritten.
+
 ## 0.2.0 - 2026-05-04
 
 **Subagents now know your project, not just your preferences.** Drop four files in `docs/` (intent, stack, glossary, ADRs) and every agent that needs them picks them up automatically. Planners stop suggesting libraries you've already ruled out. Reviewers stop renaming concepts you've already named. New work stops relitigating settled decisions.

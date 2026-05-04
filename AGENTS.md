@@ -81,6 +81,7 @@ Per-agent assignment, grouped by workflow stage:
 | fixer | Y | Y |
 | **Cross-cutting** | | |
 | investigator | Y | Y |
+| setup-agent | Y | N |
 
 If no MEMORY.md exists for the current project, the hook skips the USER_CONTEXT block silently. A missing `docs/` folder omits the whole PROJECT_CONTEXT block. Per-doc silent skip: a missing token target (e.g. no `INTENT.md`) just omits that slice. No errors, no scaffolding prompts.
 
@@ -99,7 +100,7 @@ Four file types feed it. Token names are lowercase; resolved filenames are UPPER
 
 ADRs collapse to a list, not full bodies, to keep prompts lean. The hook drops ADRs with status `deprecated` or `superseded`, files matching `0000-*.md` (catches the unfilled template), and ADRs whose summary still contains a `_TODO:_` marker.
 
-The mapping from agent to tokens lives inside the hook (`READ_MAP`) and is the authoritative source. Each agent file also carries a `reads:` field in its frontmatter as documentation for agent authors - the hook ignores it. Templates ship in the plugin's `templates/` folder; copy them into your project's `docs/` and fill in the `_TODO:_` markers.
+The mapping from agent to tokens lives inside the hook (`READ_MAP`) and is the authoritative source. Each agent file also carries a `reads:` field in its frontmatter as documentation for agent authors - the hook ignores it. Templates ship in the plugin's `templates/` folder; copy them into your project's `docs/` and fill in the `_TODO:_` markers. Run `/alp-river:setup` to populate INTENT/STACK/GLOSSARY interactively.
 
 ## Confidence Tagging
 

@@ -9,6 +9,10 @@ These templates feed the alp-river plugin's `## PROJECT_CONTEXT` block. Subagent
 3. Delete sections that don't apply.
 4. The hook injects whatever exists. Missing files skip silently.
 
+Or run `/alp-river:setup` to do the first three steps interactively for INTENT/STACK/GLOSSARY.
+
+**Maintainer note**: if you edit `INTENT.md`, `STACK.md`, or `GLOSSARY.md`, also update the inlined copies in `agents/setup-agent.md` to keep them in sync.
+
 ## Layout
 
 ```
