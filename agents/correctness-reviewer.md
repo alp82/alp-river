@@ -3,6 +3,7 @@ name: correctness-reviewer
 description: Post-implementation review for correctness, type safety, dead code, and project convention adherence
 model: sonnet
 tools: Glob, Grep, Read, Bash
+reads: [stack, glossary]
 ---
 
 Follows the Reviewer Contract section in your loaded doctrine - confidence tags, VERDICT/FINDINGS/ACTION_NEEDED.

@@ -31,17 +31,75 @@
 
 ## Subagent Context Inheritance
 
-MEMORY.md + linked files don't transfer to subagents automatically - they inherit nothing.
+MEMORY.md + linked files don't transfer to subagents automatically - they inherit nothing. Neither do project-level docs.
 
-The alp-river plugin's **PreToolUse(Agent) hook** (`user-context-injector`) handles this: it detects judgment-call subagent types and prepends `## USER_CONTEXT` (MEMORY.md + linked files, concatenated) to the Agent prompt before the spawn.
+The alp-river plugin's **PreToolUse(Agent) hook** (`user-context-injector`) handles both. It prepends up to two blocks to the Agent prompt:
 
-Judgment-call agents (receive `USER_CONTEXT`): interviewer, planner, plan-challenger, implementer, every *-reviewer, visual-verifier, fixer, investigator, prototyper, requirements-clarifier, reuse-scanner, researcher.
+- `## USER_CONTEXT` - MEMORY.md + linked files (durable user preferences and feedback).
+- `## PROJECT_CONTEXT` - matching slices of the project's `docs/` folder (intent, stack, glossary, ADRs).
 
-Mechanical agents (skip `USER_CONTEXT`): complexity-classifier, health-checker, prototype-identifier.
+The two axes are independent. User-aware status does not determine project-aware status, and vice versa.
 
-Subagents treat `USER_CONTEXT` as durable user preferences and feedback. When a preference conflicts with a default behavior, the preference wins unless it creates a correctness issue.
+**User-aware** means the agent receives `## USER_CONTEXT`. The hook's case statement is the allowlist. When a user preference conflicts with a default behavior, the preference wins unless it creates a correctness issue.
 
-If no MEMORY.md file exists for the current project, the hook skips silently.
+**Project-aware** means the agent receives `## PROJECT_CONTEXT`. The hook's `READ_MAP` is the allowlist. Each entry lists which doc tokens the agent needs (`intent`, `stack`, `glossary`, `adrs`).
+
+Per-agent assignment, grouped by workflow stage:
+
+| Agent | User-aware | Project-aware |
+|-------|:----------:|:-------------:|
+| **Understand** | | |
+| interviewer | Y | Y |
+| complexity-classifier | N | N |
+| **Prepare** | | |
+| reuse-scanner | Y | Y |
+| health-checker | N | Y |
+| prototype-identifier | N | Y |
+| researcher | N | Y |
+| prototyper | N | Y |
+| requirements-clarifier | Y | Y |
+| **Design** | | |
+| planner | Y | Y |
+| plan-challenger | Y | Y |
+| **Build** | | |
+| implementer | Y | Y |
+| **Verify** | | |
+| test-verifier | N | N |
+| correctness-reviewer | Y | Y |
+| quality-reviewer | Y | Y |
+| acceptance-reviewer | Y | Y |
+| plan-adherence-reviewer | Y | N |
+| structure-reviewer | Y | Y |
+| consistency-reviewer | Y | Y |
+| reuse-reviewer | Y | Y |
+| security-reviewer | Y | Y |
+| performance-reviewer | Y | Y |
+| accessibility-reviewer | N | N |
+| design-consistency-reviewer | Y | Y |
+| ux-reviewer | Y | Y |
+| visual-verifier | Y | N |
+| fixer | Y | Y |
+| **Cross-cutting** | | |
+| investigator | Y | Y |
+
+If no MEMORY.md exists for the current project, the hook skips the USER_CONTEXT block silently. A missing `docs/` folder omits the whole PROJECT_CONTEXT block. Per-doc silent skip: a missing token target (e.g. no `INTENT.md`) just omits that slice. No errors, no scaffolding prompts.
+
+### Project Context docs
+
+Project intent, stack choices, glossary, and prior architectural decisions live in your repo's `docs/` folder.
+
+Four file types feed it. Token names are lowercase; resolved filenames are UPPERCASE to match README/CHANGELOG/LICENSE convention. ADRs live in `docs/adr/` per the standard ADR convention.
+
+| Token | Resolves to | How it appears |
+|-------|-------------|----------------|
+| `intent` | `docs/INTENT.md` | full body under `### INTENT.md` |
+| `stack` | `docs/STACK.md` | full body under `### STACK.md` |
+| `glossary` | `docs/GLOSSARY.md` | full body under `### GLOSSARY.md` |
+| `adrs` | `docs/adr/*.md` | summary list - one bullet per ADR with status, title, summary, path |
+
+ADRs collapse to a list, not full bodies, to keep prompts lean. The hook drops ADRs with status `deprecated` or `superseded`, files matching `0000-*.md` (catches the unfilled template), and ADRs whose summary still contains a `_TODO:_` marker.
+
+The mapping from agent to tokens lives inside the hook (`READ_MAP`) and is the authoritative source. Each agent file also carries a `reads:` field in its frontmatter as documentation for agent authors - the hook ignores it. Templates ship in the plugin's `templates/` folder; copy them into your project's `docs/` and fill in the `_TODO:_` markers.
 
 ## Confidence Tagging
 

@@ -3,6 +3,7 @@ name: fixer
 description: Fixes issues identified by quality gates. Receives structured findings and applies targeted fixes without scope creep. Emits a RE-RUN set so the main agent knows which gates to re-fire.
 model: sonnet
 tools: Glob, Grep, Read, Edit, Write, Bash
+reads: [stack, glossary, adrs]
 ---
 
 Default model is sonnet for M tasks. On L/XL, main agent overrides to opus at spawn time via the Agent tool's `model` parameter.

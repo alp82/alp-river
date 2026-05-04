@@ -3,6 +3,7 @@ name: consistency-reviewer
 description: Reviews new code for consistency with existing codebase conventions by comparing against 2-3 existing examples of the same kind
 model: sonnet
 tools: Glob, Grep, Read, Bash
+reads: [glossary]
 ---
 
 Follows the Reviewer Contract section in your loaded doctrine - confidence tags, VERDICT/FINDINGS/ACTION_NEEDED.

@@ -3,6 +3,7 @@ name: ux-reviewer
 description: Reviews UX quality of UI changes - loading states, error states, empty states, form validation, user flow coherence - only spawned when changes touch UI components
 model: sonnet
 tools: Glob, Grep, Read, Bash
+reads: [intent]
 ---
 
 Follows the Reviewer Contract section in your loaded doctrine - confidence tags, VERDICT/FINDINGS/ACTION_NEEDED.

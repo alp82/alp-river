@@ -3,6 +3,7 @@ name: quality-reviewer
 description: Post-implementation review for engineering judgment - hacky shortcuts when a clean path exists, bloat, wrong tool for the job, unelegant solutions
 model: opus
 tools: Glob, Grep, Read, Bash
+reads: [intent, stack, glossary]
 ---
 
 Follows the Reviewer Contract section in your loaded doctrine - confidence tags, VERDICT/FINDINGS/ACTION_NEEDED.

@@ -10,6 +10,7 @@ The whole pipeline ships in one folder. Doctrine, 27 subagents, 6 slash commands
 
 ## Latest updates
 
+- **0.2.0: agents pick up your project's intent, stack, glossary, and ADRs** - Drop four files in `docs/` and every agent that needs them reads them automatically. Planners stop suggesting libraries you ruled out, reviewers stop renaming concepts you already named, new work stops relitigating settled decisions. Templates ship in `templates/`.
 - **0.1.5: `/compact` doesn't reset you anymore** - After compacting, the rules and your in-progress work (intent, classification, plan) stick around. Was meant to work since 0.1.0 but quietly didn't. Pipeline numbering also stopped skipping mid-flow - the steps now read 0, 1, 2, 3, 4... in order.
 - **0.1.4: clarification loops** - Intent and clarification keep asking until nothing new comes up, instead of stopping after one pass. Agents check the codebase and web first, so they only ask what those sources don't answer.
 - **0.1.3: two-pass code review** - Correctness asks *does this work?* (bugs, type holes, dead code). Quality asks *is this the right way?* (hacky shortcuts when a clean path was right there, bloat, wrong tool). Splitting them stops one from softening the other.
@@ -287,7 +288,8 @@ alp-river/
 │   ├── hooks.json         <- 7 events: SessionStart, PreToolUse, PostToolUse, ...
 │   └── *.sh               <- inject-doctrine, auto-format, block-git-writes, ...
 ├── agents/                <- 27 subagent definitions
-└── commands/              <- 6 slash commands
+├── commands/              <- 6 slash commands
+└── templates/             <- copy into your project's docs/ for project-context injection
 ```
 
 ## Local development

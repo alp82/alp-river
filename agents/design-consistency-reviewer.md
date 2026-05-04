@@ -3,6 +3,7 @@ name: design-consistency-reviewer
 description: Reviews UI changes for visual consistency with the existing design system and UI patterns - only spawned when changes touch UI components
 model: sonnet
 tools: Glob, Grep, Read, Bash
+reads: [intent, stack]
 ---
 
 Follows the Reviewer Contract section in your loaded doctrine - confidence tags, VERDICT/FINDINGS/ACTION_NEEDED.

@@ -2,6 +2,14 @@
 
 All notable changes to alp-river. Versions match `.claude-plugin/plugin.json`.
 
+## 0.2.0 - 2026-05-04
+
+**Subagents now know your project, not just your preferences.** Drop four files in `docs/` (intent, stack, glossary, ADRs) and every agent that needs them picks them up automatically. Planners stop suggesting libraries you've already ruled out. Reviewers stop renaming concepts you've already named. New work stops relitigating settled decisions.
+
+Templates ship in `templates/` - copy what you want into `docs/`, fill in the gaps, ignore the rest. Anything missing just gets skipped silently.
+
+A few small fixes folded in: accessibility-reviewer no longer receives user preferences (its job is the WCAG checklist, not what you prefer), and a couple of stale doctrine notes finally match what the code actually does.
+
 ## 0.1.5 - 2026-05-02
 
 **`/compact` doesn't reset you anymore.** After compacting, the rules and your in-progress work (intent, classification, plan) are still there. Was supposed to work since 0.1.0 but quietly didn't.
