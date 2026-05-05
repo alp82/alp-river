@@ -6,10 +6,11 @@
 
 Multi-stage agent refinement for Claude Code, scaled by automatic complexity classification. Small changes pass quickly. Bigger ones add stages: clarification, planning, adversarial challenge, implementation, broad review, specialist review, self-heal.
 
-The whole pipeline ships in one folder. Doctrine, 28 subagents, 7 slash commands, 8 quality hooks.
+The whole pipeline ships in one folder. Doctrine, 29 subagents, 7 slash commands, 8 quality hooks.
 
 ## Latest updates
 
+- **0.2.2: agents capture what they noticed in passing** - Glossary terms, ADR-worthy decisions, and stack/intent drift that surface during a run get collected at the end. You see a list, pick what to keep, and the survivors land in `docs/` automatically. Nothing scaffolds itself - if you don't have `docs/` yet, you get a nudge to run `/alp-river:setup` first.
 - **0.2.1: `/alp-river:setup` writes the project docs for you** - One command interviews you about the project and fills in `docs/INTENT.md`, `docs/STACK.md`, and `docs/GLOSSARY.md`. Recommendations come from looking at the codebase first, so most answers are pick-from-options. Existing docs are merged, not overwritten.
 - **0.2.0: agents pick up your project's intent, stack, glossary, and ADRs** - Drop four files in `docs/` and every agent that needs them reads them automatically. Planners stop suggesting libraries you ruled out, reviewers stop renaming concepts you already named, new work stops relitigating settled decisions. Templates ship in `templates/`.
 - **0.1.5: `/compact` doesn't reset you anymore** - After compacting, the rules and your in-progress work (intent, classification, plan) stick around. Was meant to work since 0.1.0 but quietly didn't. Pipeline numbering also stopped skipping mid-flow - the steps now read 0, 1, 2, 3, 4... in order.
@@ -192,7 +193,7 @@ flowchart TB
 
 ## Agents
 
-28 subagents, grouped by stage. Italic = conditional / gated. Tier shows the model that runs by default.
+29 subagents, grouped by stage. Italic = conditional / gated. Tier shows the model that runs by default.
 
 ### Intent
 
@@ -262,6 +263,12 @@ Each specialist fires only when its trigger matches: a broad-pass finding in its
 | ux-reviewer | sonnet | Touched files include UI components. |
 | visual-verifier | sonnet | XL + UI; uses playwright-cli to screenshot and verify. |
 
+### Capture (separate flow)
+
+| Agent | Tier | Role |
+|-------|------|------|
+| capture-agent | opus | Collects novel project-context items (glossary terms, ADR-worthy decisions, stack/intent drift) surfaced incidentally by upstream agents. Two phases - proposes, then writes after user approval. Never creates `docs/`. |
+
 ### Investigate (separate flow)
 
 | Agent | Tier | Role |
@@ -295,7 +302,7 @@ alp-river/
 ├── hooks/
 │   ├── hooks.json         <- 7 events: SessionStart, PreToolUse, PostToolUse, ...
 │   └── *.sh               <- inject-doctrine, auto-format, block-git-writes, ...
-├── agents/                <- 28 subagent definitions
+├── agents/                <- 29 subagent definitions
 ├── commands/              <- 7 slash commands
 └── templates/             <- copy into your project's docs/ for project-context injection
 ```

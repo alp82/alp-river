@@ -31,6 +31,6 @@ Follows the Reviewer Contract section in your loaded doctrine - confidence tags,
 <TOUCHED_FILES>{file paths the implementer or main agent modified or created}</TOUCHED_FILES>
 ```
 
-## Output (override)
+## Output (strict)
 
 Each finding's description names the a11y violation, the WCAG criterion when applicable, and the impact on users.

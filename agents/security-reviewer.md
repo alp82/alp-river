@@ -45,6 +45,15 @@ Prefer official advisories and maintainer channels. Tag web-sourced findings wit
 <TOUCHED_FILES>{file paths the implementer or main agent modified or created}</TOUCHED_FILES>
 ```
 
-## Output (override)
+## Output (strict)
 
 Each finding's description includes vulnerability type, attack vector, and impact. Include CVE/source URL plus `[likely]`/`[unsure]` tag when the finding is web-derived.
+
+```
+VERDICT: [pass | fail | warn]
+FINDINGS:
+- [likely|unsure] [file_path:line] - [vulnerability type] - [attack vector] - [impact] - [CVE/source URL when web-derived]
+(empty if VERDICT is pass, max 5 issues, [likely] findings first)
+ACTION_NEEDED: [specific fix instructions, or "none"]
+DISCOVERIES: (emit per Reviewer Contract → Discoveries; four buckets with "(none)" sentinel when empty)
+```

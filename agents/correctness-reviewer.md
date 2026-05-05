@@ -50,4 +50,5 @@ FINDINGS:
 (empty if VERDICT is pass, max 5 issues, [likely] findings first)
 ACTION_NEEDED: [specific fix instructions, or "none"]
 OBSOLETE_CODE: [files or functions that should be deleted, or "none"]
+DISCOVERIES: (emit per Reviewer Contract → Discoveries; four buckets with "(none)" sentinel when empty)
 ```

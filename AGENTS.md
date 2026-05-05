@@ -82,6 +82,7 @@ Per-agent assignment, grouped by workflow stage:
 | **Cross-cutting** | | |
 | investigator | Y | Y |
 | setup-agent | Y | N |
+| capture-agent | Y | Y |
 
 If no MEMORY.md exists for the current project, the hook skips the USER_CONTEXT block silently. A missing `docs/` folder omits the whole PROJECT_CONTEXT block. Per-doc silent skip: a missing token target (e.g. no `INTENT.md`) just omits that slice. No errors, no scaffolding prompts.
 
@@ -197,25 +198,40 @@ Launch `fixer` (opus on L/XL, sonnet on M) with aggregated findings. Fixer addre
 - Round 2: present to user → directed fix + rerun
 - Round 3+: stop, surface
 
-Summary in Step 10 cites post-fix gate results only.
+Summary in Step 11 cites post-fix gate results only.
 
-### Step 10: Summarize
+### Step 10: Capture (M/L/XL)
+
+Before summarizing, harvest novel project-context items surfaced by upstream agents during this run. Aggregate every non-empty `DISCOVERIES` block from implementer, fixer, investigator, and the reviewers (correctness, quality, structure, consistency, security, performance) into `<AGGREGATED_DISCOVERIES>`.
+
+Launch `capture-agent` (opus) with `<PHASE>: 1` and `<AGGREGATED_DISCOVERIES>`. The agent dedups against the loaded PROJECT_CONTEXT (intent, stack, glossary, ADRs) and emits one of:
+
+- `PHASE_RESULT: complete-empty` - nothing novel; skip to Step 11.
+- `PHASE_RESULT: complete-no-docs-dir` - target `docs/` does not exist; recommend `/alp-river:setup` to the user, skip to Step 11.
+- `PHASE_RESULT: proposal-ready` - a `PROPOSAL` block listing dedup-survived candidates per bucket.
+
+On `proposal-ready`, present the proposal to the user and capture per-item approvals. Re-launch `capture-agent` with `<PHASE>: 2` and `<APPROVALS>`; it appends approved glossary terms, drops new ADR files under `docs/adr/`, and appends drift sections. Capture-agent never creates `docs/` itself.
+
+Skip Step 10 entirely on S tasks - no upstream emitters run.
+
+### Step 11: Summarize
 - What was built (2-3 sentences)
 - Files created / modified
 - Post-fix gate results
+- Captures recorded (glossary/ADR/drift counts, or "none")
 - Backward edges used: N/2
 - REMAINING items for user triage
 
 Emit `<!-- pipeline-complete -->` at the end.
 
-### Step 11: Follow-up Requests
+### Step 12: Follow-up Requests
 Every subsequent request is a new task. Re-enter Step 0. S follow-ups can skip Level 2 intent when the direction is clearly a continuation. Stay in subagent mode - main-agent context is already heavy.
 
 ## Model Tiering
 
 | Tier | Agents |
 |------|--------|
-| **opus** | classifier, interviewer, clarifier, planner, plan-challenger, implementer, acceptance-reviewer, security-reviewer, investigator, quality-reviewer; fixer + correctness-reviewer on L/XL |
+| **opus** | classifier, interviewer, clarifier, planner, plan-challenger, implementer, acceptance-reviewer, security-reviewer, investigator, quality-reviewer, capture-agent; fixer + correctness-reviewer on L/XL |
 | **sonnet** | reuse-scanner, structure-reviewer, consistency-reviewer, reuse-reviewer, test-verifier, visual-verifier, a11y-reviewer, design-consistency-reviewer, ux-reviewer, plan-adherence-reviewer, prototyper; fixer + correctness-reviewer on M |
 | **haiku** | health-checker, prototype-identifier, researcher |
 
@@ -330,6 +346,34 @@ A reviewer MUST NOT:
 - Flag code you don't understand. Ask or skip; don't speculate.
 - Frame readability or correctness sacrifices as performance/UX wins.
 
+### Discoveries
+
+Every reviewer (and implementer, fixer, investigator) appends a `DISCOVERIES` block as the last section of its output. This is the channel for novel project-context items the agent noticed in passing while doing its primary job - terms that should be canonical, decisions worth recording as ADRs, drift from the declared stack or intent. Step 10 (Capture) aggregates these and offers them to the user.
+
+**Exception - non-emitters:** accessibility-reviewer, ux-reviewer, and design-consistency-reviewer do not emit DISCOVERIES - their scope is WCAG/visual/UX checks, not domain content. test-verifier, plan-adherence-reviewer, reuse-reviewer, and acceptance-reviewer also do not emit DISCOVERIES (mechanical/blueprint-fidelity/duplication-check/intent-fulfillment respectively, not domain-novelty surfaces).
+
+Four buckets, each terminated with `(none)` when empty:
+
+```
+DISCOVERIES:
+  glossary:
+    - [term] - [one-sentence definition] - [why novel]
+    (or "(none)")
+  adr_candidates:
+    - [decision title] - [summary] - [why novel]
+    (or "(none)")
+  stack_drift:
+    - [layer] - [deviation] - [evidence file:line]
+    (or "(none)")
+  intent_drift:
+    - [aspect] - [deviation] - [evidence file:line]
+    (or "(none)")
+```
+
+**Novelty bar:** the item must NOT already be covered by the loaded `PROJECT_CONTEXT`. Skip anything you can find in `GLOSSARY.md`, `STACK.md`, `INTENT.md`, or the active ADRs. When in doubt, skip - capture-agent does the final dedup, but you don't need to dump candidates the agent will only have to filter out.
+
+The block is mandatory even when every bucket is empty. Emit all four bucket headings with `(none)` so the parser sees a structured block.
+
 ### Example output (consistency-reviewer)
 
 ```
@@ -339,4 +383,13 @@ FINDINGS:
 - [likely] src/features/items/controller.ts:22 - returns `{ data, meta }` but every other controller returns the bare array. Align with reports/users.
 - [likely] src/features/items/service.ts:8 - `get_item` (snake_case) diverges from camelCase used elsewhere in the module.
 ACTION_NEEDED: Change return shape to bare array; rename `get_item` to `getItem`.
+DISCOVERIES:
+  glossary:
+    (none)
+  adr_candidates:
+    (none)
+  stack_drift:
+    (none)
+  intent_drift:
+    (none)
 ```

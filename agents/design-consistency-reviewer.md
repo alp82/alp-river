@@ -33,7 +33,7 @@ Always compare against 2-3 existing UI components of similar kind before flaggin
 <TOUCHED_FILES>{file paths the implementer or main agent modified or created}</TOUCHED_FILES>
 ```
 
-## Output (override)
+## Output (strict)
 
 Emit `DESIGN_REFERENCES: [existing components/files used as visual baseline]` before `FINDINGS`.
 

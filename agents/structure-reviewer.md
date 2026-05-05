@@ -39,6 +39,15 @@ Follows the Reviewer Contract section in your loaded doctrine - confidence tags,
 <APPROVED_PLAN>{current APPROVED_PLAN block, or "none" on S/M without plan}</APPROVED_PLAN>
 ```
 
-## Output (override)
+## Output (strict)
 
 Each finding describes the structural issue and suggests a specific decomposition.
+
+```
+VERDICT: [pass | fail | warn]
+FINDINGS:
+- [likely|unsure] [file_path:line] - [structural issue] → [specific decomposition]
+(empty if VERDICT is pass, max 5 issues, [likely] findings first)
+ACTION_NEEDED: [specific fix instructions, or "none"]
+DISCOVERIES: (emit per Reviewer Contract → Discoveries; four buckets with "(none)" sentinel when empty)
+```

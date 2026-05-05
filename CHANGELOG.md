@@ -2,6 +2,10 @@
 
 All notable changes to alp-river. Versions match `.claude-plugin/plugin.json`.
 
+## 0.2.2 - 2026-05-05
+
+**Agents capture what they noticed in passing.** Reviewers, the implementer, the fixer, and the investigator now jot down anything novel that crossed their path during a run - a domain term that should be canonical, a decision worth recording as an ADR, drift from the declared stack or intent. At the end of the pipeline you get a list, pick what to keep, and the survivors land in `docs/` automatically. Nothing scaffolds itself - if `docs/` doesn't exist yet, you get a nudge to run `/alp-river:setup` first instead of silent file creation.
+
 ## 0.2.1 - 2026-05-04
 
 **`/alp-river:setup` writes the project docs for you.** One command interviews you about the project and fills in `docs/INTENT.md`, `docs/STACK.md`, and `docs/GLOSSARY.md`. Recommendations come from looking at the codebase first, so most answers are pick-from-options. Existing docs are merged, not overwritten.

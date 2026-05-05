@@ -105,12 +105,29 @@ After the fixer runs, refresh `<TOUCHED_FILES>` to include any new files the fix
 
 Summary cites post-fix gate results.
 
-## Step 8: Summary
+## Step 8: Capture
+
+**S tasks**: skip - no upstream emitters ran.
+
+**M tasks**: aggregate every non-empty `DISCOVERIES` block from this run's upstream agents (implementer was you, but fixer + the broad/specialist reviewers all emit) into `<AGGREGATED_DISCOVERIES>`. Drop blocks where every bucket is `(none)`.
+
+Launch `capture-agent` (opus) with `<PHASE>: 1`, `<AGGREGATED_DISCOVERIES>`, `<APPROVALS>: n/a`.
+
+Handle `PHASE_RESULT`:
+
+- `complete-empty` → no novel context surfaced. Skip to Step 9.
+- `complete-no-docs-dir` → surface the recommendation to the user ("docs/ not found - run /alp-river:setup if you want captures recorded next time"). Skip to Step 9.
+- `proposal-ready` → present the `PROPOSAL` block to the user. Capture per-item approvals in the format `BUCKET.INDEX: accept | edit: <new text> | reject`. Re-launch `capture-agent` with `<PHASE>: 2`, the same `<AGGREGATED_DISCOVERIES>`, and `<APPROVALS>`. Capture the returned `CAPTURE_REPORT` for Step 9's summary.
+
+Capture-agent always runs on M - never auto-skip. If the agent fails to spawn, treat as "no captures this round" and continue.
+
+## Step 9: Summary
 
 Brief report:
 - What was fixed (1-2 sentences)
 - Files changed
 - Post-fix gate results
+- Captures recorded (glossary terms, ADRs created, drift items appended - or "none"; M only)
 - REMAINING items for user triage (anything in fixer's REMAINING)
 
 End with the literal line `<!-- pipeline-complete -->`.

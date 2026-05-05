@@ -158,14 +158,29 @@ After the fixer runs, refresh `<TOUCHED_FILES>` to include any new files the fix
 - **Round 2**: present findings + fixer output to the user, ask how to proceed. Apply chosen fixes, rerun RE_RUN_SET.
 - **Round 3+**: present results, stop. Do not loop silently.
 
-Summary in Step 10 cites post-fix gate results only.
+Summary in Step 11 cites post-fix gate results only.
 
-## Step 10: Summary
+## Step 10: Capture
+
+Aggregate every non-empty `DISCOVERIES` block from this run's upstream agents (implementer, fixer, investigator, correctness-reviewer, quality-reviewer, structure-reviewer, consistency-reviewer, security-reviewer, performance-reviewer) into `<AGGREGATED_DISCOVERIES>`. Drop blocks where every bucket is `(none)`.
+
+Launch `capture-agent` (opus) with `<PHASE>: 1`, `<AGGREGATED_DISCOVERIES>`, `<APPROVALS>: n/a`.
+
+Handle `PHASE_RESULT`:
+
+- `complete-empty` → no novel context surfaced. Skip to Step 11.
+- `complete-no-docs-dir` → surface the recommendation to the user ("docs/ not found - run /alp-river:setup if you want captures recorded next time"). Skip to Step 11.
+- `proposal-ready` → present the `PROPOSAL` block to the user. Capture per-item approvals in the format `BUCKET.INDEX: accept | edit: <new text> | reject` (e.g. `glossary.1: accept`, `adr_candidates.1: edit: ...`, `stack_drift.2: reject`). Re-launch `capture-agent` with `<PHASE>: 2`, the same `<AGGREGATED_DISCOVERIES>`, and `<APPROVALS>` containing the user's decisions. Capture the returned `CAPTURE_REPORT` for Step 11's summary.
+
+Capture-agent always runs - never auto-skip. If the agent fails to spawn, treat as "no captures this round" and continue.
+
+## Step 11: Summary
 
 Report:
 - What was built (2-3 sentences)
 - Files created / modified
 - Post-fix gate results (broad pass + specialists)
+- Captures recorded (glossary terms, ADRs created, drift items appended - or "none")
 - Backward edges used: N/2
 - REMAINING items for user triage (anything in fixer's REMAINING)
 

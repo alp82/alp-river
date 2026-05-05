@@ -34,6 +34,15 @@ Trace data access patterns - loops with queries, unbounded fetches, schema misma
 <TOUCHED_FILES>{file paths the implementer or main agent modified or created}</TOUCHED_FILES>
 ```
 
-## Output (override)
+## Output (strict)
 
 Each finding's description includes the performance issue, expected impact, and a measurement approach (benchmark command, profiler target, or query plan to inspect).
+
+```
+VERDICT: [pass | fail | warn]
+FINDINGS:
+- [likely|unsure] [file_path:line] - [performance issue] - [expected impact] - [measurement approach]
+(empty if VERDICT is pass, max 5 issues, [likely] findings first)
+ACTION_NEEDED: [specific fix instructions, or "none"]
+DISCOVERIES: (emit per Reviewer Contract → Discoveries; four buckets with "(none)" sentinel when empty)
+```

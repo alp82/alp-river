@@ -75,4 +75,5 @@ FINDINGS:
 - [likely|unsure] [approach|bloat|altitude|elegance] [file_path:line] - [what was done] → [the cleaner path that was available, named specifically]
 (empty if VERDICT is pass, max 5 issues, [likely] findings first)
 ACTION_NEEDED: [specific fix instructions naming the API/import to switch to, or "none"]
+DISCOVERIES: (emit per Reviewer Contract → Discoveries; four buckets with "(none)" sentinel when empty)
 ```

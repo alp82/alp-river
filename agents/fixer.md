@@ -55,4 +55,5 @@ RE_RUN_SET:
 REMAINING:
 - [file_path:line] - [finding not fixed and why]
 (or "none")
+DISCOVERIES: (emit per Reviewer Contract → Discoveries; four buckets with "(none)" sentinel when empty)
 ```

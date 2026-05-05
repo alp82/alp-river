@@ -31,8 +31,16 @@ Always compare new code against 2-3 existing examples of the same kind before fl
 <TOUCHED_FILES>{file paths the implementer or main agent modified or created}</TOUCHED_FILES>
 ```
 
-## Output (override)
+## Output (strict)
 
-Emit `EXAMPLES_COMPARED: [file paths of existing code used as reference]` before `FINDINGS`.
+Emit `EXAMPLES_COMPARED: [file paths of existing code used as reference]` before `FINDINGS`. Each finding describes how the new code diverges from the established pattern, referencing the example.
 
-Each finding describes how the new code diverges from the established pattern, referencing the example.
+```
+VERDICT: [pass | fail | warn]
+EXAMPLES_COMPARED: [file paths of existing code used as reference]
+FINDINGS:
+- [likely|unsure] [file_path:line] - [divergence] - [the established pattern it diverges from]
+(empty if VERDICT is pass, max 5 issues, [likely] findings first)
+ACTION_NEEDED: [specific fix instructions, or "none"]
+DISCOVERIES: (emit per Reviewer Contract → Discoveries; four buckets with "(none)" sentinel when empty)
+```

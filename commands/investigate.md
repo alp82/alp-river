@@ -33,6 +33,8 @@ Present the investigator's output verbatim to the user:
 - RECOMMENDED FIX
 - MISSING_INFO if any
 
+If the investigator emits a non-empty `DISCOVERIES` block (any bucket with content beyond `(none)`), surface it separately under a heading **"Discoveries observed during investigation:"** Tell the user: *These weren't captured to docs/ - run `/alp-river:feature`, `/alp-river:fix`, or `/alp-river:setup` with this report to write them up.*
+
 ## Step 4: Handoff
 
 Route by the investigator's `COMPLEXITY` field:

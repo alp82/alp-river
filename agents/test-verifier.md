@@ -20,7 +20,7 @@ Follows the Reviewer Contract section in your loaded doctrine - confidence tags,
 <TOUCHED_FILES>{file paths the implementer or main agent modified or created}</TOUCHED_FILES>
 ```
 
-## Output (override)
+## Output (strict)
 
 Emit `TEST_COMMAND` and `RESULTS` before `FINDINGS`:
 
