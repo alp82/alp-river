@@ -2,21 +2,17 @@
 
 All notable changes to alp-river. Versions match `.claude-plugin/plugin.json`.
 
-## 0.2.2 - 2026-05-05
+## 0.2.0 - 2026-05-10
 
-**Agents capture what they noticed in passing.** Reviewers, the implementer, the fixer, and the investigator now jot down anything novel that crossed their path during a run - a domain term that should be canonical, a decision worth recording as an ADR, drift from the declared stack or intent. At the end of the pipeline you get a list, pick what to keep, and the survivors land in `docs/` automatically. Nothing scaffolds itself - if `docs/` doesn't exist yet, you get a nudge to run `/alp-river:setup` first instead of silent file creation.
+**Subagents pick up your project's intent, stack, glossary, and ADRs, capture what they noticed in passing, and draft new ADRs from the decisions worth recording.**
 
-## 0.2.1 - 2026-05-04
+Drop the four files into `docs/` and every agent that needs them reads them automatically - planners stop suggesting libraries you've already ruled out, reviewers stop renaming concepts you've already named, new work stops relitigating settled decisions. Templates ship in `templates/`; copy what you want, fill in the gaps, ignore the rest. `/alp-river:setup` writes those files for you interview-style, with recommendations drawn from the codebase. Existing docs are merged, not overwritten.
 
-**`/alp-river:setup` writes the project docs for you.** One command interviews you about the project and fills in `docs/INTENT.md`, `docs/STACK.md`, and `docs/GLOSSARY.md`. Recommendations come from looking at the codebase first, so most answers are pick-from-options. Existing docs are merged, not overwritten.
+Reviewers, the implementer, the fixer, and the investigator now jot down anything novel that crossed their path during a run - terms that should be canonical, decisions worth recording, drift from the declared stack or intent. At the end of the pipeline you get a list, pick what to keep, and the survivors land in `docs/` automatically. Nothing scaffolds itself; if `docs/` doesn't exist yet, you get a nudge to run `/alp-river:setup` first.
 
-## 0.2.0 - 2026-05-04
+Decisions worth recording - whether surfaced by capture, lifted from a drift item, or entered deliberately via `/alp-river:adr` - run through a read-only drafter that fills in all four ADR sections from the surrounding context, runs a contradiction check against existing ADRs, and rates its own draft on three criteria so you know what to look at twice. Duplicates of active ADRs get rejected before any file lands. Supersession (replacing or chaining old ADRs) is coming next.
 
-**Subagents now know your project, not just your preferences.** Drop four files in `docs/` (intent, stack, glossary, ADRs) and every agent that needs them picks them up automatically. Planners stop suggesting libraries you've already ruled out. Reviewers stop renaming concepts you've already named. New work stops relitigating settled decisions.
-
-Templates ship in `templates/` - copy what you want into `docs/`, fill in the gaps, ignore the rest. Anything missing just gets skipped silently.
-
-A few small fixes folded in: accessibility-reviewer no longer receives user preferences (its job is the WCAG checklist, not what you prefer), and a couple of stale doctrine notes finally match what the code actually does.
+Smaller fixes that landed alongside: accessibility-reviewer no longer receives user preferences (its job is the WCAG checklist, not what you prefer), the per-agent context wiring lives in one place (`hooks/user-context-injector.sh`) instead of being duplicated across agent frontmatter and a doctrine table, and the ADR drafter loop is defined once in `AGENTS.md` so the feature, fix, and `/alp-river:adr` flows reference it instead of carrying their own copies.
 
 ## 0.1.5 - 2026-05-02
 

@@ -3,7 +3,6 @@ name: performance-reviewer
 description: Focused performance review - only spawned when changes touch database queries, data processing, or request-handling hot paths
 model: sonnet
 tools: Glob, Grep, Read, Bash
-reads: [stack]
 ---
 
 Follows the Reviewer Contract section in your loaded doctrine - confidence tags, VERDICT/FINDINGS/ACTION_NEEDED.

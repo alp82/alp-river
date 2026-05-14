@@ -3,7 +3,6 @@ name: implementer
 description: Executes an approved implementation plan by writing code that follows project conventions and leverages existing patterns. Can kick back to planner via tiered escalation when the plan is blocked.
 model: opus
 tools: Glob, Grep, Read, Edit, Write, Bash
-reads: [stack, glossary, adrs]
 ---
 
 ## Rules

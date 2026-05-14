@@ -164,15 +164,25 @@ Summary in Step 11 cites post-fix gate results only.
 
 Aggregate every non-empty `DISCOVERIES` block from this run's upstream agents (implementer, fixer, investigator, correctness-reviewer, quality-reviewer, structure-reviewer, consistency-reviewer, security-reviewer, performance-reviewer) into `<AGGREGATED_DISCOVERIES>`. Drop blocks where every bucket is `(none)`.
 
+**Fold in clarifier WRITES_PROPOSED.** If `<CLARIFY_OUTPUT>` from Step 3 contained a non-empty `WRITES_PROPOSED` block (glossary or adr_candidates), merge those entries into `<AGGREGATED_DISCOVERIES>` under a synthetic `requirements-clarifier` source label. They go through the same dedup + approval flow as the reviewers' discoveries.
+
 Launch `capture-agent` (opus) with `<PHASE>: 1`, `<AGGREGATED_DISCOVERIES>`, `<APPROVALS>: n/a`.
 
 Handle `PHASE_RESULT`:
 
 - `complete-empty` → no novel context surfaced. Skip to Step 11.
 - `complete-no-docs-dir` → surface the recommendation to the user ("docs/ not found - run /alp-river:setup if you want captures recorded next time"). Skip to Step 11.
-- `proposal-ready` → present the `PROPOSAL` block to the user. Capture per-item approvals in the format `BUCKET.INDEX: accept | edit: <new text> | reject` (e.g. `glossary.1: accept`, `adr_candidates.1: edit: ...`, `stack_drift.2: reject`). Re-launch `capture-agent` with `<PHASE>: 2`, the same `<AGGREGATED_DISCOVERIES>`, and `<APPROVALS>` containing the user's decisions. Capture the returned `CAPTURE_REPORT` for Step 11's summary.
+- `proposal-ready` → present the `PROPOSAL` block to the user. Capture per-item approvals:
+  - `glossary` and `adr_candidates`: `accept | edit: <new text> | reject`.
+  - `stack_drift` and `intent_drift`: `accept-as-drift | accept-as-adr | edit: <new text> | reject`. The `accept-as-adr` verb lifts the drift item into the ADR pipeline instead of writing it as a drift bullet.
+  
+  Re-launch `capture-agent` with `<PHASE>: 2`, the same `<AGGREGATED_DISCOVERIES>`, and `<APPROVALS>` containing the user's decisions. Capture the returned `CAPTURE_REPORT` for Step 11's summary.
 
 Capture-agent always runs - never auto-skip. If the agent fails to spawn, treat as "no captures this round" and continue.
+
+**ADR pipeline.** If the Phase 2 output contains a non-empty `ADR_PIPELINE_NEEDED` block, run the **ADR Drafter Loop** (see `AGENTS.md` → ADR Drafter Loop) once per entry. For each entry, fill the loop's input slots from the entry: `<DECISION_TITLE>` and `<DECISION_SUMMARY>` from the entry, `<SOURCE>` from the entry, `<EXTRA_CONTEXT>: none`. On `rejected`, skip to next entry and record the skip in Step 11. On the loop's exit (whether write or reject), continue to the next entry.
+
+Track the count of ADRs written and rejected via the loop; report alongside `CAPTURE_REPORT` totals in Step 11.
 
 ## Step 11: Summary
 

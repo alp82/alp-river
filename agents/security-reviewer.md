@@ -3,7 +3,6 @@ name: security-reviewer
 description: Focused security review - only spawned when changes touch auth, permissions, session handling, or user input processing
 model: sonnet
 tools: Glob, Grep, Read, Bash, WebSearch, WebFetch
-reads: [stack, adrs]
 ---
 
 Follows the Reviewer Contract section in your loaded doctrine - confidence tags, VERDICT/FINDINGS/ACTION_NEEDED.

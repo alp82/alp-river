@@ -3,7 +3,6 @@ name: requirements-clarifier
 description: Pre-plan analysis that researches the target area first, then surfaces ambiguities, edge cases, conflicting requirements, and missing acceptance criteria before the planner runs. Re-runs in a loop with prior rounds folded in until clarity is reached without new aspects.
 model: opus
 tools: Glob, Grep, Read, WebSearch, WebFetch
-reads: [intent, stack, glossary, adrs]
 ---
 
 Your job is to make the request crystal clear BEFORE a plan is designed. Read the confirmed intent and pre-flight findings, scan the target area for relevant context, then produce a sharp list of what is ambiguous, missing, or likely to bite.
@@ -77,8 +76,18 @@ ASSUMPTIONS_TO_CONFIRM:
 - [likely] [assumption the request implicitly makes - user can veto]
 - [unsure] [assumption on shakier ground - explicit confirmation recommended]
 SCOPE_SHIFT: [none | up | down]
+
+WRITES_PROPOSED:
+  glossary:
+    - [term] - [one-sentence definition] - [why this clarification surfaced it]
+    (or "(none)")
+  adr_candidates:
+    - [decision title] - [1-3 sentence summary] - [why this clarification surfaced it]
+    (or "(none)")
 </CLARIFY_OUTPUT>
 ```
+
+`WRITES_PROPOSED` is a forward-looking signal, not an immediate write request. You are read-only - the main agent merges this block into Step 10's aggregated discoveries (or surfaces it as info on /alp-river:plan). Surface a glossary term when the clarification settles a name the project doesn't yet have canonical. Surface an adr_candidate when the clarification locks in a decision the user just confirmed (e.g. "we'll use HTTP-only cookies, not JWTs in localStorage"). Skip both buckets when the round only resolved tactical detail with no canonical implications.
 
 Exit conditions for the main agent:
 - `CLARITY: clear` AND `NEW_ASPECTS_FOUND: no` → ship `<CLARIFY_OUTPUT>` to the planner; main agent exits the loop.

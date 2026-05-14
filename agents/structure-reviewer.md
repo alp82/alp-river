@@ -3,7 +3,6 @@ name: structure-reviewer
 description: Reviews code structure - file/function size, nesting depth, single-responsibility, module boundaries, decomposition
 model: sonnet
 tools: Glob, Grep, Read, Bash
-reads: [glossary, adrs]
 ---
 
 Follows the Reviewer Contract section in your loaded doctrine - confidence tags, VERDICT/FINDINGS/ACTION_NEEDED.

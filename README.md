@@ -6,13 +6,11 @@
 
 Multi-stage agent refinement for Claude Code, scaled by automatic complexity classification. Small changes pass quickly. Bigger ones add stages: clarification, planning, adversarial challenge, implementation, broad review, specialist review, self-heal.
 
-The whole pipeline ships in one folder. Doctrine, 29 subagents, 7 slash commands, 8 quality hooks.
+The whole pipeline ships in one folder. Doctrine, 30 subagents, 8 slash commands, 8 quality hooks.
 
 ## Latest updates
 
-- **0.2.2: agents capture what they noticed in passing** - Glossary terms, ADR-worthy decisions, and stack/intent drift that surface during a run get collected at the end. You see a list, pick what to keep, and the survivors land in `docs/` automatically. Nothing scaffolds itself - if you don't have `docs/` yet, you get a nudge to run `/alp-river:setup` first.
-- **0.2.1: `/alp-river:setup` writes the project docs for you** - One command interviews you about the project and fills in `docs/INTENT.md`, `docs/STACK.md`, and `docs/GLOSSARY.md`. Recommendations come from looking at the codebase first, so most answers are pick-from-options. Existing docs are merged, not overwritten.
-- **0.2.0: agents pick up your project's intent, stack, glossary, and ADRs** - Drop four files in `docs/` and every agent that needs them reads them automatically. Planners stop suggesting libraries you ruled out, reviewers stop renaming concepts you already named, new work stops relitigating settled decisions. Templates ship in `templates/`.
+- **0.2.0: subagents pick up your project context, record novel findings, and draft ADRs** - Drop intent, stack, glossary, and ADRs into `docs/` and every agent that needs them reads them automatically. Reviewers and the implementer jot down anything novel they notice in passing - terms, decisions, stack/intent drift - and at the end of the pipeline you pick what to keep. Decisions get drafted by a read-only agent that runs a contradiction check and rates its own draft on three criteria, so you know what to look at twice. `/alp-river:setup` writes the project docs interview-style; `/alp-river:adr` records a decision deliberately.
 - **0.1.5: `/compact` doesn't reset you anymore** - After compacting, the rules and your in-progress work (intent, classification, plan) stick around. Was meant to work since 0.1.0 but quietly didn't. Pipeline numbering also stopped skipping mid-flow - the steps now read 0, 1, 2, 3, 4... in order.
 - **0.1.4: clarification loops** - Intent and clarification keep asking until nothing new comes up, instead of stopping after one pass. Agents check the codebase and web first, so they only ask what those sources don't answer.
 - **0.1.3: two-pass code review** - Correctness asks *does this work?* (bugs, type holes, dead code). Quality asks *is this the right way?* (hacky shortcuts when a clean path was right there, bloat, wrong tool). Splitting them stops one from softening the other.
@@ -193,7 +191,7 @@ flowchart TB
 
 ## Agents
 
-29 subagents, grouped by stage. Italic = conditional / gated. Tier shows the model that runs by default.
+30 subagents, grouped by stage. Italic = conditional / gated. Tier shows the model that runs by default.
 
 ### Intent
 
@@ -267,7 +265,8 @@ Each specialist fires only when its trigger matches: a broad-pass finding in its
 
 | Agent | Tier | Role |
 |-------|------|------|
-| capture-agent | opus | Collects novel project-context items (glossary terms, ADR-worthy decisions, stack/intent drift) surfaced incidentally by upstream agents. Two phases - proposes, then writes after user approval. Never creates `docs/`. |
+| capture-agent | opus | Collects novel project-context items (glossary terms, ADR-worthy decisions, stack/intent drift) surfaced incidentally by upstream agents. Two phases - proposes, then writes after user approval. ADR candidates are handed to the orchestrator's ADR pipeline rather than written here. Never creates `docs/`. |
+| adr-drafter | opus | Drafts a single ADR from a decision summary, mirroring the canonical template. Read-only - emits a draft (with a contradiction self-check and a three-criteria self-criticism block) or hard-rejects on duplicates. Used by `/alp-river:adr` and by capture-agent's ADR pipeline. |
 
 ### Investigate (separate flow)
 
@@ -285,6 +284,7 @@ Each specialist fires only when its trigger matches: a broad-pass finding in its
 
 ```
 /alp-river:setup        Interactive bootstrap of docs/INTENT.md, docs/STACK.md, docs/GLOSSARY.md
+/alp-river:adr          Draft and write a single architectural decision record
 /alp-river:feature      Full pipeline (L/XL - clarify, plan, challenge, build, review)
 /alp-river:fix          Lighter pipeline for fixes and small changes (S/M)
 /alp-river:plan         Design-only - each stage driven by a specialist agent
@@ -302,8 +302,8 @@ alp-river/
 ├── hooks/
 │   ├── hooks.json         <- 7 events: SessionStart, PreToolUse, PostToolUse, ...
 │   └── *.sh               <- inject-doctrine, auto-format, block-git-writes, ...
-├── agents/                <- 29 subagent definitions
-├── commands/              <- 7 slash commands
+├── agents/                <- 30 subagent definitions
+├── commands/              <- 8 slash commands
 └── templates/             <- copy into your project's docs/ for project-context injection
 ```
 

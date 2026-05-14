@@ -12,7 +12,8 @@
 # An agent can be user-aware only, project-aware only, both, or neither:
 #   User-aware Y + Project-aware Y: most agents - interviewer, planner,
 #                                   implementer, reviewers, fixer, investigator,
-#                                   capture-agent (see case arms and READ_MAP)
+#                                   capture-agent, adr-drafter (see case arms
+#                                   and READ_MAP)
 #   User-aware N + Project-aware Y: health-checker, prototype-identifier,
 #                                   researcher, prototyper  (user_aware=0)
 #   User-aware Y + Project-aware N: visual-verifier, plan-adherence-reviewer,
@@ -45,7 +46,7 @@ fi
 user_aware=1
 case "$subagent_type" in
   # User-aware: yes. Project-aware: depends on READ_MAP.
-  interviewer|planner|plan-challenger|implementer|fixer|investigator|setup-agent|capture-agent)
+  interviewer|planner|plan-challenger|implementer|fixer|investigator|setup-agent|capture-agent|adr-drafter)
     ;;
   requirements-clarifier|reuse-scanner|visual-verifier)
     ;;
@@ -79,8 +80,8 @@ memory_file="$memory_dir/MEMORY.md"
 
 # READ_MAP: per-agent token list resolving to docs/ files.
 # Tokens (lowercase) → INTENT/STACK/GLOSSARY/adr (UPPERCASE filenames, singular adr/).
-# Authoritative source for project-context routing. The reads: field in agent
-# frontmatter is documentation only; the hook ignores it.
+# Single source of truth for project-context routing. Agent files do not carry
+# a reads: field - what runs is what's in this map.
 declare -A READ_MAP=(
   [interviewer]="intent glossary adrs"
   [requirements-clarifier]="intent stack glossary adrs"
@@ -105,6 +106,7 @@ declare -A READ_MAP=(
   [fixer]="stack glossary adrs"
   [investigator]="stack glossary adrs"
   [capture-agent]="intent stack glossary adrs"
+  [adr-drafter]="intent stack glossary adrs"
 )
 
 # Summarize active ADRs as a markdown bullet list. Empty string when nothing

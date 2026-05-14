@@ -111,15 +111,25 @@ Summary cites post-fix gate results.
 
 **M tasks**: aggregate every non-empty `DISCOVERIES` block from this run's upstream agents (implementer was you, but fixer + the broad/specialist reviewers all emit) into `<AGGREGATED_DISCOVERIES>`. Drop blocks where every bucket is `(none)`.
 
+**Fold in clarifier WRITES_PROPOSED.** If Step 3 ran the clarify loop and `<CLARIFY_OUTPUT>` contained a non-empty `WRITES_PROPOSED` block (glossary or adr_candidates), merge those entries into `<AGGREGATED_DISCOVERIES>` under a synthetic `requirements-clarifier` source label.
+
 Launch `capture-agent` (opus) with `<PHASE>: 1`, `<AGGREGATED_DISCOVERIES>`, `<APPROVALS>: n/a`.
 
 Handle `PHASE_RESULT`:
 
 - `complete-empty` → no novel context surfaced. Skip to Step 9.
 - `complete-no-docs-dir` → surface the recommendation to the user ("docs/ not found - run /alp-river:setup if you want captures recorded next time"). Skip to Step 9.
-- `proposal-ready` → present the `PROPOSAL` block to the user. Capture per-item approvals in the format `BUCKET.INDEX: accept | edit: <new text> | reject`. Re-launch `capture-agent` with `<PHASE>: 2`, the same `<AGGREGATED_DISCOVERIES>`, and `<APPROVALS>`. Capture the returned `CAPTURE_REPORT` for Step 9's summary.
+- `proposal-ready` → present the `PROPOSAL` block to the user. Capture per-item approvals:
+  - `glossary` and `adr_candidates`: `accept | edit: <new text> | reject`.
+  - `stack_drift` and `intent_drift`: `accept-as-drift | accept-as-adr | edit: <new text> | reject`. The `accept-as-adr` verb lifts the drift item into the ADR pipeline instead of writing it as a drift bullet.
+  
+  Re-launch `capture-agent` with `<PHASE>: 2`, the same `<AGGREGATED_DISCOVERIES>`, and `<APPROVALS>`. Capture the returned `CAPTURE_REPORT` for Step 9's summary.
 
 Capture-agent always runs on M - never auto-skip. If the agent fails to spawn, treat as "no captures this round" and continue.
+
+**ADR pipeline.** If the Phase 2 output contains a non-empty `ADR_PIPELINE_NEEDED` block, run the **ADR Drafter Loop** (see `AGENTS.md` → ADR Drafter Loop) once per entry. For each entry, fill the loop's input slots from the entry: `<DECISION_TITLE>` and `<DECISION_SUMMARY>` from the entry, `<SOURCE>` from the entry, `<EXTRA_CONTEXT>: none`. On `rejected`, skip to next entry and record the skip in Step 9. On the loop's exit (whether write or reject), continue to the next entry.
+
+Track the count of ADRs written and rejected via the loop; report alongside `CAPTURE_REPORT` totals in Step 9.
 
 ## Step 9: Summary
 
