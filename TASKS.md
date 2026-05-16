@@ -1,80 +1,17 @@
+setup invisible
+
 SWOT assessments
 
-multiple angles - Design It Twice
-
-less to read
+multiple angles
+* multiple prototypes
+* Design It Twice
 
 push for 100% validation for goals
+* TDD
+* other validations
 
-TDD
+XXL --> too big + pushback or explicit treating as XL
 
-complexity worth it?
-```
-Two gates, different questions:
-
-1. Top-level "should we do this at all?" - after `complexity-classifier`, before
-   clarify/plan. Fires only on L|XL. Output asks the user a one-line value-vs-cost
-   prompt with the classifier's REASON inline, e.g.
-     "Classified XL (5+ files, new module). Cost: ~30min planning + full quality
-      gates. Worth it, or scope down? [y / scope down / abandon]"
-   - "y" continues the pipeline
-   - "scope down" loops back to interviewer with a "reduce scope" directive
-   - "abandon" stops cleanly
-   Lives in `/feature` and `/plan` commands. Skip on `/fix` (S|M already cheap).
-
-2. Plan-level scope-vs-value check - new finding category inside
-   `plan-challenger`. Currently it flags per-component over-engineering
-   ("abstractions not justified by requirements"). Add a whole-plan check: does
-   the plan's total surface (file count, new modules, new seams) match the
-   stated intent's leverage? Findings emit as `SCOPE_MISMATCH` alongside
-   existing BLOCKERS/CONCERNS, with a one-line "drop X to land Y" suggestion.
-
-Open: should (1) be a hard gate (block until answered) or soft (show + continue
-after default)? Hard avoids drift, soft preserves flow. Lean hard for XL, soft
-for L.
-```
-
-use Aristotelian first principles reasoning. before you proceed, break every undefined term down to its atomic meaning
-```
-  1e: Aristotelian first principles - where it fits
-
-  Your reddit quote: "use Aristotelian first principles reasoning. before you proceed, break every undefined term down to its atomic 
-  meaning"
-
-  The phrase works because LLM agents drift on fuzzy terms. "Improve the auth", "modernize the dashboard", "clean up X" - the verbs are
-  placeholders for unspecified intent, and downstream agents act on the assumed meaning instead of asking. Decomposition forces the
-  assumption to surface.
-
-  Three places it integrates naturally:
-
-  1. Interviewer (Step 0 Level 2) - highest leverage. Before formulating any question, the interviewer should identify fuzzy terms in
-  <RAW_REQUEST> and <L1_CONFIRMATION>, decompose each to atomic meaning, and surface ambiguity that way. Today interviewer asks "what's
-  the priority trade-off?" - with this, it asks "you said 'improve' - do you mean faster, more secure, more readable, or feature-richer?
-  Each implies different work."
-  2. Clarifier (Step 3) - second leverage point. Same decomposition pattern, applied to <CLARIFY_OUTPUT> candidate questions. If a
-  question contains a fuzzy term, decompose before asking.
-  3. Planner (optional) - decompose "build the X" into atomic actions before sequencing. Catches design assumptions like "build the queue"
-   - one queue per user? Per tenant? Per topic?
-
-  How to phrase in the prompts:
-
-  A dedicated process step early in interviewer and clarifier:
-
-  ▎ Decompose before asking. Identify every fuzzy or jargon-laden term in your inputs. For each, write its atomic meaning. A term 
-  ▎ qualifies as fuzzy when ANY of these hold: (a) two reasonable readings produce materially different work, (b) the term is 
-  ▎ project-specific jargon not in GLOSSARY.md, (c) the term bundles multiple concerns ("improve", "modernize", "clean up") without 
-  ▎ specifying which. Stable code/tech vocabulary (function, repository, endpoint) does not qualify. If decomposition surfaces ambiguity, 
-  ▎ that becomes the question - prefer it over downstream surface questions.
-
-  Risk to manage: "philosophy theater" - long preamble decomposing obvious terms. The qualifier list above is the guardrail. Plus a hard
-  rule: decomposition appears in LOOKUPS_PERFORMED output (the existing slot for showing recon), not as a separate verbose block.
-
-  This pairs naturally with the existing "research first" rule. Decomposition identifies which terms need clarification; research checks
-  if the codebase already answers them; only what remains becomes a question.
-
-  Pair this with the user's other 1e items: recommend-an-answer per question (already planned) + concrete scenario probing +
-  cross-reference user statements against code. The Aristotelian framing slots in at the front of all of them.
-```
 
 investigator: diagnose improvements
 ```

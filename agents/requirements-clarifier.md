@@ -23,7 +23,7 @@ Only ask what genuinely remains open. The main agent loops you until `CLARITY: c
 ## Criteria
 
 - **Research first**: codebase + pre-flight + web recon before any question; report what you checked
-- **Ambiguities**: wording that admits multiple reasonable interpretations
+- **Ambiguities**: wording that admits multiple reasonable interpretations - especially load-bearing words like "fast", "robust", "secure", "scale" that need a concrete threshold before the planner can commit to an approach
 - **Unstated assumptions**: what the request takes for granted that may not hold
 - **Edge cases**: empty/null/huge inputs, concurrency, failure modes, partial states
 - **Conflicting requirements**: internal contradictions, or conflicts with existing code/patterns
@@ -35,7 +35,16 @@ Only report items where a reasonable engineer could build two different valid th
 
 Max 10 items per round, ordered by how much they'd change the plan.
 
+**Auto-promotion eligibility**: any `[unsure]` entry in `ACCEPTANCE_CRITERIA_PROPOSED` or `ASSUMPTIONS_TO_CONFIRM` is eligible for promotion into QUESTIONS by the main agent (using a Confirm/Replace shape: two options labeled `Confirm` with description = the candidate text, and `Replace` with description = "Provide an alternative"). The clarifier itself only lists them in their natural sections; the main agent applies the AGENTS.md 4-cap priority queue.
+
 Questions surface real ambiguity - no confidence tag needed there. Criteria and assumptions carry `[likely]`/`[unsure]`.
+
+## HEADER_GUIDANCE
+
+Each question's `header` must fit within 12 characters. Aim for noun phrases describing the topic. Worked examples:
+- "How should the API treat empty input arrays?" -> `Empty input`
+- "Confirm: returns the bare array, not a wrapped object?" -> `Return shape`
+- "What's the timeout policy for the downstream call?" -> `Timeout`
 
 ## Input
 
@@ -65,9 +74,20 @@ NEW_ASPECTS_FOUND: [yes | no]
 (yes = the latest user answers or your fresh research surfaced something not in PRIOR_ROUNDS, so the loop should continue. no = inputs are stable; safe to exit if CLARITY is clear.)
 
 QUESTIONS:
-1. [category] [question - state both/all plausible interpretations so the user picks]
-2. ...
-(empty if CLARITY is clear AND NEW_ASPECTS_FOUND: no)
+  (structured per Concise Surfacing Contract; max 4 entries)
+  - question: [question text - state both/all plausible interpretations so the user picks]
+    header: [max 12 chars - see HEADER_GUIDANCE below]
+    multiSelect: [true | false]
+    options:
+      - label: [short]
+        description: [load-bearing essence: what choosing this means]
+        preview: [optional best-effort enrichment]
+      - ...
+    (2-4 options per question; CLI handles "Other" - do not synthesize one)
+(empty when CLARITY clear AND NEW_ASPECTS_FOUND: no)
+
+DEFERRED_QUESTIONS:
+  (overflow items beyond the 4-cap; same shape; empty when total <= 4)
 
 ACCEPTANCE_CRITERIA_PROPOSED:
 - [likely] [criterion strongly implied by the request or project context]

@@ -18,7 +18,7 @@ Task: $ARGUMENTS
 **Level 2** (escalate when the user's answer shifts scope, the request has multiple plausible readings, OR restating would require recon): enter the **interview loop**.
 
 - Round 1: Launch `interviewer` with `<RAW_REQUEST>`, `<L1_CONFIRMATION>`, `<PRIOR_ROUNDS>: none`.
-- Each round, read `VERDICT`, `NEW_ASPECTS_FOUND`, `QUESTIONS`. Exit when `confirmed` AND `NEW_ASPECTS_FOUND: no`; capture `<CONFIRMED_INTENT>` and `EXTERNAL_DEPS_FLAG`. Otherwise present QUESTIONS, capture answers, append one-line entries to `<PRIOR_ROUNDS>` (`R{n}.Q{i}: ... | A: ...`), re-launch.
+- Each round, read `LOOKUPS_PERFORMED`, `VERDICT`, `NEW_ASPECTS_FOUND`, `QUESTIONS`, `DEFERRED_QUESTIONS`. Exit when `confirmed` AND `NEW_ASPECTS_FOUND: no`; capture `<CONFIRMED_INTENT>` and `EXTERNAL_DEPS_FLAG`. Otherwise, if QUESTIONS is non-empty (or DEFERRED_QUESTIONS carried open items from prior rounds), apply the AGENTS.md Concise Surfacing Contract 4-cap priority queue and invoke `AskUserQuestion` with the resulting items. Do not emit a numbered prose list. Capture answers, append one-line entries to `<PRIOR_ROUNDS>` (`R{n}.Q{i}: ... | A: ...`), thread any unanswered DEFERRED_QUESTIONS into the next round's `<PRIOR_ROUNDS>`, re-launch.
 - Cap: 5 rounds. At the cap, present the latest state and ask the user to confirm explicitly or reshape.
 
 The interview loop is free - does NOT count toward the backward-edge budget. Most fix-sized tasks stay at Level 1.
@@ -55,7 +55,7 @@ Apply reuse-scanner QUICK_WINS when they fit the radius and budget.
 If the pre-flight results leave material ambiguities, enter the **clarify loop**.
 
 - Round 1: Launch `requirements-clarifier` with `<CONFIRMED_INTENT>`, `<CLASSIFICATION>`, `<PREFLIGHT>`, `<PRIOR_ROUNDS>: none`.
-- Each round, read `CLARITY`, `NEW_ASPECTS_FOUND`, `QUESTIONS`, `ACCEPTANCE_CRITERIA_PROPOSED`, `ASSUMPTIONS_TO_CONFIRM`, `SCOPE_SHIFT`. Exit when `clear` AND `NEW_ASPECTS_FOUND: no`; capture `<CLARIFY_OUTPUT>`. On `blocked`, surface to the user. Otherwise present the items, wait for answers, append one-line entries to `<PRIOR_ROUNDS>` (`R{n}.Q{i}: ... | A: ...`), re-launch.
+- Each round, read `LOOKUPS_PERFORMED`, `CLARITY`, `NEW_ASPECTS_FOUND`, `QUESTIONS`, `DEFERRED_QUESTIONS`, `ACCEPTANCE_CRITERIA_PROPOSED`, `ASSUMPTIONS_TO_CONFIRM`, `SCOPE_SHIFT`. Exit when `clear` AND `NEW_ASPECTS_FOUND: no`; no separate confirmation step - criteria were settled through the loop. Capture `<CLARIFY_OUTPUT>`. On `blocked`, surface to the user. Otherwise, apply the AGENTS.md Concise Surfacing Contract 4-cap priority queue across QUESTIONS + [unsure] criteria + [unsure] assumptions; invoke `AskUserQuestion` with the resulting items. Surface `[likely]` ACCEPTANCE_CRITERIA_PROPOSED and `[likely]` ASSUMPTIONS_TO_CONFIRM inline as one-line confirmations above the picker. Capture answers, append one-line entries to `<PRIOR_ROUNDS>` (`R{n}.Q{i}: ... | A: ...`), thread DEFERRED_QUESTIONS forward, re-launch.
 - Cap: 5 rounds. At the cap, present the latest state and ask the user to confirm explicitly or reshape.
 
 Skip the loop entirely when the task is clear from pre-flight alone. The clarify loop is free - does NOT count toward the backward-edge budget.

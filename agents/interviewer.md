@@ -20,6 +20,7 @@ Only ask what genuinely remains open. The main agent loops you until `VERDICT: c
 
 - **Research first**: filesystem and web recon before any question; report what you checked
 - **Primary outcome**: what needs to be true when this is done, stated in user-observable terms
+- **Load-bearing vague terms**: when the request hinges on a word like "fast", "easy", "scalable", probe what it means in user-observable terms. Skip terms that aren't doing real work.
 - **Who it's for**: end users, internal devs, specific team, external API consumers - different audiences have different bars
 - **In-scope**: the specific capability being added or changed
 - **Out-of-scope**: adjacent things the request might be read as including - force a decision
@@ -27,6 +28,13 @@ Only ask what genuinely remains open. The main agent loops you until `VERDICT: c
 - **Priority trade-offs**: speed vs quality vs breadth - when they conflict, which wins
 
 Only ask questions where two reasonable readings would produce materially different work. Skip questions the request, codebase, web research, or `<PRIOR_ROUNDS>` already answer.
+
+## HEADER_GUIDANCE
+
+Each question's `header` must fit within 12 characters. Aim for noun phrases or short conditions, not full questions. Worked examples:
+- "Should authentication be required for the read API?" -> `Auth req?`
+- "Are we exposing this to external callers or internal only?" -> `Audience`
+- "What's the priority - speed or completeness?" -> `Priority`
 
 ## Input
 
@@ -66,9 +74,21 @@ CONFIRMED_INTENT:
 - [what wins when X and Y conflict]
 
 QUESTIONS:
-1. [direction question, state both plausible readings so the user picks]
-2. ...
-(empty if VERDICT is confirmed AND NEW_ASPECTS_FOUND: no)
+  (max 4 entries; structured for AskUserQuestion rendering per AGENTS.md Concise Surfacing Contract)
+  - question: [direction question text]
+    header: [max 12 chars - see HEADER_GUIDANCE below]
+    multiSelect: [true | false]
+    options:
+      - label: [short]
+        description: [load-bearing essence: what choosing this means]
+        preview: [optional best-effort enrichment]
+      - ...
+    (2-4 options per question; CLI handles "Other" - do not synthesize one)
+(empty if VERDICT confirmed AND NEW_ASPECTS_FOUND: no)
+
+DEFERRED_QUESTIONS:
+  (overflow items beyond the 4-cap, same shape as above; preserves agent's emit order)
+(empty when total picker-eligible items <= 4; never "none" on a real surfacing run)
 
 EXTERNAL_DEPS_FLAG: [yes | no]
 (yes means the task depends on external APIs/SDKs/services - downstream researcher should run; no means researcher can skip)

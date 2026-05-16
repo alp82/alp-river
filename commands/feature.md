@@ -21,9 +21,9 @@ Feature request: $ARGUMENTS
 
 - Round 1: Launch `interviewer` with `<RAW_REQUEST>`, `<L1_CONFIRMATION>`, `<PRIOR_ROUNDS>: none`.
 - Each round:
-  - Read `LOOKUPS_PERFORMED`, `VERDICT`, `NEW_ASPECTS_FOUND`, and `QUESTIONS` from the output.
+  - Read `LOOKUPS_PERFORMED`, `VERDICT`, `NEW_ASPECTS_FOUND`, `QUESTIONS`, and `DEFERRED_QUESTIONS` from the output.
   - If `VERDICT: confirmed` AND `NEW_ASPECTS_FOUND: no` → exit. Capture the final `<CONFIRMED_INTENT>` block and `EXTERNAL_DEPS_FLAG`.
-  - Otherwise → present QUESTIONS to the user, capture answers, append a one-line entry per Q&A to `<PRIOR_ROUNDS>` (format: `R{n}.Q{i}: ... | A: ...`), re-launch `interviewer` with the updated `<PRIOR_ROUNDS>`.
+  - Otherwise → if QUESTIONS is non-empty (or DEFERRED_QUESTIONS carried open items from prior rounds), apply the AGENTS.md Concise Surfacing Contract 4-cap priority queue and invoke `AskUserQuestion` with the resulting items. Do not emit a numbered prose list. Capture user answers, append `R{n}.Q{i}: ... | A: ...` per Q&A to `<PRIOR_ROUNDS>`, thread any unanswered DEFERRED_QUESTIONS into the next round's `<PRIOR_ROUNDS>`, re-launch `interviewer` with the updated `<PRIOR_ROUNDS>`.
 - Cap: 5 rounds. At the cap, present the latest CONFIRMED_INTENT and remaining QUESTIONS to the user, ask them to confirm explicitly or reshape the request, and proceed only on explicit confirmation.
 
 The interview loop is free - does NOT count toward the backward-edge budget.
@@ -36,6 +36,38 @@ Launch `complexity-classifier`:
 If COMPLEXITY is S or M: tell the user "this classifies as S/M - re-run under `/fix` for the lighter pipeline." Then **STOP** this command.
 
 If COMPLEXITY is L or XL: continue.
+
+### Gate 1: Pre-plan cost check (L/XL)
+
+<!-- Gate 1 exclusion: Gate 1 stays as prose (binary continue/abandon decision tied to cost confirmation). AskUserQuestion would add friction for a single-keystroke choice. See AGENTS.md Concise Surfacing Contract. -->
+
+<!-- Keep this block in sync with the matching gate block in the other command file (feature.md <-> plan.md). Edit both together. -->
+
+After the classifier (or re-classifier) lands at L or XL **for the first time in this run**, pause before continuing to pre-flight (or, on re-classify, to Step 4).
+
+Initialize on first fire: `<SCOPE_DOWN_COUNT> = 0`. Threaded through subsequent gate fires in this run.
+
+**If `<SCOPE_DOWN_COUNT> < 2`**, prompt the user with one of:
+
+- L: `This classifies as L: <REASON>. Worth it? [continue (default) / scope down / abandon] (scope-down cycles used: <SCOPE_DOWN_COUNT>/2)`
+- XL: `This classifies as XL: <REASON>. Worth it? [continue / scope down / abandon] (scope-down cycles used: <SCOPE_DOWN_COUNT>/2)`
+
+Interpret user input:
+- **L**: bare Enter / empty / `y` / `yes` / `continue` -> continue.
+- **XL**: any continue requires an explicit affirmative word (`y` / `yes` / `continue`); bare Enter is **not** a default - re-prompt instead.
+- `scope down` / `scope-down` / `narrow` / `smaller` -> ask:
+  > Ok, restating with narrower scope. What part of the work do you want to drop or postpone?
+
+  Take the user's reply, increment `<SCOPE_DOWN_COUNT>`, feed the reply as the new `<RAW_REQUEST>` into Step 0 Level 1 restatement, and run the normal intent loop. After re-classify, this gate fires again with the updated counter.
+- `abandon` / `n` / `no` / `stop` / `quit` -> stop the command; emit no `<!-- pipeline-complete -->`.
+
+**If `<SCOPE_DOWN_COUNT> >= 2` (cap reached)**, prompt with the locked wording:
+
+`Scope-down limit reached. Classified <tier>: <REASON>. Worth it? [continue / abandon]`
+
+(No `scope down` option.) Interpret: continue word -> proceed. Abandon word -> stop.
+
+Gate 1 cycles are **free** - they do not count toward the backward-edge budget.
 
 ## Step 2: Pre-flight (parallel)
 
@@ -62,10 +94,10 @@ Enter the **clarify loop**.
 
 - Round 1: Launch `requirements-clarifier` with `<CONFIRMED_INTENT>`, `<CLASSIFICATION>`, `<PREFLIGHT>` (reuse/health/prototypes/research), `<PRIOR_ROUNDS>: none`.
 - Each round:
-  - Read `LOOKUPS_PERFORMED`, `CLARITY`, `NEW_ASPECTS_FOUND`, `QUESTIONS`, `ACCEPTANCE_CRITERIA_PROPOSED`, `ASSUMPTIONS_TO_CONFIRM`, `SCOPE_SHIFT` from the output.
-  - If `CLARITY: clear` AND `NEW_ASPECTS_FOUND: no` → confirm the proposed acceptance criteria with the user, then exit. Capture `<CLARIFY_OUTPUT>`.
+  - Read `LOOKUPS_PERFORMED`, `CLARITY`, `NEW_ASPECTS_FOUND`, `QUESTIONS`, `DEFERRED_QUESTIONS`, `ACCEPTANCE_CRITERIA_PROPOSED`, `ASSUMPTIONS_TO_CONFIRM`, `SCOPE_SHIFT` from the output.
+  - If `CLARITY: clear` AND `NEW_ASPECTS_FOUND: no` → exit. No separate confirmation step - criteria were settled through the loop. Capture `<CLARIFY_OUTPUT>`.
   - If `CLARITY: blocked` → surface to the user; recommend reshaping. Stop the loop.
-  - Otherwise → present QUESTIONS, ACCEPTANCE_CRITERIA_PROPOSED, ASSUMPTIONS_TO_CONFIRM as a numbered list. **Wait for answers.** Append one-line entries per Q&A to `<PRIOR_ROUNDS>` (format: `R{n}.Q{i}: ... | A: ...`), re-launch with the updated `<PRIOR_ROUNDS>`.
+  - Otherwise → apply the AGENTS.md Concise Surfacing Contract 4-cap priority queue across QUESTIONS + [unsure] criteria + [unsure] assumptions; invoke `AskUserQuestion` with the resulting items. Surface `[likely]` ACCEPTANCE_CRITERIA_PROPOSED and `[likely]` ASSUMPTIONS_TO_CONFIRM inline as one-line confirmations above the picker (no picker needed - they're not in doubt). Capture answers, append Q&A entries per Q&A to `<PRIOR_ROUNDS>` (format: `R{n}.Q{i}: ... | A: ...`), thread DEFERRED_QUESTIONS forward, re-launch with the updated `<PRIOR_ROUNDS>`.
 - Cap: 5 rounds. At the cap, present the latest state and ask the user to confirm explicitly or reshape; proceed only on explicit confirmation.
 
 The clarify loop is free - does NOT count toward the backward-edge budget.
@@ -78,6 +110,8 @@ If `SCOPE_MOVED: yes`:
 - **Down** → keep current-tier gates, note downgrade, don't retract any step already executed.
 
 **Counts as one backward edge.**
+
+**Re-fire Gate 1**: if re-classify lands at L or XL AND Gate 1 has not yet fired in this run at L/XL (covers M->L/XL upgrade only - dormant in /feature in practice since Step 1 stops on S/M, kept for symmetry with /plan), fire the same Gate 1 block from Step 1 here, before continuing to Step 4. Use the current `<SCOPE_DOWN_COUNT>`. A scope-down here also re-enters Step 0 with the new RAW_REQUEST.
 
 ## Step 4: Plan
 
@@ -96,9 +130,7 @@ Launch `plan-challenger`:
 On XL, challenger reviews **all** approaches, then the recommendation.
 
 Handle VERDICT:
-- `approve` → present plan + BLOCKERS + CONCERNS + SIMPLER_ALTERNATIVE to the user, wait for approval.
-- `revise` → rerun planner with `<REPLAN_REASON>` = BLOCKERS. Capture new `<APPROVED_PLAN version="2">`. **Counts as one backward edge.**
-- `reject` → reinterview (back to Step 0). **Counts as one backward edge.** Inform the user why.
+- On VERDICT `approve`: surface BLOCKERS (one line each) and SCOPE_MISMATCH (when not "none") inline as advisory notes, then invoke `AskUserQuestion` with the challenger's `CHALLENGE_QUESTIONS` (Approve/Revise/Reshape). Map the user's selection per AGENTS.md Concise Surfacing Contract: Approve → proceed to Step 6; Revise → rerun planner with `<REPLAN_REASON>` = BLOCKERS, capture next APPROVED_PLAN version, counts as one backward edge; Reshape → reinterview from Step 0, counts as one backward edge (equivalent to challenger reject path).
 
 If backward-edge budget is at 2 and challenger still returns `revise`/`reject`: stop, surface state to the user.
 

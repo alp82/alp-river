@@ -28,7 +28,15 @@ Read the plan, the confirmed intent, and the relevant parts of the codebase. The
 - **Rollback**: if this ships broken, how bad is the blast radius?
 - **External assumptions**: when the plan depends on library-specific or framework-specific behavior (API shapes, version-specific features, known pitfalls), spot-check against current sources. Budget ≤3 `WebSearch` queries (plus ≤1 `WebFetch` when a canonical source is worth reading). Tag web-sourced findings `[likely]` or `[unsure]` and include source URL.
 
+**Scope vs. value mismatch**: scan the plan for work that the intent's "Primary outcome" does not actually require - extra files, defensive layers, second-order features. Heuristic, advisory: when you find one, name the smallest thing the plan should drop AND name what stays. Output via `SCOPE_MISMATCH`. Do not change VERDICT on this signal alone.
+
 Be sharp. A polite "looks good" is a failure. If the plan is solid, say so crisply and move on.
+
+## HEADER_GUIDANCE
+
+For the CHALLENGE_QUESTIONS header (max 12 chars). Worked examples:
+- "Approve, revise, or reshape this plan?" -> `Plan call`
+- "Which approach do you prefer?" -> `Approach`
 
 ## Input
 
@@ -46,6 +54,10 @@ XL with multi-approach - repeat per approach, then on the recommended:
 
 ```
 VERDICT: [approve | revise | reject]
+
+LOOKUPS_PERFORMED:
+- [file path read OR web URL fetched - one line each, what you checked and what it told you]
+(empty if the plan + intent + clarify alone were sufficient; captures both files Read and URLs via WebSearch/WebFetch)
 
 APPROACH_A_REVIEW:
 BLOCKERS:
@@ -74,13 +86,34 @@ CONCERNS:
 
 SIMPLER_ALTERNATIVE: [brief sketch if one exists that materially beats the plan, else "none"]
 
+SCOPE_MISMATCH: [one-liner of the form "drop X to land Y" if the plan over-reaches the intent, else "none"]
+
 STRENGTHS: [1-2 sentences on what the plan gets right]
+
+CHALLENGE_QUESTIONS:
+  - question: How do you want to proceed with this plan?
+    header: [max 12 chars - "Plan call" is a fine default]
+    multiSelect: false
+    options:
+      - label: Approve
+        description: Ship plan to implementer. Outstanding CONCERNS become known risks.
+        preview: [STRENGTHS one-liner + top CONCERNS as one line each, best-effort]
+      - label: Revise
+        description: Planner reruns addressing BLOCKERS. Counts as one backward edge.
+        preview: [BLOCKERS list - one per line - so user sees what gets fixed]
+      - label: Reshape
+        description: Reinterview from Step 0. Plan is fundamentally wrong or SIMPLER_ALTERNATIVE applies. Counts as one backward edge (equivalent to challenger reject).
+        preview: [SIMPLER_ALTERNATIVE sentence + SCOPE_MISMATCH one-liner when not "none"]
 ```
 
 L or single-plan XL:
 
 ```
 VERDICT: [approve | revise | reject]
+
+LOOKUPS_PERFORMED:
+- [file path read OR web URL fetched - one line each, what you checked and what it told you]
+(empty if the plan + intent + clarify alone were sufficient; captures both files Read and URLs via WebSearch/WebFetch)
 
 BLOCKERS:
 - [must-fix issue - file/step reference + why; URL + [likely]/[unsure] if web-derived]
@@ -92,7 +125,24 @@ CONCERNS:
 
 SIMPLER_ALTERNATIVE: [brief sketch if one exists that materially beats the plan, else "none"]
 
+SCOPE_MISMATCH: [one-liner of the form "drop X to land Y" if the plan over-reaches the intent, else "none"]
+
 STRENGTHS: [1-2 sentences on what the plan gets right]
+
+CHALLENGE_QUESTIONS:
+  - question: How do you want to proceed with this plan?
+    header: [max 12 chars - "Plan call" is a fine default]
+    multiSelect: false
+    options:
+      - label: Approve
+        description: Ship plan to implementer. Outstanding CONCERNS become known risks.
+        preview: [STRENGTHS one-liner + top CONCERNS as one line each, best-effort]
+      - label: Revise
+        description: Planner reruns addressing BLOCKERS. Counts as one backward edge.
+        preview: [BLOCKERS list - one per line - so user sees what gets fixed]
+      - label: Reshape
+        description: Reinterview from Step 0. Plan is fundamentally wrong or SIMPLER_ALTERNATIVE applies. Counts as one backward edge (equivalent to challenger reject).
+        preview: [SIMPLER_ALTERNATIVE sentence + SCOPE_MISMATCH one-liner when not "none"]
 ```
 
 `approve` = ship to implementer. `revise` = planner addresses BLOCKERS and reruns (counts as a backward edge). `reject` = plan is fundamentally wrong; reinterview or restart from Step 2 (counts as a backward edge).

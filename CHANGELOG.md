@@ -2,31 +2,29 @@
 
 All notable changes to alp-river. Versions match `.claude-plugin/plugin.json`.
 
-## 0.2.1 - 2026-05-16
+## 0.2.3 - 2026-05-17
 
-**A new reviewer asks whether each abstraction is earning its keep.** Shallow wrappers, single-call modules, premature seams, and leaky interfaces now have an owner: architecture-reviewer. It mentally inlines each module at its callers - if the inlined code is cleaner, the module fails the deletion test and gets flagged.
+Intent, clarify, and plan-critique rounds in `/feature`, `/fix`, and `/plan` now ask via a picker instead of dumping prose inline. Each option's description tells you what picking it does; the agent's recon stays in the transcript.
 
-Quality-reviewer used to catch shallow wrappers under "bloat" and structure-reviewer used to flag leaky abstractions under "boundaries" - both blurry. Those concerns moved to architecture-reviewer, leaving quality on tool / altitude / elegance and structure on size / nesting / layer crossings. Each finding now has one clear home.
+## 0.2.2 - 2026-05-16
 
-Architecture-reviewer fires in the specialist pass when touched files introduce new exports, wrappers, or seams, or when the broad pass surfaces abstraction shape.
+Before big jobs start, `/feature` and `/plan` now pause to ask if the work is worth doing. Three answers: keep going, narrow the scope, or drop it. The plan critic also speaks up when a plan reaches farther than the goal actually needs, with a one-line "drop X to land Y" hint.
 
-## 0.2.0 - 2026-05-16
+## 0.2.1 - 2026-05-15
 
-**Subagents pick up your project's intent, stack, glossary, and ADRs, and capture what they noticed in passing.**
+New architecture-reviewer flags shallow wrappers, single-call modules, premature seams, and leaky interfaces via the deletion test. Quality-reviewer narrows to tool / altitude / elegance; structure-reviewer narrows to size / nesting / layer crossings - one clear owner per finding.
 
-Drop the four files into `docs/` and every agent that needs them reads them automatically - planners stop suggesting libraries you've already ruled out, reviewers stop renaming concepts you've already named, new work stops relitigating settled decisions. Templates ship in `templates/`; copy what you want, fill in the gaps, ignore the rest. `/alp-river:setup` writes those files for you interview-style, with recommendations drawn from the codebase. Existing docs are merged, not overwritten.
+## 0.2.0 - 2026-05-10
 
-Reviewers, the implementer, the fixer, and the investigator now jot down anything novel that crossed their path during a run - terms that should be canonical, drift from the declared stack or intent. At the end of the pipeline you get a list, pick what to keep, and the survivors land in `docs/` automatically. Nothing scaffolds itself; if `docs/` doesn't exist yet, you get a nudge to run `/alp-river:setup` first.
+Subagents read your project's intent, stack, glossary, and ADRs from `docs/` automatically - planners stop suggesting ruled-out libraries, reviewers stop renaming named concepts. `/alp-river:setup` bootstraps those docs interview-style; templates ship in `templates/`.
 
-Architectural decisions get their own deliberate entrypoint: `/alp-river:adr` takes a title and a one-line summary and produces a fully-resolved draft you can accept, edit, or reject before it lands. Duplicates of active ADRs get rejected before any file is written.
+Reviewers and the implementer record novel terms and stack/intent drift during a run; at the end you pick what to keep. `/alp-river:adr` drafts a single decision record from a title + summary, rejecting duplicates of active ADRs.
 
-Smaller fixes that landed alongside: accessibility-reviewer no longer receives user preferences (its job is the WCAG checklist, not what you prefer), and the per-agent context wiring lives in one place (`hooks/user-context-injector.sh`) instead of being duplicated across agent frontmatter and a doctrine table.
+Smaller: accessibility-reviewer no longer receives user preferences (WCAG only); per-agent context wiring consolidated to one hook.
 
 ## 0.1.5 - 2026-05-02
 
-**`/compact` doesn't reset you anymore.** After compacting, the rules and your in-progress work (intent, classification, plan) are still there. Was supposed to work since 0.1.0 but quietly didn't.
-
-**No more weird Step 3 → Step 5 gaps.** The old Step 4 was a rare conditional that mostly didn't fire, leaving a visible gap when you watched the pipeline run. It's now part of Step 3, so the steps go 0, 1, 2, 3, 4... in order.
+`/compact` no longer resets in-progress work - rules, intent, classification, and plan all persist (was meant to work since 0.1.0; quietly didn't). Pipeline steps also read sequentially now: the old Step 4 was a rare conditional that left a visible gap; folded into Step 3.
 
 ## 0.1.4 - 2026-05-02
 
@@ -36,12 +34,11 @@ Smaller fixes that landed alongside: accessibility-reviewer no longer receives u
 
 ## 0.1.3 - 2026-05-02
 
-**Code review now runs in two passes:**
+Code review runs in two passes now:
+- **Correctness**: bugs, type holes, dead code, convention violations.
+- **Quality**: hacky shortcuts, bloat, wrong tool for the job.
 
-- **Correctness asks: *does this work?*** Bugs, type holes, dead code, convention violations.
-- **Quality asks: *is this the right way?*** The senior-engineer pass. Catches hacky shortcuts when a clean path was right there (parsing CLI output when an SDK is already imported), bloat (config knobs nothing reads, defensive code for cases that can't happen), and reinvention (rolling your own when the stdlib does it).
-
-Splitting them this way stops one from softening the other.
+Splitting them stops one from softening the other.
 
 ## 0.1.2 - 2026-05-02
 

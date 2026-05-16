@@ -84,12 +84,14 @@ Phases: Understand (0-1) → Prepare (2-3) → Design (4-5) → Build (6) → Ve
 Before classification, confirm direction - a misread request misclassifies every gate downstream.
 
 - **Level 1 (always)**: Main agent restates the **outcome** the user wants - what needs to be true when this is done, in user-observable terms. Keep it concise; clarity wins over brevity, so use a couple of sentences, a small ASCII diagram, or a brief example if that lands the point better than prose. **No file paths, schema fields, function names, API routes, or component names** - those are implementation details that belong in the plan, not the intent. If you can't restate without naming specifics, you've over-interpreted; pull back to the goal. **Main agent stays text-only - no codebase reads, no web lookups.** Wait for user confirmation.
-- **Level 2 (escalate when request has multiple readings, Level 1 answer shifts scope, OR restating would require recon)**: enter the **interview loop**. Launch `interviewer` (opus) to research the target area (filesystem + web when relevant), then probe scope, users, success criteria, and priority trade-offs. Each round, present QUESTIONS to the user, capture answers, append to `<PRIOR_ROUNDS>`, re-launch. Exit when `VERDICT: confirmed` AND `NEW_ASPECTS_FOUND: no`. Cap at 5 rounds - at the cap, present the latest direction and ask the user to confirm or reshape.
+- **Level 2 (escalate when request has multiple readings, Level 1 answer shifts scope, OR restating would require recon)**: enter the **interview loop**. Launch `interviewer` (opus) to research the target area (filesystem + web when relevant), then probe scope, users, success criteria, and priority trade-offs. Each round, present QUESTIONS to the user, capture answers, append to `<PRIOR_ROUNDS>`, re-launch. Exit when `VERDICT: confirmed` AND `NEW_ASPECTS_FOUND: no`. Cap at 5 rounds - at the cap, present the latest direction and ask the user to confirm or reshape. Rendering follows the Concise Surfacing Contract.
 
 Emit `<CONFIRMED_INTENT>` - every downstream agent reads it.
 
 ### Step 1: Classify
 Launch `complexity-classifier` (opus) with `<CONFIRMED_INTENT>`. Output `<CLASSIFICATION>` with COMPLEXITY (S|M|L|XL) + REASON. Gates which downstream steps run.
+
+**Pre-plan cost check (Gate 1) on L/XL**: after classification lands at L or XL (initial pass or re-classify upgrade from M), the main agent pauses and asks `Worth it? [continue / scope down / abandon]`. L treats bare Enter as continue; XL requires an explicit word. `scope down` asks the user what to drop, feeds the answer back as a new RAW_REQUEST through Step 0, and counts against a per-task cap of 2 cycles (counter rendered in the prompt). At the cap, the prompt drops the scope-down option and offers only continue / abandon. Gate 1 cycles are free - not backward edges. The canonical prompt block lives in `commands/feature.md` Step 1 and `commands/plan.md` Step 1 (kept verbatim in sync).
 
 ### Step 2: Pre-flight (M/L/XL)
 Parallel fan-out on the confirmed scope:
@@ -102,7 +104,7 @@ Parallel fan-out on the confirmed scope:
 **Prototype gate**: launch `prototyper` (sonnet) if flagged, writing to `.prototypes/`.
 
 ### Step 3: Clarify (L/XL; M when ambiguity remains after pre-flight)
-Enter the **clarify loop**. Launch `requirements-clarifier` (opus) with intent + pre-flight outputs. Surface QUESTIONS, ACCEPTANCE_CRITERIA_PROPOSED, ASSUMPTIONS_TO_CONFIRM as a numbered list. Wait for user answers, append to `<PRIOR_ROUNDS>`, re-launch. Exit when `CLARITY: clear` AND `NEW_ASPECTS_FOUND: no`. Cap at 5 rounds - at the cap, present the latest state and ask the user to confirm or reshape. Emit `<CLARIFY_OUTPUT>`.
+Enter the **clarify loop**. Launch `requirements-clarifier` (opus) with intent + pre-flight outputs. Each round, apply the Concise Surfacing Contract 4-cap priority queue across QUESTIONS + [unsure] criteria + [unsure] assumptions; invoke `AskUserQuestion` with the resulting items. Thread DEFERRED_QUESTIONS forward. Append answers to `<PRIOR_ROUNDS>`, re-launch. Exit when `CLARITY: clear` AND `NEW_ASPECTS_FOUND: no`. Cap at 5 rounds - at the cap, present the latest state and ask the user to confirm or reshape. Emit `<CLARIFY_OUTPUT>`.
 
 The clarifier also emits `WRITES_PROPOSED` (glossary terms) on exit when the round settled canonical names. The clarifier itself never writes - on `/alp-river:feature` and `/alp-river:fix` the main agent merges these into Step 10's aggregated discoveries; on `/alp-river:plan` they surface as info only.
 
@@ -117,7 +119,9 @@ Launch `plan-challenger` (opus). XL challenges **all** approaches (not just the 
 - `revise` → planner rerun with BLOCKERS (**backward edge**)
 - `reject` → reinterview (**backward edge**)
 
-Present plan + BLOCKERS + CONCERNS + SIMPLER_ALTERNATIVE. Wait for user approval.
+Surface BLOCKERS + SCOPE_MISMATCH inline; render CHALLENGE_QUESTIONS via AskUserQuestion (Concise Surfacing Contract).
+
+Optional `SCOPE_MISMATCH` slot - one-liner "drop X to land Y" when the plan reaches farther than the intent's primary outcome needs. Heuristic, advisory; does not change VERDICT. Shown alongside plan to the user for an informed call.
 
 ### Step 6: Implement
 - **S/M**: main agent implements directly (M draws on pre-flight + clarify).
@@ -224,6 +228,60 @@ Step 0 Level 2 (interviewer) and Step 3 (clarifier) run as loops, not single pas
 **Research first**: before formulating questions in any round, the agent exhausts filesystem (Glob/Grep/Read), prior pre-flight findings, and web sources when the request mentions external surface. It reports what it checked in `LOOKUPS_PERFORMED`. If the codebase or research already answers a candidate question, drop it.
 
 **Loops are free**: clarification loops refine intent within a step. They do NOT count toward the backward-edge budget.
+
+## Concise Surfacing Contract
+
+**Purpose**: Inline prose stays only for decisions. Multi-option choices render through `AskUserQuestion` so reasoning lives in `description`/`preview` instead of inline prose. Recon notes and round-over-round restatements still exist in the subagent output - the user opens them on demand by scrolling the transcript.
+
+**In scope**: Step 0 Level 2 (interviewer), Step 3 (clarifier), Step 5 (plan-challenger).
+
+**Out of scope** (each excluded for a reason):
+- **Step 0 Level 1**: stays plain text. Single-sentence restate; a picker would add ceremony for what's essentially confirm/correct.
+- **Step 4**: emits `<APPROVED_PLAN>` as a text readback only - no picker. The user decides once at Step 5.
+- **Gate 1 cost check**: stays prose. Binary continue/abandon decision tied to a single-keystroke confirmation; `AskUserQuestion` would add friction.
+- **Pre-flight agents**: unchanged. Not user-facing.
+- **Post-impl reviewers**: unchanged.
+
+**MUST-render rule**: when the main agent has just received output from `interviewer`, `requirements-clarifier`, or `plan-challenger`, AND any of the following would otherwise render as a prose list -
+- non-empty `QUESTIONS`
+- still-open items in `PRIOR_ROUNDS`-tracked `DEFERRED_QUESTIONS`
+- promoted `[unsure]` criteria or assumptions (clarifier only)
+- non-empty `CHALLENGE_QUESTIONS` (challenger only)
+
+- the main agent MUST invoke `AskUserQuestion` instead of emitting a numbered prose list. When all of those are empty AND the agent's exit criteria hold, the main agent proceeds without prompting. Single-question single-select auto-submits per `AskUserQuestion` CLI behavior - that is expected.
+
+**Question schema** (carried by interviewer/clarifier `QUESTIONS` items and challenger `CHALLENGE_QUESTIONS` items):
+- `question` (text)
+- `header` (max 12 chars)
+- `multiSelect` (true | false)
+- `options` (2-4 entries; each has `label`, `description`, optional `preview`)
+
+**Description vs. preview**: `description` carries the essence - what choosing this means and its consequence. It is load-bearing; the user can decide from it alone. `preview` is enrichment, best-effort; the host CLI may strip it when `toolConfig.askUserQuestion.previewFormat` is unset. Never put load-bearing content in `preview`.
+
+**No agent-side "Other"**: the CLI surfaces an "Other" free-text escape automatically. Agents MUST NOT synthesize their own "Other" option.
+
+**4-question cap + DEFERRED priority queue**: `AskUserQuestion` accepts 1-4 questions per call. When upstream output produces more than 4 picker-eligible items, the main agent fills the 4 slots in this priority order and rolls the rest into `DEFERRED_QUESTIONS`:
+1. Genuine open `QUESTIONS` in the order the agent emitted them (clarifier orders by plan-change impact; interviewer orders by direction impact).
+2. `[unsure]` items from `ACCEPTANCE_CRITERIA_PROPOSED`, in their original list order (each becomes a Confirm/Replace shape).
+3. `[unsure]` items from `ASSUMPTIONS_TO_CONFIRM`, in their original list order (each becomes Confirm/Replace).
+
+Walk this priority queue top-to-bottom; remainder goes to `DEFERRED_QUESTIONS` preserving the same order. Deterministic and re-runnable. On rounds where `QUESTIONS` already fills all 4 slots, `[unsure]` items defer entirely - acceptable trade-off; the loop will surface them on a later round.
+
+**DEFERRED_QUESTIONS round-trip**:
+- **Clarifier**: `DEFERRED_QUESTIONS` lives **inside** `<CLARIFY_OUTPUT>` so the SessionStart re-injector preserves it across compaction.
+- **Interviewer**: `DEFERRED_QUESTIONS` is a top-level sibling of `QUESTIONS` (interviewer output has no wrapper today; adding one is out of scope). Compaction during the intent loop will lose interviewer `DEFERRED_QUESTIONS`. Accepted trade-off - Step 0 L2 rounds are short; the agent re-asks anyway.
+- The main agent threads still-open `DEFERRED_QUESTIONS` items into the next round's `<PRIOR_ROUNDS>` so the subagent can resurface them.
+
+**HEADER_GUIDANCE**: each covered subagent file carries its own `HEADER_GUIDANCE` worked examples (max 12 chars per header). The agent must produce a header that fits the cap; truncated headers signal a too-broad question.
+
+**SCOPE_MISMATCH surfacing**: the plan-challenger's `SCOPE_MISMATCH` field is preserved. Surfaced inline as a single-line advisory alongside `BLOCKERS` at Step 5. Also folded into the Reshape option's `preview` in `CHALLENGE_QUESTIONS` so the user sees the "drop X to land Y" framing in context.
+
+**Reshape == challenger `reject` for backward-edge accounting**: Step 4 has no picker. Reshape exists only at Step 5 in `CHALLENGE_QUESTIONS`. Selecting Reshape IS the `reject` path - reinterview to Step 0, counts as one backward edge per the Backward-Edge Budget section below. No new source of backward edges.
+
+**Mapping Approve/Revise/Reshape to existing branches**:
+- **Approve** -> proceed to Step 6.
+- **Revise** -> rerun planner with `<REPLAN_REASON>` = `BLOCKERS`; one backward edge.
+- **Reshape** -> reinterview from Step 0; one backward edge (equivalent to challenger `reject`).
 
 ## Backward-Edge Budget
 
