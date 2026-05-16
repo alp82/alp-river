@@ -10,13 +10,11 @@ The whole pipeline ships in one folder. Doctrine, 31 subagents, 8 slash commands
 
 ## Latest updates
 
+The last three versions:
+
 - **0.2.3: pre-plan questions become a picker** - Intent, clarify, and plan-critique rounds in `/feature`, `/fix`, and `/plan` ask via picker options. The agent's working notes stay in the transcript instead of dumped inline.
 - **0.2.2: cost checks before big jobs, and a sharper plan critic** - `/feature` and `/plan` pause on L and XL to ask if the work is worth doing - keep going, narrow scope, or drop it. The plan critic also calls out plans that reach farther than the goal needs, with a one-line "drop X to land Y" hint.
 - **0.2.1: architecture-reviewer joins the specialist pass** - Flags shallow wrappers, single-call modules, premature seams, and leaky interfaces via the deletion test. Quality narrows to tool / altitude / elegance, structure to size / nesting / layer crossings.
-- **0.2.0: project context loads automatically, novel findings get captured, ADRs get a drafter** - Drop intent, stack, glossary, ADRs into `docs/` and agents pick them up. Reviewers and the implementer record drift you can accept at pipeline end. `/alp-river:setup` bootstraps the docs; `/alp-river:adr` drafts decisions, rejecting duplicates of active ADRs.
-- **0.1.5: `/compact` doesn't reset you anymore** - After compacting, the rules and your in-progress work (intent, classification, plan) stick around. Was meant to work since 0.1.0 but quietly didn't. Pipeline numbering also stopped skipping mid-flow - the steps now read 0, 1, 2, 3, 4... in order.
-- **0.1.4: clarification loops** - Intent and clarification keep asking until nothing new comes up, instead of stopping after one pass. Agents check the codebase and web first, so they only ask what those sources don't answer.
-- **0.1.3: two-pass code review** - Correctness asks *does this work?* (bugs, type holes, dead code). Quality asks *is this the right way?* (hacky shortcuts when a clean path was right there, bloat, wrong tool). Splitting them stops one from softening the other.
 
 Full history in [CHANGELOG.md](CHANGELOG.md).
 

@@ -118,7 +118,7 @@ Launch `capture-agent` (opus) with `<PHASE>: 1`, `<AGGREGATED_DISCOVERIES>`, `<A
 Handle `PHASE_RESULT`:
 
 - `complete-empty` → no novel context surfaced. Skip to Step 9.
-- `complete-no-docs-dir` → surface the recommendation to the user ("docs/ not found - run /alp-river:setup if you want captures recorded next time"). Skip to Step 9.
+- `complete-no-docs-dir` → if `alpRiver.skipSetup: true` in `.claude/settings.local.json`, skip the message silently. Otherwise surface the recommendation to the user ("docs/ not found - run /alp-river:setup if you want captures recorded next time. Dismiss permanently with `\"alpRiver\": {\"skipSetup\": true}` in `.claude/settings.local.json`."). Skip to Step 9.
 - `proposal-ready` → present the `PROPOSAL` block to the user. Capture per-item approvals:
   - `glossary`: `accept | edit: <new text> | reject`.
   - `stack_drift` and `intent_drift`: `accept-as-drift | edit: <new text> | reject`.

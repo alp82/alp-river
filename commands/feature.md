@@ -37,6 +37,19 @@ If COMPLEXITY is S or M: tell the user "this classifies as S/M - re-run under `/
 
 If COMPLEXITY is L or XL: continue.
 
+### Setup nudge (L/XL, first-fire)
+
+On first L/XL classification in this run, before Gate 1's prompt:
+
+1. Check whether `docs/INTENT.md` exists.
+2. Read `.claude/settings.local.json` if present and look up `alpRiver.skipSetup`. Treat a missing file or missing key as `false`.
+3. If `docs/INTENT.md` exists OR `alpRiver.skipSetup: true`, skip the nudge.
+4. Otherwise, emit one advisory line immediately above Gate 1's prompt:
+
+   > Project context missing: no `docs/INTENT.md`. Consider `/alp-river:setup` first so planning and review run with your intent, stack, and glossary loaded. Dismiss permanently with `"alpRiver": {"skipSetup": true}` in `.claude/settings.local.json`.
+
+Advisory only - does not block, does not add an interaction step, does not re-fire on re-classify, does not count against the backward-edge budget.
+
 ### Gate 1: Pre-plan cost check (L/XL)
 
 <!-- Gate 1 exclusion: Gate 1 stays as prose (binary continue/abandon decision tied to cost confirmation). AskUserQuestion would add friction for a single-keystroke choice. See AGENTS.md Concise Surfacing Contract. -->
@@ -204,7 +217,7 @@ Launch `capture-agent` (opus) with `<PHASE>: 1`, `<AGGREGATED_DISCOVERIES>`, `<A
 Handle `PHASE_RESULT`:
 
 - `complete-empty` → no novel context surfaced. Skip to Step 11.
-- `complete-no-docs-dir` → surface the recommendation to the user ("docs/ not found - run /alp-river:setup if you want captures recorded next time"). Skip to Step 11.
+- `complete-no-docs-dir` → if `alpRiver.skipSetup: true` in `.claude/settings.local.json`, skip the message silently. Otherwise surface the recommendation to the user ("docs/ not found - run /alp-river:setup if you want captures recorded next time. Dismiss permanently with `\"alpRiver\": {\"skipSetup\": true}` in `.claude/settings.local.json`."). Skip to Step 11.
 - `proposal-ready` → present the `PROPOSAL` block to the user. Capture per-item approvals:
   - `glossary`: `accept | edit: <new text> | reject`.
   - `stack_drift` and `intent_drift`: `accept-as-drift | edit: <new text> | reject`.
