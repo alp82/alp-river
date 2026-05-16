@@ -134,6 +134,7 @@ Launch concurrently:
 Gate each specialist on broad-pass finding OR touched files matching its domain. Launch only matching specialists:
 
 - `structure-reviewer` - broad pass flagged structure / boundaries, OR touched files include files over ~300 lines / functions over ~30 lines
+- `architecture-reviewer` (opus) - touched files introduce new exports / wrappers / seams, OR broad pass flagged shallow abstraction
 - `reuse-reviewer` - broad pass flagged duplication, OR touched files contain new functions similar to existing ones
 - `consistency-reviewer` - touched files affect naming/error-handling/return-shape patterns
 - `security-reviewer` (opus) - touched files include auth/permissions/session/input-handling
@@ -162,9 +163,9 @@ Summary in Step 11 cites post-fix gate results only.
 
 ## Step 10: Capture
 
-Aggregate every non-empty `DISCOVERIES` block from this run's upstream agents (implementer, fixer, investigator, correctness-reviewer, quality-reviewer, structure-reviewer, consistency-reviewer, security-reviewer, performance-reviewer) into `<AGGREGATED_DISCOVERIES>`. Drop blocks where every bucket is `(none)`.
+Aggregate every non-empty `DISCOVERIES` block from this run's upstream agents (implementer, fixer, investigator, correctness-reviewer, quality-reviewer, architecture-reviewer, structure-reviewer, consistency-reviewer, security-reviewer, performance-reviewer) into `<AGGREGATED_DISCOVERIES>`. Drop blocks where every bucket is `(none)`.
 
-**Fold in clarifier WRITES_PROPOSED.** If `<CLARIFY_OUTPUT>` from Step 3 contained a non-empty `WRITES_PROPOSED` block (glossary or adr_candidates), merge those entries into `<AGGREGATED_DISCOVERIES>` under a synthetic `requirements-clarifier` source label. They go through the same dedup + approval flow as the reviewers' discoveries.
+**Fold in clarifier WRITES_PROPOSED.** If `<CLARIFY_OUTPUT>` from Step 3 contained a non-empty `WRITES_PROPOSED` block (glossary terms), merge those entries into `<AGGREGATED_DISCOVERIES>` under a synthetic `requirements-clarifier` source label. They go through the same dedup + approval flow as the reviewers' discoveries.
 
 Launch `capture-agent` (opus) with `<PHASE>: 1`, `<AGGREGATED_DISCOVERIES>`, `<APPROVALS>: n/a`.
 
@@ -173,16 +174,12 @@ Handle `PHASE_RESULT`:
 - `complete-empty` → no novel context surfaced. Skip to Step 11.
 - `complete-no-docs-dir` → surface the recommendation to the user ("docs/ not found - run /alp-river:setup if you want captures recorded next time"). Skip to Step 11.
 - `proposal-ready` → present the `PROPOSAL` block to the user. Capture per-item approvals:
-  - `glossary` and `adr_candidates`: `accept | edit: <new text> | reject`.
-  - `stack_drift` and `intent_drift`: `accept-as-drift | accept-as-adr | edit: <new text> | reject`. The `accept-as-adr` verb lifts the drift item into the ADR pipeline instead of writing it as a drift bullet.
+  - `glossary`: `accept | edit: <new text> | reject`.
+  - `stack_drift` and `intent_drift`: `accept-as-drift | edit: <new text> | reject`.
   
   Re-launch `capture-agent` with `<PHASE>: 2`, the same `<AGGREGATED_DISCOVERIES>`, and `<APPROVALS>` containing the user's decisions. Capture the returned `CAPTURE_REPORT` for Step 11's summary.
 
 Capture-agent always runs - never auto-skip. If the agent fails to spawn, treat as "no captures this round" and continue.
-
-**ADR pipeline.** If the Phase 2 output contains a non-empty `ADR_PIPELINE_NEEDED` block, run the **ADR Drafter Loop** (see `AGENTS.md` → ADR Drafter Loop) once per entry. For each entry, fill the loop's input slots from the entry: `<DECISION_TITLE>` and `<DECISION_SUMMARY>` from the entry, `<SOURCE>` from the entry, `<EXTRA_CONTEXT>: none`. On `rejected`, skip to next entry and record the skip in Step 11. On the loop's exit (whether write or reject), continue to the next entry.
-
-Track the count of ADRs written and rejected via the loop; report alongside `CAPTURE_REPORT` totals in Step 11.
 
 ## Step 11: Summary
 
@@ -190,7 +187,7 @@ Report:
 - What was built (2-3 sentences)
 - Files created / modified
 - Post-fix gate results (broad pass + specialists)
-- Captures recorded (glossary terms, ADRs created, drift items appended - or "none")
+- Captures recorded (glossary terms, drift items appended - or "none")
 - Backward edges used: N/2
 - REMAINING items for user triage (anything in fixer's REMAINING)
 

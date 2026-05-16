@@ -2,17 +2,25 @@
 
 All notable changes to alp-river. Versions match `.claude-plugin/plugin.json`.
 
-## 0.2.0 - 2026-05-10
+## 0.2.1 - 2026-05-16
 
-**Subagents pick up your project's intent, stack, glossary, and ADRs, capture what they noticed in passing, and draft new ADRs from the decisions worth recording.**
+**A new reviewer asks whether each abstraction is earning its keep.** Shallow wrappers, single-call modules, premature seams, and leaky interfaces now have an owner: architecture-reviewer. It mentally inlines each module at its callers - if the inlined code is cleaner, the module fails the deletion test and gets flagged.
+
+Quality-reviewer used to catch shallow wrappers under "bloat" and structure-reviewer used to flag leaky abstractions under "boundaries" - both blurry. Those concerns moved to architecture-reviewer, leaving quality on tool / altitude / elegance and structure on size / nesting / layer crossings. Each finding now has one clear home.
+
+Architecture-reviewer fires in the specialist pass when touched files introduce new exports, wrappers, or seams, or when the broad pass surfaces abstraction shape.
+
+## 0.2.0 - 2026-05-16
+
+**Subagents pick up your project's intent, stack, glossary, and ADRs, and capture what they noticed in passing.**
 
 Drop the four files into `docs/` and every agent that needs them reads them automatically - planners stop suggesting libraries you've already ruled out, reviewers stop renaming concepts you've already named, new work stops relitigating settled decisions. Templates ship in `templates/`; copy what you want, fill in the gaps, ignore the rest. `/alp-river:setup` writes those files for you interview-style, with recommendations drawn from the codebase. Existing docs are merged, not overwritten.
 
-Reviewers, the implementer, the fixer, and the investigator now jot down anything novel that crossed their path during a run - terms that should be canonical, decisions worth recording, drift from the declared stack or intent. At the end of the pipeline you get a list, pick what to keep, and the survivors land in `docs/` automatically. Nothing scaffolds itself; if `docs/` doesn't exist yet, you get a nudge to run `/alp-river:setup` first.
+Reviewers, the implementer, the fixer, and the investigator now jot down anything novel that crossed their path during a run - terms that should be canonical, drift from the declared stack or intent. At the end of the pipeline you get a list, pick what to keep, and the survivors land in `docs/` automatically. Nothing scaffolds itself; if `docs/` doesn't exist yet, you get a nudge to run `/alp-river:setup` first.
 
-Decisions worth recording - whether surfaced by capture, lifted from a drift item, or entered deliberately via `/alp-river:adr` - run through a read-only drafter that fills in all four ADR sections from the surrounding context, runs a contradiction check against existing ADRs, and rates its own draft on three criteria so you know what to look at twice. Duplicates of active ADRs get rejected before any file lands. Supersession (replacing or chaining old ADRs) is coming next.
+Architectural decisions get their own deliberate entrypoint: `/alp-river:adr` takes a title and a one-line summary and produces a fully-resolved draft you can accept, edit, or reject before it lands. Duplicates of active ADRs get rejected before any file is written.
 
-Smaller fixes that landed alongside: accessibility-reviewer no longer receives user preferences (its job is the WCAG checklist, not what you prefer), the per-agent context wiring lives in one place (`hooks/user-context-injector.sh`) instead of being duplicated across agent frontmatter and a doctrine table, and the ADR drafter loop is defined once in `AGENTS.md` so the feature, fix, and `/alp-river:adr` flows reference it instead of carrying their own copies.
+Smaller fixes that landed alongside: accessibility-reviewer no longer receives user preferences (its job is the WCAG checklist, not what you prefer), and the per-agent context wiring lives in one place (`hooks/user-context-injector.sh`) instead of being duplicated across agent frontmatter and a doctrine table.
 
 ## 0.1.5 - 2026-05-02
 

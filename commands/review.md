@@ -15,15 +15,16 @@ If `$ARGUMENTS` is empty, ask the user which files to review and stop.
 
 Launch concurrently with `<TOUCHED_FILES>` set to the file paths above and `<APPROVED_PLAN>: none`:
 - `correctness-reviewer` - bugs, type holes, dead code, convention adherence
-- `quality-reviewer` - engineering judgment: hacky shortcuts, bloat, wrong tool, unelegant solutions
+- `quality-reviewer` - engineering judgment: hacky shortcuts, dead config, defensive paranoia, wrong tool, unelegant solutions
+- `architecture-reviewer` - module shape: depth, leverage, the deletion test - shallow wrappers, premature seams, leaky interfaces
 
 ## Report
 
-Present each reviewer's output verbatim under its own heading - full `VERDICT`, `FINDINGS`, `ACTION_NEEDED`, and (for correctness) `OBSOLETE_CODE`. Do not reformat or summarize the findings themselves.
+Present each reviewer's output verbatim under its own heading - full `VERDICT`, `FINDINGS`, `ACTION_NEEDED`, (for correctness) `OBSOLETE_CODE`, and (for architecture) `MODULES_ASSESSED`. Do not reformat or summarize the findings themselves.
 
 Then append:
 
-1. **Bottom line** - one sentence on the change's overall state, calling out the worse of the two verdicts.
+1. **Bottom line** - one sentence on the change's overall state, calling out the worst verdict across the three reviewers.
 2. **Next command** -
    - Both `pass` → done.
    - Any `warn` → name the one or two issues worth addressing.

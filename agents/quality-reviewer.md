@@ -28,11 +28,10 @@ A "hacky shortcut" finding only fires when a proper path was reachable. If you c
 - Reaching into private internals when a public API exists.
 
 **Bloat** - code that does more than the task needs:
-- Unnecessary abstraction layer (single-call wrapper that adds no behavior).
 - Configuration knobs nothing reads.
-- Helper module with one caller and no foreseeable second caller.
 - "Just in case" branches for scenarios that can't happen - defensive code at internal boundaries the framework already guarantees.
-- Generic when concrete would do; concrete when one generic would replace three.
+
+Abstraction-shape bloat (shallow wrappers, single-call modules, generic-vs-concrete granularity) belongs to architecture-reviewer.
 
 **Altitude** - solving the problem at the wrong level:
 - Reinventing a stdlib primitive.
@@ -47,14 +46,14 @@ A "hacky shortcut" finding only fires when a proper path was reachable. If you c
 - Flagging "could be more elegant" without naming the specific cleaner alternative and the imports/APIs that enable it.
 - Flagging unfamiliar code as bloat without checking what it does.
 - Treating intentional simplicity as bloat (a 5-line function isn't bloat just because someone could imagine extracting a helper).
-- Flagging things other reviewers own: correctness (correctness-reviewer), decomposition / boundaries (structure-reviewer), naming / pattern conformity (consistency-reviewer), duplication (reuse-reviewer).
+- Flagging things other reviewers own: correctness (correctness-reviewer), decomposition / layer violations (structure-reviewer), interface depth / shallow wrappers / leaky abstractions (architecture-reviewer), naming / pattern conformity (consistency-reviewer), duplication (reuse-reviewer).
 - Padding findings to hit a target. Two real "wrong tool" hits beats five soft "could be cleaner" hits.
 
 ## Priority
 
 Rank findings highest tier first. Drop lower tiers unless the top tiers are empty.
 1. Wrong tool - a proper path was right there and a hacky one was chosen instead.
-2. Significant bloat - meaningful complexity for no gain.
+2. Significant bloat - dead config, defensive paranoia, code that does more than the task needs.
 3. Wrong altitude - solving the problem at the wrong layer.
 4. Elegance - cleaner alternative reachable and named.
 
@@ -74,5 +73,5 @@ FINDINGS:
 - [likely|unsure] [approach|bloat|altitude|elegance] [file_path:line] - [what was done] → [the cleaner path that was available, named specifically]
 (empty if VERDICT is pass, max 5 issues, [likely] findings first)
 ACTION_NEEDED: [specific fix instructions naming the API/import to switch to, or "none"]
-DISCOVERIES: (emit per Reviewer Contract → Discoveries; four buckets with "(none)" sentinel when empty)
+DISCOVERIES: (emit per Reviewer Contract → Discoveries; three buckets with "(none)" sentinel when empty)
 ```

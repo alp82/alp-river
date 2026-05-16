@@ -63,7 +63,7 @@ Four file types feed it. Token names are lowercase; resolved filenames are UPPER
 
 ADRs collapse to a list, not full bodies, to keep prompts lean. The hook drops ADRs with status `deprecated` or `superseded`, files matching `0000-*.md` (catches the unfilled template), and ADRs whose summary still contains a `_TODO:_` marker.
 
-Templates ship in the plugin's `templates/` folder; copy them into your project's `docs/` and fill in the `_TODO:_` markers. Run `/alp-river:setup` to populate INTENT/STACK/GLOSSARY interactively. Run `/alp-river:adr` to record a decision deliberately - it runs the **ADR Drafter Loop** (see below) which drafts via the `adr-drafter` agent (read-only, opus), checks for contradictions, scores the draft on three criteria, and rejects duplicates of active ADRs before any file lands. ADR supersession (chains, status flips, old-ADR edits) is deliberately out of scope here - tracked as a follow-up.
+Templates ship in the plugin's `templates/` folder; copy them into your project's `docs/` and fill in the `_TODO:_` markers. Run `/alp-river:setup` to populate INTENT/STACK/GLOSSARY interactively. Run `/alp-river:adr` to record a decision deliberately - it drafts via the `adr-drafter` agent (read-only, opus) and rejects duplicates of active ADRs before any file lands.
 
 ## Confidence Tagging
 
@@ -76,6 +76,8 @@ Every finding carries a tag: `[likely]` (evidence-based - code you read, officia
 ## Workflow
 
 Every implementation task runs through a staged pipeline. Depth scales with complexity; confirming intent is always mandatory.
+
+Phases: Understand (0-1) → Prepare (2-3) → Design (4-5) → Build (6) → Verify (7-9) → Capture (10-11) → Follow-up (12).
 
 ### Step 0: Intent
 
@@ -102,7 +104,7 @@ Parallel fan-out on the confirmed scope:
 ### Step 3: Clarify (L/XL; M when ambiguity remains after pre-flight)
 Enter the **clarify loop**. Launch `requirements-clarifier` (opus) with intent + pre-flight outputs. Surface QUESTIONS, ACCEPTANCE_CRITERIA_PROPOSED, ASSUMPTIONS_TO_CONFIRM as a numbered list. Wait for user answers, append to `<PRIOR_ROUNDS>`, re-launch. Exit when `CLARITY: clear` AND `NEW_ASPECTS_FOUND: no`. Cap at 5 rounds - at the cap, present the latest state and ask the user to confirm or reshape. Emit `<CLARIFY_OUTPUT>`.
 
-The clarifier also emits `WRITES_PROPOSED` (glossary terms + adr_candidates) on exit when the round settled canonical names or locked-in decisions. The clarifier itself never writes - on `/alp-river:feature` and `/alp-river:fix` the main agent merges these into Step 10's aggregated discoveries; on `/alp-river:plan` they surface as info only.
+The clarifier also emits `WRITES_PROPOSED` (glossary terms) on exit when the round settled canonical names. The clarifier itself never writes - on `/alp-river:feature` and `/alp-river:fix` the main agent merges these into Step 10's aggregated discoveries; on `/alp-river:plan` they surface as info only.
 
 **Re-classify (backward edge)**: before exiting Step 3, if clarify answers (or earlier interviewer output) materially shifted scope, rerun `complexity-classifier` on intent + clarify. Scope up → add gates for the new tier going forward. Scope down → keep current gates (no retroactive downgrade). **Counts toward backward-edge budget.**
 
@@ -142,6 +144,7 @@ Gate each specialist on broad-pass finding OR touched files matching its domain:
 | Specialist | Trigger |
 |------------|---------|
 | `structure-reviewer` | broad pass flagged structure / boundaries |
+| `architecture-reviewer` (opus) | touched files introduce new exports / wrappers / seams; broad pass flagged shallow abstraction |
 | `reuse-reviewer` | broad pass flagged duplication |
 | `consistency-reviewer` | touched files affect patterns / naming |
 | `security-reviewer` (opus) | touched files include auth / permissions |
@@ -166,21 +169,19 @@ Summary in Step 11 cites post-fix gate results only.
 
 ### Step 10: Capture (M/L/XL)
 
-Before summarizing, harvest novel project-context items surfaced by upstream agents during this run. Aggregate every non-empty `DISCOVERIES` block from implementer, fixer, investigator, and the reviewers (correctness, quality, structure, consistency, security, performance) into `<AGGREGATED_DISCOVERIES>`. Also fold in any non-empty `WRITES_PROPOSED` block from `<CLARIFY_OUTPUT>` (glossary terms + adr_candidates the clarifier surfaced on exit) - same dedup + approval flow applies.
+Before summarizing, harvest novel project-context items surfaced by upstream agents during this run. Aggregate every non-empty `DISCOVERIES` block from implementer, fixer, investigator, and the reviewers (correctness, quality, architecture, structure, consistency, security, performance) into `<AGGREGATED_DISCOVERIES>`. Also fold in any non-empty `WRITES_PROPOSED` block from `<CLARIFY_OUTPUT>` (glossary terms the clarifier surfaced on exit) - same dedup + approval flow applies.
 
-Launch `capture-agent` (opus) with `<PHASE>: 1` and `<AGGREGATED_DISCOVERIES>`. The agent dedups against the loaded PROJECT_CONTEXT (intent, stack, glossary, ADRs) and emits one of:
+Launch `capture-agent` (opus) with `<PHASE>: 1` and `<AGGREGATED_DISCOVERIES>`. The agent dedups against the loaded PROJECT_CONTEXT (intent, stack, glossary) and emits one of:
 
 - `PHASE_RESULT: complete-empty` - nothing novel; skip to Step 11.
 - `PHASE_RESULT: complete-no-docs-dir` - target `docs/` does not exist; recommend `/alp-river:setup` to the user, skip to Step 11.
 - `PHASE_RESULT: proposal-ready` - a `PROPOSAL` block listing dedup-survived candidates per bucket.
 
 On `proposal-ready`, present the proposal to the user and capture per-item approvals:
-- `glossary` and `adr_candidates`: `accept | edit: <text> | reject`.
-- `stack_drift` and `intent_drift`: `accept-as-drift | accept-as-adr | edit: <text> | reject`. The `accept-as-adr` verb lifts the drift item into the ADR pipeline instead of writing a drift bullet.
+- `glossary`: `accept | edit: <text> | reject`.
+- `stack_drift` and `intent_drift`: `accept-as-drift | edit: <text> | reject`.
 
-Re-launch `capture-agent` with `<PHASE>: 2` and `<APPROVALS>`; it appends approved glossary terms, appends drift sections for `accept-as-drift`, and emits `ADR_PIPELINE_NEEDED` entries for accepted ADR candidates and `accept-as-adr` drift items. Capture-agent never creates `docs/` itself and never writes ADR files.
-
-If `ADR_PIPELINE_NEEDED` is non-empty, the orchestrator runs the **ADR Drafter Loop** (see below) once per entry. `/alp-river:adr` runs the same loop with a single user-provided entry. Both call sites reference the loop rather than inlining it.
+Re-launch `capture-agent` with `<PHASE>: 2` and `<APPROVALS>`; it appends approved glossary terms and drift sections. Capture-agent never creates `docs/`.
 
 Skip Step 10 entirely on S tasks - no upstream emitters run.
 
@@ -188,7 +189,7 @@ Skip Step 10 entirely on S tasks - no upstream emitters run.
 - What was built (2-3 sentences)
 - Files created / modified
 - Post-fix gate results
-- Captures recorded (glossary/ADR/drift counts, or "none")
+- Captures recorded (glossary/drift counts, or "none")
 - Backward edges used: N/2
 - REMAINING items for user triage
 
@@ -201,7 +202,7 @@ Every subsequent request is a new task. Re-enter Step 0. S follow-ups can skip L
 
 | Tier | Agents |
 |------|--------|
-| **opus** | classifier, interviewer, clarifier, planner, plan-challenger, implementer, acceptance-reviewer, security-reviewer, investigator, quality-reviewer, capture-agent, adr-drafter; fixer + correctness-reviewer on L/XL |
+| **opus** | classifier, interviewer, clarifier, planner, plan-challenger, implementer, acceptance-reviewer, security-reviewer, investigator, quality-reviewer, architecture-reviewer, capture-agent, adr-drafter; fixer + correctness-reviewer on L/XL |
 | **sonnet** | reuse-scanner, structure-reviewer, consistency-reviewer, reuse-reviewer, test-verifier, visual-verifier, a11y-reviewer, design-consistency-reviewer, ux-reviewer, plan-adherence-reviewer, prototyper; fixer + correctness-reviewer on M |
 | **haiku** | health-checker, prototype-identifier, researcher |
 
@@ -263,28 +264,6 @@ What still needs manual preservation in the conversation: current workflow step,
 
 Discard: raw exploration output, full file contents already acted on, superseded plans.
 
-## ADR Drafter Loop
-
-A reusable sub-flow that drafts and writes a single ADR from a decision title and summary. Two call sites: Step 10 (capture-driven, one entry per `ADR_PIPELINE_NEEDED` item) and `/alp-river:adr` (user-driven, one entry from `$ARGUMENTS`). Both reference this loop rather than inlining it.
-
-**Inputs**: `<DECISION_TITLE>`, `<DECISION_SUMMARY>`, `<SOURCE>`, `<EXTRA_CONTEXT>` (or `"none"`).
-
-**Step 1 - Draft.** Launch `adr-drafter` (opus, read-only) with the four input slots. Handle VERDICT:
-- `drafted` → continue to Step 2 with `DRAFT`, `CONTRADICTION_FOUND`, `SELF_CRITICISM`, `PROPOSED_FILENAME` slug.
-- `rejected` → surface `ADR_REJECTED` to the user (reason, conflicting ADR path, recommendation). Skip this entry. The caller decides whether to continue with remaining entries (capture pipeline) or stop (manual /adr).
-
-**Step 2 - Present.** Show the user, in this order:
-1. The full DRAFT body (frontmatter + four sections), readable as the final file content.
-2. `CONTRADICTION_FOUND` if non-empty - call it out explicitly. The user decides whether the contradiction is real or whether the draft needs revision.
-3. `SELF_CRITICISM` block. If `warnings` is non-empty, call out which criteria scored under 3 and ask whether to revise or accept as-is.
-4. The proposed path: `docs/adr/NNNN-{kebab-title}.md` where `NNNN` is the next free 4-digit sequence (computed from `docs/adr/*.md` excluding `0000-template.md`).
-
-Ask: `accept | edit | reject`.
-
-**Step 3 - Write.** On `accept`, write the DRAFT body verbatim. On `edit`, take the user's edited body and write that. Replace literal `NNNN` in the H1 with the resolved number. On `reject`, skip - record in the caller's summary.
-
-The orchestrator handles writing - the agent stays read-only.
-
 ## Code Quality
 - Use the project's formatter.
 - Failing tests → fix the code, keeping assertions and coverage intact.
@@ -294,7 +273,7 @@ The orchestrator handles writing - the agent stays read-only.
 
 ## Reviewer Contract
 
-Shared rules for every specialized reviewer (correctness, quality, security, performance, accessibility, design-consistency, ux, consistency, structure, reuse). Each reviewer's own file carries only its Criteria list and any specialization - the rest lives here.
+Shared rules for every specialized reviewer (correctness, quality, architecture, security, performance, accessibility, design-consistency, ux, consistency, structure, reuse). Each reviewer's own file carries only its Criteria list and any specialization - the rest lives here.
 
 ### Confidence tagging (reviewer reporting threshold)
 
@@ -340,19 +319,16 @@ A reviewer MUST NOT:
 
 ### Discoveries
 
-Every reviewer (and implementer, fixer, investigator) appends a `DISCOVERIES` block as the last section of its output. This is the channel for novel project-context items the agent noticed in passing while doing its primary job - terms that should be canonical, decisions worth recording as ADRs, drift from the declared stack or intent. Step 10 (Capture) aggregates these and offers them to the user.
+Every reviewer (and implementer, fixer, investigator) appends a `DISCOVERIES` block as the last section of its output. This is the channel for novel project-context items the agent noticed in passing while doing its primary job - terms that should be canonical, drift from the declared stack or intent. Step 10 (Capture) aggregates these and offers them to the user.
 
 **Exception - non-emitters:** accessibility-reviewer, ux-reviewer, and design-consistency-reviewer do not emit DISCOVERIES - their scope is WCAG/visual/UX checks, not domain content. test-verifier, plan-adherence-reviewer, reuse-reviewer, and acceptance-reviewer also do not emit DISCOVERIES (mechanical/blueprint-fidelity/duplication-check/intent-fulfillment respectively, not domain-novelty surfaces).
 
-Four buckets, each terminated with `(none)` when empty:
+Three buckets, each terminated with `(none)` when empty:
 
 ```
 DISCOVERIES:
   glossary:
     - [term] - [one-sentence definition] - [why novel]
-    (or "(none)")
-  adr_candidates:
-    - [decision title] - [summary] - [why novel]
     (or "(none)")
   stack_drift:
     - [layer] - [deviation] - [evidence file:line]
@@ -362,9 +338,9 @@ DISCOVERIES:
     (or "(none)")
 ```
 
-**Novelty bar:** the item must NOT already be covered by the loaded `PROJECT_CONTEXT`. Skip anything you can find in `GLOSSARY.md`, `STACK.md`, `INTENT.md`, or the active ADRs. When in doubt, skip - capture-agent does the final dedup, but you don't need to dump candidates the agent will only have to filter out.
+**Novelty bar:** the item must NOT already be covered by the loaded `PROJECT_CONTEXT`. Skip anything you can find in `GLOSSARY.md`, `STACK.md`, or `INTENT.md`. When in doubt, skip - capture-agent does the final dedup, but you don't need to dump candidates the agent will only have to filter out.
 
-The block is mandatory even when every bucket is empty. Emit all four bucket headings with `(none)` so the parser sees a structured block.
+The block is mandatory even when every bucket is empty. Emit all three bucket headings with `(none)` so the parser sees a structured block.
 
 ### Example output (consistency-reviewer)
 
@@ -377,8 +353,6 @@ FINDINGS:
 ACTION_NEEDED: Change return shape to bare array; rename `get_item` to `getItem`.
 DISCOVERIES:
   glossary:
-    (none)
-  adr_candidates:
     (none)
   stack_drift:
     (none)

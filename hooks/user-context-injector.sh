@@ -52,7 +52,7 @@ case "$subagent_type" in
     ;;
   correctness-reviewer|quality-reviewer|acceptance-reviewer|plan-adherence-reviewer)
     ;;
-  structure-reviewer|consistency-reviewer|reuse-reviewer)
+  structure-reviewer|architecture-reviewer|consistency-reviewer|reuse-reviewer)
     ;;
   security-reviewer|performance-reviewer)
     ;;
@@ -97,6 +97,7 @@ declare -A READ_MAP=(
   [quality-reviewer]="intent stack glossary"
   [acceptance-reviewer]="intent glossary"
   [structure-reviewer]="glossary adrs"
+  [architecture-reviewer]="stack glossary adrs"
   [consistency-reviewer]="glossary"
   [reuse-reviewer]="glossary"
   [security-reviewer]="stack adrs"
@@ -105,7 +106,7 @@ declare -A READ_MAP=(
   [design-consistency-reviewer]="intent stack"
   [fixer]="stack glossary adrs"
   [investigator]="stack glossary adrs"
-  [capture-agent]="intent stack glossary adrs"
+  [capture-agent]="intent stack glossary"
   [adr-drafter]="intent stack glossary adrs"
 )
 

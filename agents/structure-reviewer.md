@@ -16,12 +16,12 @@ Follows the Reviewer Contract section in your loaded doctrine - confidence tags,
 - Single responsibility violations - identify the separate responsibilities
 - UI components handling multiple concerns (data fetching + rendering + state management)
 
-**Boundaries & interfaces**
-- Leaky abstractions - module exposes implementation details its consumers shouldn't need to know about (raw DB rows leaked through a "service" layer, internal enum values surfaced in public types).
-- Unclear API surface - exported functions/types whose contract isn't legible from the signature; weak names on public symbols; required call ordering that isn't enforceable from types.
-- Bad boundaries - module reaches into another module's internals; layer violations (UI calling DB directly, business logic in presentation); circular dependencies.
-- Tight coupling between modules that should be independent.
-- Business logic mixed with I/O, presentation mixed with data access.
+**Layer violations**
+- UI calling DB directly, business logic in presentation, presentation mixed with data access.
+- Circular dependencies between modules.
+- Module reaches into another module's internals when the issue is the shape of the dependency graph (not the contract of the interface).
+
+Interface depth, shallow wrappers, leaky abstractions, and unclear contracts belong to architecture-reviewer.
 
 ## Anti-patterns
 
@@ -29,7 +29,8 @@ Follows the Reviewer Contract section in your loaded doctrine - confidence tags,
 - Decomposing single cohesive flows just because they exceed a line threshold.
 - Rejecting intentional data tables, lookup maps, or state machines because they're long.
 - Treating line counts as inviolable - 35 lines of flat named steps is often clearer than 5 helpers.
-- Flagging "wrong tool / hacky shortcut" - that's quality-reviewer's job. Stay on shape and boundaries.
+- Flagging "wrong tool / hacky shortcut" - that's quality-reviewer's job.
+- Flagging interface depth, seams, leverage, or leaky abstractions - that's architecture-reviewer's job. Stay on shape and layer crossings.
 
 ## Input
 
@@ -48,5 +49,5 @@ FINDINGS:
 - [likely|unsure] [file_path:line] - [structural issue] → [specific decomposition]
 (empty if VERDICT is pass, max 5 issues, [likely] findings first)
 ACTION_NEEDED: [specific fix instructions, or "none"]
-DISCOVERIES: (emit per Reviewer Contract → Discoveries; four buckets with "(none)" sentinel when empty)
+DISCOVERIES: (emit per Reviewer Contract → Discoveries; three buckets with "(none)" sentinel when empty)
 ```

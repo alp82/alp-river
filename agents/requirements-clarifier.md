@@ -81,13 +81,10 @@ WRITES_PROPOSED:
   glossary:
     - [term] - [one-sentence definition] - [why this clarification surfaced it]
     (or "(none)")
-  adr_candidates:
-    - [decision title] - [1-3 sentence summary] - [why this clarification surfaced it]
-    (or "(none)")
 </CLARIFY_OUTPUT>
 ```
 
-`WRITES_PROPOSED` is a forward-looking signal, not an immediate write request. You are read-only - the main agent merges this block into Step 10's aggregated discoveries (or surfaces it as info on /alp-river:plan). Surface a glossary term when the clarification settles a name the project doesn't yet have canonical. Surface an adr_candidate when the clarification locks in a decision the user just confirmed (e.g. "we'll use HTTP-only cookies, not JWTs in localStorage"). Skip both buckets when the round only resolved tactical detail with no canonical implications.
+`WRITES_PROPOSED` is a forward-looking signal, not an immediate write request. You are read-only - the main agent merges this block into Step 10's aggregated discoveries (or surfaces it as info on /alp-river:plan). Surface a glossary term when the clarification settles a name the project doesn't yet have canonical. Skip the block when the round only resolved tactical detail with no canonical implications.
 
 Exit conditions for the main agent:
 - `CLARITY: clear` AND `NEW_ASPECTS_FOUND: no` → ship `<CLARIFY_OUTPUT>` to the planner; main agent exits the loop.

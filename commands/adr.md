@@ -1,5 +1,5 @@
 ---
-description: Manually draft and write an architectural decision record. Three steps - confirm input, run the shared ADR Drafter Loop, summarize.
+description: Manually draft and write an architectural decision record.
 argument-hint: Decision title and a one-line summary (e.g. "use HTTP-only cookies for auth - rules out JWT-in-localStorage")
 ---
 
@@ -7,7 +7,7 @@ argument-hint: Decision title and a one-line summary (e.g. "use HTTP-only cookie
 
 Manual entry: `$ARGUMENTS`
 
-Use this when you want to record a decision deliberately. The shared **ADR Drafter Loop** (defined in `AGENTS.md`) does the drafting, presenting, and writing - this command is the user-driven entrypoint that prepares one input from `$ARGUMENTS`. Auto-captured ADRs from `/alp-river:feature` (Step 10) and `/alp-river:fix` (Step 8) runs invoke the same loop with entries from the capture pipeline.
+Use this when you want to record a decision deliberately. Four steps - confirm input, draft, present, write.
 
 ## Step 1: Confirm input
 
@@ -23,22 +23,30 @@ Capture:
 - `<SOURCE>` - "manual /alp-river:adr entry by user on {today YYYY-MM-DD}".
 - `<EXTRA_CONTEXT>` - if the user supplied anything beyond title + summary, include it here verbatim; else "none".
 
-## Step 2: Run the ADR Drafter Loop
+## Step 2: Draft
 
-Run the **ADR Drafter Loop** (see `AGENTS.md` → ADR Drafter Loop) with the four input slots from Step 1.
+Launch `adr-drafter` (opus, read-only) with the four input slots. Handle VERDICT:
 
-The loop drafts via `adr-drafter`, presents the draft + contradiction check + self-criticism to the user, then writes on `accept`/`edit` or stops on `reject`. On `rejected` from the drafter (duplicate of an active ADR), the loop surfaces `ADR_REJECTED` and stops - this command exits without writing. The user can then edit the existing ADR manually or re-run with a re-framed title.
+- `drafted` → continue to Step 3 with `DRAFT` and `PROPOSED_FILENAME` slug.
+- `rejected` → surface `ADR_REJECTED` to the user (reason, conflicting ADR path, recommendation). Stop - this command exits without writing. The user can edit the existing ADR manually or re-run with a re-framed title.
 
-After the loop returns, capture: did it write a file? Was it rejected by the drafter? Was it rejected by the user? Carry that into Step 3.
+## Step 3: Present and write
 
-## Step 3: Summarize
+Show the user the full DRAFT body (frontmatter + four sections), readable as the final file content, plus the proposed path: `docs/adr/NNNN-{kebab-title}.md` where `NNNN` is the next free 4-digit sequence (computed from `docs/adr/*.md` excluding `0000-template.md`).
+
+Ask: `accept | edit | reject`.
+
+- `accept` → write the DRAFT body verbatim. Replace literal `NNNN` in the H1 with the resolved number.
+- `edit` → take the user's edited body and write that, with the same `NNNN` replacement.
+- `reject` → skip the write.
+
+## Step 4: Summarize
 
 Report:
 
-- ADR created: `docs/adr/NNNN-{kebab-title}.md`
+- ADR created (or rejected/skipped, with reason)
+- Path: `docs/adr/NNNN-{kebab-title}.md`
 - Status: proposed
 - Source: manual entry
-- Warnings (if any from self-criticism): list them so the user knows what to revisit later
-- Contradictions (if any): list with the file/section that conflicts
 
 End with the literal line `<!-- pipeline-complete -->`.

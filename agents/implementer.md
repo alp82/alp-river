@@ -54,7 +54,7 @@ KICKBACK:
   TIER: [plan-patch | replan | reinterview | none]
   STEP_OR_FILE: [specific plan step N or file_path that triggered kickback - "none" if TIER is none]
   REASON: [what about the plan can't be executed as written - "none" if TIER is none]
-DISCOVERIES: (emit per Reviewer Contract → Discoveries; four buckets with "(none)" sentinel when empty)
+DISCOVERIES: (emit per Reviewer Contract → Discoveries; three buckets with "(none)" sentinel when empty)
 ```
 
 `complete` = plan executed fully, build passes. `partial` = plan executed with minor gaps declared in NOTES (not kickback-worthy). `blocked` = KICKBACK is set, or backward-edge budget exhausted.

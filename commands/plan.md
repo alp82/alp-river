@@ -56,7 +56,7 @@ Enter the **clarify loop**.
 
 The clarify loop is free - does NOT count toward the backward-edge budget.
 
-**On exit, surface `WRITES_PROPOSED` as info only.** If the final clarifier output contained a non-empty `WRITES_PROPOSED` block (glossary terms or adr_candidates), present it to the user under a heading like *"The clarifier flagged these for capture - they'll be picked up if you implement under /alp-river:feature or /alp-river:fix:"* and list each item. Do NOT write any docs from this command. `/alp-river:plan` produces designs only.
+**On exit, surface `WRITES_PROPOSED` as info only.** If the final clarifier output contained a non-empty `WRITES_PROPOSED` block (glossary terms), present it to the user under a heading like *"The clarifier flagged these for capture - they'll be picked up if you implement under /alp-river:feature or /alp-river:fix:"* and list each item. Do NOT write any docs from this command. `/alp-river:plan` produces designs only.
 
 **Re-classify (backward edge)**: before exiting Step 3, if clarifier returned `SCOPE_SHIFT: up` or `down`, rerun `complexity-classifier` with `<CONFIRMED_INTENT>`, `<CLARIFY_OUTPUT>`, `<PRIOR_CLASSIFICATION>`. On `SCOPE_MOVED: yes`, note the new tier; the user will route to `/feature` or `/fix` when implementing. Counts as one backward edge if it fires.
 
