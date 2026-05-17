@@ -6,15 +6,15 @@
 
 Multi-stage agent refinement for Claude Code, scaled by automatic complexity classification. Small changes pass quickly. Bigger ones add stages: clarification, planning, adversarial challenge, implementation, broad review, specialist review, self-heal.
 
-The whole pipeline ships in one folder. Doctrine, 31 subagents, 8 slash commands, 8 quality hooks.
+The whole pipeline ships in one folder. Doctrine, 32 subagents, 8 slash commands, 8 quality hooks.
 
 ## Latest updates
 
 The last three versions:
 
+- **0.2.6: every task confirms intent first, UI design choices get an interactive picker** - The "this is small, I'll just do it" follow-up path is gone. After any pipeline, the next request pauses for a one-sentence restate before any work; `yes` rolls, anything else becomes the new input for the interviewer. Separately, when the clarifier sees a UI task with multiple legitimate visual or interaction shapes, a new design-explorer agent confirms which knobs to expose, builds an interactive picker page (sandbox prototype or real page behind a dev gate), and waits for you to copy and paste back the spec. The planner builds to exactly that.
 - **0.2.5: validation per criterion, visual reviewer opt-in, two prototypes on high novelty** - Plans now declare HOW each acceptance criterion gets verified (automated test, manual check, or observable code); the acceptance reviewer enforces that the declared validation actually exists. Visual reviewer no longer auto-fires - you get a single Y/n offer when UI is touched (default yes on XL, default no on M/L). And when the prototype identifier judges a target as high-novelty (the *shape* of the solution is genuinely uncertain), the prototyper builds two differently-shaped tracer bullets side-by-side so the planner picks on evidence, not intuition.
 - **0.2.4: XXL classification pushes back on jobs that are too big** - The classifier now grades tasks S/M/L/XL/**XXL**. XXL means "this spans more than fits in one task" - the classifier suggests how to split it, and `/feature` and `/plan` pause before any other work to ask: pick a slice, treat as XL anyway (explicit acknowledgment required), or drop it. `/fix` hands off to `/feature` with the suggested split for reference.
-- **0.2.3: pre-plan questions become a picker** - Intent, clarify, and plan-critique rounds in `/feature`, `/fix`, and `/plan` ask via picker options. The agent's working notes stay in the transcript instead of dumped inline.
 
 Full history in [CHANGELOG.md](CHANGELOG.md).
 
@@ -42,8 +42,9 @@ Each stage is run by a dedicated agent: classifier judges scope, scanners pre-fl
 
 You stay in the loop at a few well-defined moments:
 
-- **Intent confirmation** (always) - confirm or correct the one-sentence read; an interviewer digs deeper when your request has multiple readings, looping with you (cap 5 rounds) until intent settles and no new aspects emerge.
+- **Intent confirmation** (always, every tier - including S follow-ups) - confirm or correct the one-sentence read. A bare affirmation (`yes`/`correct`/`proceed`) rolls; anything else - your own words, additions, corrections - is treated as a reshape and spawns the interviewer with that reply as the new input. The interviewer loops with you (cap 5 rounds) until intent settles and no new aspects emerge.
 - **Clarifier questions** (M/L/XL when ambiguity remains) - the clarifier researches the codebase first, then asks only what's still open. It loops with you (cap 5 rounds) until clarity is reached, then the planner runs.
+- **Design picker** (when the clarifier flags UI design choice with multiple legitimate shapes) - the design-explorer agent confirms which parameters to expose, builds an interactive page (sandbox or real-page behind a dev gate), and waits for you to copy a labeled key-value spec back into chat. That spec becomes binding for the planner.
 - **Plan selection** (XL) - pick one of the proposed approaches.
 
 Everything else runs to completion. Reviewer findings feed the fixer automatically.
@@ -122,6 +123,8 @@ flowchart TB
     reuse & health & proto & rsrch --> clari[requirements-clarifier]
     ptype -.-> clari
     clari --> plan[planner]
+    clari -.-> design[design-explorer]
+    design -.-> plan
     plan --> chal[plan-challenger]
     chal --> impl[implementer]
     impl --> bp
@@ -165,6 +168,8 @@ flowchart TB
     reuse & health & proto & rsrch --> clari[requirements-clarifier]
     ptype -.-> clari
     clari --> plan["planner: 2-3 approaches"]
+    clari -.-> design[design-explorer]
+    design -.-> plan
     plan --> chal["plan-challenger reviews each"]
     chal --> pick[user picks approach]
     pick --> impl[implementer]
@@ -198,7 +203,7 @@ flowchart TB
 
 ## Agents
 
-31 subagents organized by phase of work. Italic = conditional / gated. Tier shows the model that runs by default.
+32 subagents organized by phase of work. Italic = conditional / gated. Tier shows the model that runs by default.
 
 ### Understand (Steps 0-1)
 
@@ -218,11 +223,12 @@ flowchart TB
 | *prototyper* | sonnet | Builds tracer-bullet prototypes in `.prototypes/` when prototype-identifier flags external surface. On high-novelty targets, builds two differently-shaped tracers side-by-side and reports an evidence-based comparison. |
 | requirements-clarifier | opus | Surfaces ambiguity, edge cases, and proposed acceptance criteria as a numbered question list before the planner runs. |
 
-### Design (Steps 4-5)
+### Design (Steps 3.5-5)
 
 | Agent | Tier | Role |
 |-------|------|------|
-| planner | opus | Designs the implementation blueprint. On XL, presents 2-3 approaches with a recommendation. Attaches a validation type (test/manual/observable) to every acceptance criterion. |
+| *design-explorer* | opus | Step 3.5 - fires when the clarifier flags a UI task with multiple legitimate visual or interaction shapes. Confirms which parameters to expose as controls, decides whether to host the picker in a sandbox prototype or in the real page behind a dev gate, writes the interactive page with a copy-spec button, and hands the labeled key-value spec the user paste-backs to the planner as binding input. |
+| planner | opus | Designs the implementation blueprint. On XL, presents 2-3 approaches with a recommendation. Attaches a validation type (test/manual/observable) to every acceptance criterion. Reads `<LOCKED_DESIGN_SPEC>` when the design loop ran and builds to that spec. |
 | plan-challenger | opus | Adversarial review - pokes holes, names failure modes, proposes simpler alternatives. |
 
 ### Build (Step 6)
@@ -302,7 +308,7 @@ alp-river/
 ├── hooks/
 │   ├── hooks.json         <- 7 events: SessionStart, PreToolUse, PostToolUse, ...
 │   └── *.sh               <- inject-doctrine, auto-format, block-git-writes, ...
-├── agents/                <- 30 subagent definitions
+├── agents/                <- 32 subagent definitions
 ├── commands/              <- 8 slash commands
 └── templates/             <- copy into your project's docs/ for project-context injection
 ```

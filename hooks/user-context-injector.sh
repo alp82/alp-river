@@ -11,9 +11,9 @@
 #
 # An agent can be user-aware only, project-aware only, both, or neither:
 #   User-aware Y + Project-aware Y: most agents - interviewer, planner,
-#                                   implementer, reviewers, fixer, investigator,
-#                                   capture-agent, adr-drafter (see case arms
-#                                   and READ_MAP)
+#                                   plan-challenger, implementer, design-explorer,
+#                                   reviewers, fixer, investigator, capture-agent,
+#                                   adr-drafter (see case arms and READ_MAP)
 #   User-aware N + Project-aware Y: health-checker, prototype-identifier,
 #                                   researcher, prototyper  (user_aware=0)
 #   User-aware Y + Project-aware N: visual-verifier, plan-adherence-reviewer,
@@ -46,7 +46,7 @@ fi
 user_aware=1
 case "$subagent_type" in
   # User-aware: yes. Project-aware: depends on READ_MAP.
-  interviewer|planner|plan-challenger|implementer|fixer|investigator|setup-agent|capture-agent|adr-drafter)
+  interviewer|planner|plan-challenger|implementer|fixer|investigator|setup-agent|capture-agent|adr-drafter|design-explorer)
     ;;
   requirements-clarifier|reuse-scanner|visual-verifier)
     ;;
@@ -92,6 +92,7 @@ declare -A READ_MAP=(
   [prototyper]="stack"
   [planner]="intent stack glossary adrs"
   [plan-challenger]="intent stack glossary adrs"
+  [design-explorer]="intent stack glossary adrs"
   [implementer]="stack glossary adrs"
   [correctness-reviewer]="stack glossary"
   [quality-reviewer]="intent stack glossary"

@@ -15,9 +15,12 @@ Design only. STOPS at an approved plan. Applying it is a separate step via `/fea
 
 ## Step 0: Intent
 
-**Level 1** (always): Restate the **outcome** the user wants - what needs to be true when this is done, in user-observable terms. Keep it concise; clarity wins over brevity, so use a couple of sentences, a small ASCII diagram, or a brief example if that lands the point better than prose. **No file paths, schema fields, function names, API routes, or component names** - those belong in the plan, not the intent. If you can't restate without naming specifics, you've over-interpreted; pull back to the goal. **Main agent stays text-only - no codebase reads, no web lookups.** Wait for confirmation.
+**Level 1** (always, every tier): Restate the **outcome** the user wants - what needs to be true when this is done, in user-observable terms. Keep it concise; clarity wins over brevity, so use a couple of sentences, a small ASCII diagram, or a brief example if that lands the point better than prose. **No file paths, schema fields, function names, API routes, or component names** - those belong in the plan, not the intent. If you can't restate without naming specifics, you've over-interpreted; pull back to the goal. **Main agent stays text-only - no codebase reads, no web lookups.** Wait for the user's reply.
 
-**Level 2** (escalate when request has multiple readings, Level 1 answer shifts scope, OR restating would require recon): enter the **interview loop**.
+- **Affirmation -> proceed**: short positive reply (`y`, `yes`, `correct`, `proceed`, `looks right`, `go`, similar). Move to Step 1.
+- **Anything else -> reshape**: free-text additions, corrections, or the user restating in their own words. Treat the reply as the new `<RAW_REQUEST>` and escalate to Level 2 with it.
+
+**Level 2** (on reshape, OR when the request has multiple plausible readings, OR when restating would require recon): enter the **interview loop**.
 
 - Round 1: Launch `interviewer` with `<RAW_REQUEST>`, `<L1_CONFIRMATION>`, `<PRIOR_ROUNDS>: none`.
 - Each round, read `LOOKUPS_PERFORMED`, `VERDICT`, `NEW_ASPECTS_FOUND`, `QUESTIONS`, `DEFERRED_QUESTIONS`. Exit when `confirmed` AND `NEW_ASPECTS_FOUND: no`; capture `<CONFIRMED_INTENT>` and `EXTERNAL_DEPS_FLAG`. Otherwise, if QUESTIONS is non-empty (or DEFERRED_QUESTIONS carried open items from prior rounds), apply the AGENTS.md Concise Surfacing Contract 4-cap priority queue and invoke `AskUserQuestion` with the resulting items. Do not emit a numbered prose list. Capture answers, append one-line entries to `<PRIOR_ROUNDS>` (`R{n}.Q{i}: ... | A: ...`), thread any unanswered DEFERRED_QUESTIONS into the next round's `<PRIOR_ROUNDS>`, re-launch.
@@ -139,9 +142,21 @@ The clarify loop is free - does NOT count toward the backward-edge budget.
 
 **Re-fire Gate 1**: if re-classify lands at L or XL AND Gate 1 has not yet fired in this run at L/XL AND no XXL pushback this run already cleared cost confirmation (covers M->L/XL upgrade), fire the same Gate 1 block from Step 1 here, before continuing to Step 4. Use the current `<SCOPE_DOWN_COUNT>`.
 
+## Step 3.5: Design Loop (when DESIGN_LOOP_NEEDED: yes)
+
+Skip when `<CLARIFY_OUTPUT>` carried `DESIGN_LOOP_NEEDED: no` (or omitted the field). Otherwise:
+
+1. **Confirm parameters.** Launch `design-explorer` with `<CONFIRMED_INTENT>`, `<CLASSIFICATION>`, `<CLARIFY_OUTPUT>`, `<PREFLIGHT>`, `<USER_PARAM_PICKS>: none`. Apply the Concise Surfacing Contract to `PARAMS_TO_CONFIRM` and invoke `AskUserQuestion`. Capture selections.
+
+2. **Build the picker page.** Re-launch `design-explorer` with the populated `<USER_PARAM_PICKS>`. Surface `HOST_DECISION` + `PAGE_FILE` / `PAGE_URL` + `USER_INSTRUCTIONS` inline.
+
+3. **Wait for paste-back.** Capture the user's next message verbatim as `<LOCKED_DESIGN_SPEC>`. If the reply asks for more options on a parameter, treat as refined `<USER_PARAM_PICKS>` and re-invoke the build phase; otherwise proceed.
+
+`<LOCKED_DESIGN_SPEC>` and `CLEANUP_NEEDED` (when real-page) feed into Step 4. The design loop is free - it does not count toward the backward-edge budget.
+
 ## Step 4: Plan
 
-Launch `planner` with `<CONFIRMED_INTENT>`, `<CLASSIFICATION>`, `<CLARIFY_OUTPUT>`, `<PREFLIGHT>`.
+Launch `planner` with `<CONFIRMED_INTENT>`, `<CLASSIFICATION>`, `<CLARIFY_OUTPUT>`, `<PREFLIGHT>`, `<LOCKED_DESIGN_SPEC>` (or "none"), `<DESIGN_CLEANUP>` (or "none").
 
 XL presents 2-3 APPROACHES with ASCII diagrams + RECOMMENDATION. Capture `<APPROVED_PLAN version="1">`.
 

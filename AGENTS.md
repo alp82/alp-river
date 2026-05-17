@@ -77,14 +77,16 @@ Every finding carries a tag: `[likely]` (evidence-based - code you read, officia
 
 Every implementation task runs through a staged pipeline. Depth scales with complexity; confirming intent is always mandatory.
 
-Phases: Understand (0-1) → Prepare (2-3) → Design (4-5) → Build (6) → Verify (7-9) → Capture (10-11) → Follow-up (12).
+Phases: Understand (0-1) → Prepare (2-3) → Design (3.5-5) → Build (6) → Verify (7-9) → Capture (10-11) → Follow-up (12).
 
 ### Step 0: Intent
 
-Before classification, confirm direction - a misread request misclassifies every gate downstream.
+Before classification, confirm direction - a misread request misclassifies every gate downstream. **Level 1 runs on every task at every tier, including S follow-ups in main-agent mode.** No "this is small, I'll just do it" path.
 
-- **Level 1 (always)**: Main agent restates the **outcome** the user wants - what needs to be true when this is done, in user-observable terms. Keep it concise; clarity wins over brevity, so use a couple of sentences, a small ASCII diagram, or a brief example if that lands the point better than prose. **No file paths, schema fields, function names, API routes, or component names** - those are implementation details that belong in the plan, not the intent. If you can't restate without naming specifics, you've over-interpreted; pull back to the goal. **Main agent stays text-only - no codebase reads, no web lookups.** Wait for user confirmation.
-- **Level 2 (escalate when request has multiple readings, Level 1 answer shifts scope, OR restating would require recon)**: enter the **interview loop**. Launch `interviewer` (opus) to research the target area (filesystem + web when relevant), then probe scope, users, success criteria, and priority trade-offs. Each round, present QUESTIONS to the user, capture answers, append to `<PRIOR_ROUNDS>`, re-launch. Exit when `VERDICT: confirmed` AND `NEW_ASPECTS_FOUND: no`. Cap at 5 rounds - at the cap, present the latest direction and ask the user to confirm or reshape. Rendering follows the Concise Surfacing Contract.
+- **Level 1 (always, every tier)**: Main agent restates the **outcome** the user wants - what needs to be true when this is done, in user-observable terms. Keep it concise; clarity wins over brevity, so use a couple of sentences, a small ASCII diagram, or a brief example if that lands the point better than prose. **No file paths, schema fields, function names, API routes, or component names** - those are implementation details that belong in the plan, not the intent. If you can't restate without naming specifics, you've over-interpreted; pull back to the goal. **Main agent stays text-only - no codebase reads, no web lookups.** Wait for the user's reply.
+  - **Affirmation -> proceed**: short positive reply (`y`, `yes`, `correct`, `proceed`, `looks right`, `go`, similar). Move to Step 1.
+  - **Anything else -> reshape**: free-text additions, corrections, the user restating in their own words, or any reply that's not a bare affirmation. Treat the reply as the new `<RAW_REQUEST>` and escalate to Level 2 with it.
+- **Level 2 (on reshape OR when the request has multiple readings OR when restating would require recon)**: enter the **interview loop**. Launch `interviewer` (opus) to research the target area (filesystem + web when relevant), then probe scope, users, success criteria, and priority trade-offs. Each round, present QUESTIONS to the user, capture answers, append to `<PRIOR_ROUNDS>`, re-launch. Exit when `VERDICT: confirmed` AND `NEW_ASPECTS_FOUND: no`. Cap at 5 rounds - at the cap, present the latest direction and ask the user to confirm or reshape. Rendering follows the Concise Surfacing Contract.
 
 Emit `<CONFIRMED_INTENT>` - every downstream agent reads it.
 
@@ -112,8 +114,19 @@ The clarifier also emits `WRITES_PROPOSED` (glossary terms) on exit when the rou
 
 **Re-classify (backward edge)**: before exiting Step 3, if clarify answers (or earlier interviewer output) materially shifted scope, rerun `complexity-classifier` on intent + clarify. Scope up → add gates for the new tier going forward. Scope down → keep current gates (no retroactive downgrade). **Counts toward backward-edge budget.**
 
+### Step 3.5: Design Loop (when clarifier flagged DESIGN_LOOP_NEEDED: yes)
+
+Fires only when `<CLARIFY_OUTPUT>` carried `DESIGN_LOOP_NEEDED: yes`. Skipped otherwise.
+
+1. **Confirm parameters**: Launch `design-explorer` (opus) with intent, classification, clarify output, pre-flight findings, and `<USER_PARAM_PICKS>: none`. Output is `PHASE: confirm-params` with `PARAMS_TO_CONFIRM`. Apply the Concise Surfacing Contract 4-cap priority queue and invoke `AskUserQuestion` with the items. Capture user selections as `<USER_PARAM_PICKS>`.
+2. **Build the picker page**: Re-launch `design-explorer` with the same inputs plus `<USER_PARAM_PICKS>`. Output is `PHASE: built` with `HOST_DECISION` (sandbox vs real-page), `PAGE_FILE`, `PAGE_URL`, `CONTROLS_EXPOSED`, `COPY_SPEC_FORMAT`, `USER_INSTRUCTIONS`, and `CLEANUP_NEEDED`. Surface `USER_INSTRUCTIONS` and the page reference inline.
+3. **Wait for paste-back**: The user opens the page, flips through controls, clicks Copy on the chosen combination, pastes the labeled key-value spec back into chat. The next user message is the spec - capture it verbatim as `<LOCKED_DESIGN_SPEC>`.
+4. **Re-explore on request**: If the pasted reply asks for more options on a parameter, treat it as a refined `<USER_PARAM_PICKS>` and re-invoke the build phase. Otherwise hand `<LOCKED_DESIGN_SPEC>` (and `CLEANUP_NEEDED` when `HOST_DECISION: real-page`) to Step 4.
+
+The design loop is **free** - it does not count toward the backward-edge budget. The planner reads `<LOCKED_DESIGN_SPEC>` as input and (when real-page) folds `CLEANUP_NEEDED` into the plan's implementation steps so the picker artifacts never ship.
+
 ### Step 4: Plan (L/XL)
-Launch `planner` (opus) with intent, classification, clarify, pre-flight findings. XL presents 2-3 APPROACHES with ASCII diagrams + RECOMMENDATION. Approved output emits `<APPROVED_PLAN version="N">`.
+Launch `planner` (opus) with intent, classification, clarify, pre-flight findings, plus `<LOCKED_DESIGN_SPEC>` and `<DESIGN_CLEANUP>` from Step 3.5 (or "none" when the design loop didn't run). XL presents 2-3 APPROACHES with ASCII diagrams + RECOMMENDATION. Approved output emits `<APPROVED_PLAN version="N">`. When the design spec is bound, the planner builds to it verbatim; when cleanup is needed (real-page host), the planner folds those steps into the implementation.
 
 The plan's `## Acceptance` section attaches a `VALIDATION` type (`test`, `manual`, or `observable`) to each acceptance criterion pulled from `<CLARIFY_OUTPUT>`. The declared validation is part of the contract - acceptance-reviewer checks both the implementation AND that the named validation actually happened (test exists, observable is present at the named location, or manual is flagged for the user).
 
@@ -177,7 +190,7 @@ Summary in Step 11 cites post-fix gate results only.
 
 ### Step 10: Capture (M/L/XL)
 
-Before summarizing, harvest novel project-context items surfaced by upstream agents during this run. Aggregate every non-empty `DISCOVERIES` block from implementer, fixer, investigator, and the reviewers (correctness, quality, architecture, structure, consistency, security, performance) into `<AGGREGATED_DISCOVERIES>`. Also fold in any non-empty `WRITES_PROPOSED` block from `<CLARIFY_OUTPUT>` (glossary terms the clarifier surfaced on exit) - same dedup + approval flow applies.
+Before summarizing, harvest novel project-context items surfaced by upstream agents during this run. Aggregate every non-empty `DISCOVERIES` block from design-explorer, implementer, fixer, investigator, and the reviewers (correctness, quality, architecture, structure, consistency, security, performance) into `<AGGREGATED_DISCOVERIES>`. Also fold in any non-empty `WRITES_PROPOSED` block from `<CLARIFY_OUTPUT>` (glossary terms the clarifier surfaced on exit) - same dedup + approval flow applies.
 
 Launch `capture-agent` (opus) with `<PHASE>: 1` and `<AGGREGATED_DISCOVERIES>`. The agent dedups against the loaded PROJECT_CONTEXT (intent, stack, glossary) and emits one of:
 
@@ -204,13 +217,13 @@ Skip Step 10 entirely on S tasks - no upstream emitters run.
 Emit `<!-- pipeline-complete -->` at the end.
 
 ### Step 12: Follow-up Requests
-Every subsequent request is a new task. Re-enter Step 0. S follow-ups can skip Level 2 intent when the direction is clearly a continuation. Stay in subagent mode - main-agent context is already heavy.
+Every subsequent request is a new task. Re-enter Step 0 and run **Level 1 restate-and-wait** before any work - the gate is mandatory for follow-ups too, including S. Level 2 stays optional: skip it when the user's affirmation reads as a clean continuation; spawn the interviewer on any reshape reply per the Step 0 affirmation rule. Stay in subagent mode - main-agent context is already heavy.
 
 ## Model Tiering
 
 | Tier | Agents |
 |------|--------|
-| **opus** | classifier, interviewer, clarifier, planner, plan-challenger, implementer, acceptance-reviewer, security-reviewer, investigator, quality-reviewer, architecture-reviewer, capture-agent, adr-drafter; fixer + correctness-reviewer on L/XL |
+| **opus** | classifier, interviewer, clarifier, planner, plan-challenger, implementer, design-explorer, acceptance-reviewer, security-reviewer, investigator, quality-reviewer, architecture-reviewer, capture-agent, adr-drafter; fixer + correctness-reviewer on L/XL |
 | **sonnet** | reuse-scanner, structure-reviewer, consistency-reviewer, reuse-reviewer, test-verifier, visual-verifier, a11y-reviewer, design-consistency-reviewer, ux-reviewer, plan-adherence-reviewer, prototyper; fixer + correctness-reviewer on M |
 | **haiku** | health-checker, prototype-identifier, researcher |
 
@@ -237,7 +250,7 @@ Step 0 Level 2 (interviewer) and Step 3 (clarifier) run as loops, not single pas
 
 **Purpose**: Inline prose stays only for decisions. Multi-option choices render through `AskUserQuestion` so reasoning lives in `description`/`preview` instead of inline prose. Recon notes and round-over-round restatements still exist in the subagent output - the user opens them on demand by scrolling the transcript.
 
-**In scope**: Step 0 Level 2 (interviewer), Step 3 (clarifier), Step 5 (plan-challenger).
+**In scope**: Step 0 Level 2 (interviewer), Step 3 (clarifier), Step 3.5 (design-explorer's `PARAMS_TO_CONFIRM` phase), Step 5 (plan-challenger).
 
 **Out of scope** (each excluded for a reason):
 - **Step 0 Level 1**: stays plain text. Single-sentence restate; a picker would add ceremony for what's essentially confirm/correct.
@@ -246,10 +259,11 @@ Step 0 Level 2 (interviewer) and Step 3 (clarifier) run as loops, not single pas
 - **Pre-flight agents**: unchanged. Not user-facing.
 - **Post-impl reviewers**: unchanged.
 
-**MUST-render rule**: when the main agent has just received output from `interviewer`, `requirements-clarifier`, or `plan-challenger`, AND any of the following would otherwise render as a prose list -
+**MUST-render rule**: when the main agent has just received output from `interviewer`, `requirements-clarifier`, `design-explorer`, or `plan-challenger`, AND any of the following would otherwise render as a prose list -
 - non-empty `QUESTIONS`
 - still-open items in `PRIOR_ROUNDS`-tracked `DEFERRED_QUESTIONS`
 - promoted `[unsure]` criteria or assumptions (clarifier only)
+- non-empty `PARAMS_TO_CONFIRM` or `DEFERRED_PARAMS` (design-explorer only)
 - non-empty `CHALLENGE_QUESTIONS` (challenger only)
 
 - the main agent MUST invoke `AskUserQuestion` instead of emitting a numbered prose list. When all of those are empty AND the agent's exit criteria hold, the main agent proceeds without prompting. Single-question single-select auto-submits per `AskUserQuestion` CLI behavior - that is expected.
@@ -381,7 +395,7 @@ A reviewer MUST NOT:
 
 ### Discoveries
 
-Every reviewer (and implementer, fixer, investigator) appends a `DISCOVERIES` block as the last section of its output. This is the channel for novel project-context items the agent noticed in passing while doing its primary job - terms that should be canonical, drift from the declared stack or intent. Step 10 (Capture) aggregates these and offers them to the user.
+Every reviewer (and implementer, fixer, investigator, design-explorer) appends a `DISCOVERIES` block as the last section of its output. This is the channel for novel project-context items the agent noticed in passing while doing its primary job - terms that should be canonical, drift from the declared stack or intent. Step 10 (Capture) aggregates these and offers them to the user.
 
 **Exception - non-emitters:** accessibility-reviewer, ux-reviewer, and design-consistency-reviewer do not emit DISCOVERIES - their scope is WCAG/visual/UX checks, not domain content. test-verifier, plan-adherence-reviewer, reuse-reviewer, and acceptance-reviewer also do not emit DISCOVERIES (mechanical/blueprint-fidelity/duplication-check/intent-fulfillment respectively, not domain-novelty surfaces).
 

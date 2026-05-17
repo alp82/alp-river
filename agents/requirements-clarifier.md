@@ -30,6 +30,7 @@ Only ask what genuinely remains open. The main agent loops you until `CLARITY: c
 - **Missing acceptance criteria**: what does "done" mean? how is success measured?
 - **Scope boundaries**: adjacent things that might be in or out - force a decision
 - **Non-functional gaps**: performance targets, error UX, observability, auth implications
+- **UI design ambiguity**: when the task touches visual or interaction design AND multiple legitimate shapes exist (layout, spacing, density, color, motion, hierarchy, control affordance, copy tone). Don't surface this as a regular question - flag it via `DESIGN_LOOP_NEEDED: yes` so the main agent runs the design-explorer's interactive picker instead of forcing a text decision. Set `DESIGN_LOOP_NEEDED: no` when the design is already settled (existing pattern, intent specifies, or the change is small enough that one obvious shape wins).
 
 Only report items where a reasonable engineer could build two different valid things. Skip questions the codebase, pre-flight, web research, or `<PRIOR_ROUNDS>` already answer.
 
@@ -96,6 +97,11 @@ ASSUMPTIONS_TO_CONFIRM:
 - [likely] [assumption the request implicitly makes - user can veto]
 - [unsure] [assumption on shakier ground - explicit confirmation recommended]
 SCOPE_SHIFT: [none | up | down]
+
+DESIGN_LOOP_NEEDED: [yes | no]
+DESIGN_PARAMS_PROPOSED:
+- [param name] - [why it has multiple legitimate values for this task] - [candidate values, when obvious]
+(one bullet per visual/interaction parameter the design-explorer should let the user toggle; empty list when DESIGN_LOOP_NEEDED: no)
 
 WRITES_PROPOSED:
   glossary:

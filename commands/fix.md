@@ -13,9 +13,12 @@ Task: $ARGUMENTS
 
 ## Step 0: Intent
 
-**Level 1** (always): Restate the **outcome** the user wants - what needs to be true when this is done, in user-observable terms. Keep it concise; clarity wins over brevity, so use a couple of sentences, a small ASCII diagram, or a brief example if that lands the point better than prose. **No file paths, schema fields, function names, API routes, or component names** - those belong in the plan, not the intent. If you can't restate without naming specifics, you've over-interpreted; pull back to the goal. **Main agent stays text-only - no codebase reads, no web lookups.** Wait for confirmation.
+**Level 1** (always, every tier): Restate the **outcome** the user wants - what needs to be true when this is done, in user-observable terms. Keep it concise; clarity wins over brevity, so use a couple of sentences, a small ASCII diagram, or a brief example if that lands the point better than prose. **No file paths, schema fields, function names, API routes, or component names** - those belong in the plan, not the intent. If you can't restate without naming specifics, you've over-interpreted; pull back to the goal. **Main agent stays text-only - no codebase reads, no web lookups.** Wait for the user's reply.
 
-**Level 2** (escalate when the user's answer shifts scope, the request has multiple plausible readings, OR restating would require recon): enter the **interview loop**.
+- **Affirmation -> proceed**: short positive reply (`y`, `yes`, `correct`, `proceed`, `looks right`, `go`, similar). Move to Step 1.
+- **Anything else -> reshape**: free-text additions, corrections, or the user restating in their own words. Treat the reply as the new `<RAW_REQUEST>` and escalate to Level 2 with it.
+
+**Level 2** (on reshape, OR when the request has multiple plausible readings, OR when restating would require recon): enter the **interview loop**.
 
 - Round 1: Launch `interviewer` with `<RAW_REQUEST>`, `<L1_CONFIRMATION>`, `<PRIOR_ROUNDS>: none`.
 - Each round, read `LOOKUPS_PERFORMED`, `VERDICT`, `NEW_ASPECTS_FOUND`, `QUESTIONS`, `DEFERRED_QUESTIONS`. Exit when `confirmed` AND `NEW_ASPECTS_FOUND: no`; capture `<CONFIRMED_INTENT>` and `EXTERNAL_DEPS_FLAG`. Otherwise, if QUESTIONS is non-empty (or DEFERRED_QUESTIONS carried open items from prior rounds), apply the AGENTS.md Concise Surfacing Contract 4-cap priority queue and invoke `AskUserQuestion` with the resulting items. Do not emit a numbered prose list. Capture answers, append one-line entries to `<PRIOR_ROUNDS>` (`R{n}.Q{i}: ... | A: ...`), thread any unanswered DEFERRED_QUESTIONS into the next round's `<PRIOR_ROUNDS>`, re-launch.
@@ -64,6 +67,20 @@ Skip the loop entirely when the task is clear from pre-flight alone. The clarify
 
 **Re-classify (backward edge)**: before exiting Step 3, if clarifier returned `SCOPE_SHIFT: up`, rerun `complexity-classifier` with `<CONFIRMED_INTENT>`, `<CLARIFY_OUTPUT>`, `<PRIOR_CLASSIFICATION>`. If `SCOPE_MOVED: yes` and new COMPLEXITY is L or XL, tell the user "reclassifies as L/XL - re-run under `/feature`" and **STOP**. If new COMPLEXITY is XXL, tell the user "reclassifies as XXL - too big for one task. Re-run under `/feature`; it will surface a pushback with the suggested decomposition." then list the `SUGGESTED_SPLIT` bullets and **STOP**. Counts as one backward edge if it fires.
 
+## Step 3.5: Design Loop (M only, when DESIGN_LOOP_NEEDED: yes)
+
+S tasks skip this step entirely (no clarify ran). M tasks skip it unless `<CLARIFY_OUTPUT>` carried `DESIGN_LOOP_NEEDED: yes`.
+
+1. **Confirm parameters.** Launch `design-explorer` with `<CONFIRMED_INTENT>`, `<CLASSIFICATION>`, `<CLARIFY_OUTPUT>`, `<PREFLIGHT>`, `<USER_PARAM_PICKS>: none`. Apply the Concise Surfacing Contract to `PARAMS_TO_CONFIRM` and invoke `AskUserQuestion`. Capture selections.
+
+2. **Build the picker page.** Re-launch `design-explorer` with the populated `<USER_PARAM_PICKS>`. Surface `HOST_DECISION` + `PAGE_FILE` / `PAGE_URL` + `USER_INSTRUCTIONS` inline.
+
+3. **Wait for paste-back.** Capture the user's next message verbatim as `<LOCKED_DESIGN_SPEC>`. If the reply asks for more options on a parameter, treat as refined `<USER_PARAM_PICKS>` and re-invoke the build phase; otherwise proceed.
+
+Main agent implements to `<LOCKED_DESIGN_SPEC>` in Step 4. When `HOST_DECISION: real-page`, fold `CLEANUP_NEEDED` into the implementation work so the picker artifacts do not ship.
+
+The design loop is free - it does not count toward the backward-edge budget.
+
 ## Step 4: Implement
 
 **S tasks**: main agent implements directly, informed by reuse findings.
@@ -110,7 +127,7 @@ Summary cites post-fix gate results.
 
 **S tasks**: skip - no upstream emitters ran.
 
-**M tasks**: aggregate every non-empty `DISCOVERIES` block from this run's upstream agents (implementer was you, but fixer + the broad/specialist reviewers all emit) into `<AGGREGATED_DISCOVERIES>`. Drop blocks where every bucket is `(none)`.
+**M tasks**: aggregate every non-empty `DISCOVERIES` block from this run's upstream agents (implementer was you, but design-explorer + fixer + the broad/specialist reviewers all emit) into `<AGGREGATED_DISCOVERIES>`. Drop blocks where every bucket is `(none)`.
 
 **Fold in clarifier WRITES_PROPOSED.** If Step 3 ran the clarify loop and `<CLARIFY_OUTPUT>` contained a non-empty `WRITES_PROPOSED` block (glossary terms), merge those entries into `<AGGREGATED_DISCOVERIES>` under a synthetic `requirements-clarifier` source label.
 

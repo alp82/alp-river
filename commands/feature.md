@@ -15,9 +15,12 @@ Feature request: $ARGUMENTS
 
 ## Step 0: Intent
 
-**Level 1** (always): Restate the **outcome** the user wants - what needs to be true when this is done, in user-observable terms. Keep it concise; clarity wins over brevity, so use a couple of sentences, a small ASCII diagram, or a brief example if that lands the point better than prose. **No file paths, schema fields, function names, API routes, or component names** - those belong in the plan, not the intent. If you can't restate without naming specifics, you've over-interpreted; pull back to the goal. **Main agent stays text-only - no codebase reads, no web lookups.** Wait for user confirmation.
+**Level 1** (always, every tier): Restate the **outcome** the user wants - what needs to be true when this is done, in user-observable terms. Keep it concise; clarity wins over brevity, so use a couple of sentences, a small ASCII diagram, or a brief example if that lands the point better than prose. **No file paths, schema fields, function names, API routes, or component names** - those belong in the plan, not the intent. If you can't restate without naming specifics, you've over-interpreted; pull back to the goal. **Main agent stays text-only - no codebase reads, no web lookups.** Wait for the user's reply.
 
-**Level 2** (escalate when the request has multiple plausible readings, the Level 1 answer shifted scope, OR restating would require recon): enter the **interview loop**.
+- **Affirmation -> proceed**: short positive reply (`y`, `yes`, `correct`, `proceed`, `looks right`, `go`, similar). Move to Step 1.
+- **Anything else -> reshape**: free-text additions, corrections, or the user restating in their own words. Treat the reply as the new `<RAW_REQUEST>` and escalate to Level 2 with it.
+
+**Level 2** (on reshape, OR when the request has multiple plausible readings, OR when restating would require recon): enter the **interview loop**.
 
 - Round 1: Launch `interviewer` with `<RAW_REQUEST>`, `<L1_CONFIRMATION>`, `<PRIOR_ROUNDS>: none`.
 - Each round:
@@ -168,10 +171,28 @@ If `SCOPE_MOVED: yes`:
 
 **Re-fire Gate 1**: if re-classify lands at L or XL AND Gate 1 has not yet fired in this run at L/XL AND no XXL pushback this run already cleared cost confirmation (covers M->L/XL upgrade only - dormant in /feature in practice since Step 1 stops on S/M, kept for symmetry with /plan), fire the same Gate 1 block from Step 1 here, before continuing to Step 4. Use the current `<SCOPE_DOWN_COUNT>`. A scope-down here also re-enters Step 0 with the new RAW_REQUEST.
 
+## Step 3.5: Design Loop (when DESIGN_LOOP_NEEDED: yes)
+
+Skip this step entirely when `<CLARIFY_OUTPUT>` carried `DESIGN_LOOP_NEEDED: no` (or omitted the field). Otherwise:
+
+1. **Confirm parameters.** Launch `design-explorer`:
+   - Input: `<CONFIRMED_INTENT>`, `<CLASSIFICATION>`, `<CLARIFY_OUTPUT>`, `<PREFLIGHT>`, `<USER_PARAM_PICKS>: none`.
+   - Output is `PHASE: confirm-params` with `PARAMS_TO_CONFIRM` and optional `DEFERRED_PARAMS`. Apply the AGENTS.md Concise Surfacing Contract 4-cap priority queue and invoke `AskUserQuestion` with the items. Capture user selections as `<USER_PARAM_PICKS>`.
+
+2. **Build the picker page.** Re-launch `design-explorer` with the same inputs plus the populated `<USER_PARAM_PICKS>`.
+   - Output is `PHASE: built` with `HOST_DECISION`, `PAGE_FILE`, `PAGE_URL`, `CONTROLS_EXPOSED`, `COPY_SPEC_FORMAT`, `USER_INSTRUCTIONS`, and `CLEANUP_NEEDED`.
+   - Surface `HOST_DECISION` + `PAGE_FILE` / `PAGE_URL` + `USER_INSTRUCTIONS` inline. Tell the user to open the page, pick a combination, click Copy spec, and paste the resulting string back into chat.
+
+3. **Wait for paste-back.** The next user message is the locked spec. Capture it verbatim as `<LOCKED_DESIGN_SPEC>`.
+
+4. **Refine on request.** If the pasted reply is a request for more options rather than a spec (e.g. "give me wider spacing range" or "add a motion control"), treat it as refined `<USER_PARAM_PICKS>` and re-invoke the build phase. Otherwise proceed to Step 4 with `<LOCKED_DESIGN_SPEC>` (and `CLEANUP_NEEDED` when `HOST_DECISION: real-page`) ready for the planner.
+
+The design loop is **free** - it does not count toward the backward-edge budget. Sandbox pages stay in `.prototypes/` for reference; real-page artifacts get torn down via plan steps generated from `CLEANUP_NEEDED`.
+
 ## Step 4: Plan
 
 Launch `planner`:
-- Input: `<CONFIRMED_INTENT>`, `<CLASSIFICATION>`, `<CLARIFY_OUTPUT>`, `<PREFLIGHT>`.
+- Input: `<CONFIRMED_INTENT>`, `<CLASSIFICATION>`, `<CLARIFY_OUTPUT>`, `<PREFLIGHT>`, `<LOCKED_DESIGN_SPEC>` (from Step 3.5, or "none" when the design loop didn't run), `<DESIGN_CLEANUP>` (Step 3.5's `CLEANUP_NEEDED` when `HOST_DECISION: real-page`, or "none").
 
 On XL, planner presents 2-3 APPROACHES with ASCII diagrams + RECOMMENDATION.
 
@@ -254,7 +275,7 @@ Summary in Step 11 cites post-fix gate results only.
 
 ## Step 10: Capture
 
-Aggregate every non-empty `DISCOVERIES` block from this run's upstream agents (implementer, fixer, investigator, correctness-reviewer, quality-reviewer, architecture-reviewer, structure-reviewer, consistency-reviewer, security-reviewer, performance-reviewer) into `<AGGREGATED_DISCOVERIES>`. Drop blocks where every bucket is `(none)`.
+Aggregate every non-empty `DISCOVERIES` block from this run's upstream agents (design-explorer, implementer, fixer, investigator, correctness-reviewer, quality-reviewer, architecture-reviewer, structure-reviewer, consistency-reviewer, security-reviewer, performance-reviewer) into `<AGGREGATED_DISCOVERIES>`. Drop blocks where every bucket is `(none)`.
 
 **Fold in clarifier WRITES_PROPOSED.** If `<CLARIFY_OUTPUT>` from Step 3 contained a non-empty `WRITES_PROPOSED` block (glossary terms), merge those entries into `<AGGREGATED_DISCOVERIES>` under a synthetic `requirements-clarifier` source label. They go through the same dedup + approval flow as the reviewers' discoveries.
 
