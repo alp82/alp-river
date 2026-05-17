@@ -12,9 +12,9 @@ The whole pipeline ships in one folder. Doctrine, 31 subagents, 8 slash commands
 
 The last three versions:
 
+- **0.2.5: validation per criterion, visual reviewer opt-in, two prototypes on high novelty** - Plans now declare HOW each acceptance criterion gets verified (automated test, manual check, or observable code); the acceptance reviewer enforces that the declared validation actually exists. Visual reviewer no longer auto-fires - you get a single Y/n offer when UI is touched (default yes on XL, default no on M/L). And when the prototype identifier judges a target as high-novelty (the *shape* of the solution is genuinely uncertain), the prototyper builds two differently-shaped tracer bullets side-by-side so the planner picks on evidence, not intuition.
+- **0.2.4: XXL classification pushes back on jobs that are too big** - The classifier now grades tasks S/M/L/XL/**XXL**. XXL means "this spans more than fits in one task" - the classifier suggests how to split it, and `/feature` and `/plan` pause before any other work to ask: pick a slice, treat as XL anyway (explicit acknowledgment required), or drop it. `/fix` hands off to `/feature` with the suggested split for reference.
 - **0.2.3: pre-plan questions become a picker** - Intent, clarify, and plan-critique rounds in `/feature`, `/fix`, and `/plan` ask via picker options. The agent's working notes stay in the transcript instead of dumped inline.
-- **0.2.2: cost checks before big jobs, and a sharper plan critic** - `/feature` and `/plan` pause on L and XL to ask if the work is worth doing - keep going, narrow scope, or drop it. The plan critic also calls out plans that reach farther than the goal needs, with a one-line "drop X to land Y" hint.
-- **0.2.1: architecture-reviewer joins the specialist pass** - Flags shallow wrappers, single-call modules, premature seams, and leaky interfaces via the deletion test. Quality narrows to tool / altitude / elegance, structure to size / nesting / layer crossings.
 
 Full history in [CHANGELOG.md](CHANGELOG.md).
 
@@ -52,7 +52,7 @@ Override the grade with natural language: *treat this as L*, *skip clarify*, *go
 
 ## How the river flows
 
-A complexity classifier reads each task and grades it **S**, **M**, **L**, or **XL**. The grade decides which stages run.
+A complexity classifier reads each task and grades it **S**, **M**, **L**, **XL**, or **XXL**. The grade decides which stages run. XXL is a pushback - the classifier judges the task too big for one run and proposes a decomposition before any other gate fires.
 
 A SessionStart hook reads `AGENTS.md` and injects it into every Claude session as foundational context. Doctrine is always loaded, no per-file imports, no skill matching. After `/compact`, it fires again to restore doctrine plus the canonical workflow state (intent, classification, approved plan).
 
@@ -205,7 +205,7 @@ flowchart TB
 | Agent | Tier | Role |
 |-------|------|------|
 | *interviewer* | opus | Level 2 intent - probes scope, users, success criteria when the request has multiple readings or the Level 1 answer shifts scope. |
-| complexity-classifier | opus | Grades each task S / M / L / XL and gates which downstream stages run. |
+| complexity-classifier | opus | Grades each task S / M / L / XL / XXL and gates which downstream stages run. On XXL, returns a suggested decomposition the main agent surfaces as a pushback (split / treat-as-XL / abandon). |
 
 ### Prepare (Steps 2-3)
 
@@ -213,16 +213,16 @@ flowchart TB
 |-------|------|------|
 | reuse-scanner | sonnet | Finds reusable code and quick-win refactors before implementation. |
 | health-checker | haiku | Scores code-health of the touched area, surfaces cleanup targets. |
-| prototype-identifier | haiku | Flags external APIs / SDK novelty that need a tracer bullet. |
+| prototype-identifier | haiku | Flags external APIs / SDK novelty that need a tracer bullet. Tags each target with NOVELTY (low/med/high); on high, also suggests two alternative shapes for the prototyper to build side-by-side. |
 | researcher | haiku | Pulls library / framework / domain knowledge from the web. |
-| *prototyper* | sonnet | Builds tracer-bullet prototypes in `.prototypes/` when prototype-identifier flags external surface. |
+| *prototyper* | sonnet | Builds tracer-bullet prototypes in `.prototypes/` when prototype-identifier flags external surface. On high-novelty targets, builds two differently-shaped tracers side-by-side and reports an evidence-based comparison. |
 | requirements-clarifier | opus | Surfaces ambiguity, edge cases, and proposed acceptance criteria as a numbered question list before the planner runs. |
 
 ### Design (Steps 4-5)
 
 | Agent | Tier | Role |
 |-------|------|------|
-| planner | opus | Designs the implementation blueprint. On XL, presents 2-3 approaches with a recommendation. |
+| planner | opus | Designs the implementation blueprint. On XL, presents 2-3 approaches with a recommendation. Attaches a validation type (test/manual/observable) to every acceptance criterion. |
 | plan-challenger | opus | Adversarial review - pokes holes, names failure modes, proposes simpler alternatives. |
 
 ### Build (Step 6)
@@ -240,7 +240,7 @@ flowchart TB
 | test-verifier | sonnet | Runs the project's test suite, fails fast. |
 | correctness-reviewer | sonnet (M) / opus (L/XL) | Bugs, type holes, dead code, project convention adherence. |
 | quality-reviewer | opus | Engineering judgment - hacky shortcuts, bloat, wrong tool for the job, unelegant solutions. Reads imports and deps first. |
-| acceptance-reviewer | opus | Verifies every requirement and acceptance criterion maps to actual code; flags scope drift. |
+| acceptance-reviewer | opus | Verifies every requirement and acceptance criterion maps to actual code AND that the plan's declared validation per criterion is in place (test exists, observable is at the named location, manual is flagged for the user); flags scope drift. |
 | *plan-adherence-reviewer* | sonnet | L/XL only. Checks the implementer followed the plan's file list, signatures, and ordering. |
 
 **Specialist pass** - fires only when its trigger matches: a broad-pass finding in its domain, or touched files inside its scope.
@@ -256,7 +256,7 @@ flowchart TB
 | accessibility-reviewer | sonnet | Touched files include UI components. |
 | design-consistency-reviewer | sonnet | Touched files include UI components. |
 | ux-reviewer | sonnet | Touched files include UI components. |
-| visual-verifier | sonnet | XL + UI; uses playwright-cli to screenshot and verify. |
+| visual-verifier | sonnet | UI touched; inline Y/n offer at the specialist pass (default yes on XL, default no on M/L). Uses playwright-cli to screenshot and verify. |
 
 **Self-heal** - applies fixes once the broad and specialist passes have produced findings.
 

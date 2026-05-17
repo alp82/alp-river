@@ -35,11 +35,13 @@ Launch `complexity-classifier`:
 
 If COMPLEXITY is S or M: tell the user "this classifies as S/M - re-run under `/fix` for the lighter pipeline." Then **STOP** this command.
 
-If COMPLEXITY is L or XL: continue.
+If COMPLEXITY is L, XL, or XXL: continue.
 
-### Setup nudge (L/XL, first-fire)
+If COMPLEXITY is XXL, fire the **XXL pushback** block below before the setup nudge and Gate 1.
 
-On first L/XL classification in this run, before Gate 1's prompt:
+### Setup nudge (L/XL/XXL, first-fire)
+
+On first L/XL/XXL classification in this run, before XXL pushback or Gate 1's prompt:
 
 1. Check whether `docs/INTENT.md` exists.
 2. Read `.claude/settings.local.json` if present and look up `alpRiver.skipSetup`. Treat a missing file or missing key as `false`.
@@ -50,11 +52,50 @@ On first L/XL classification in this run, before Gate 1's prompt:
 
 Advisory only - does not block, does not add an interaction step, does not re-fire on re-classify, does not count against the backward-edge budget.
 
+### XXL pushback (XXL only, fires before Gate 1)
+
+<!-- XXL pushback exclusion: stays prose for the same reason as Gate 1 - cost confirmation with explicit-acknowledgment required for "treat as XL". A picker would let the user bare-Enter through it. See AGENTS.md Concise Surfacing Contract. -->
+
+<!-- Keep this block in sync with the matching XXL pushback block in the other command file (feature.md <-> plan.md). Edit both together. -->
+
+When the classifier (first pass or re-classify upgrade) returns COMPLEXITY: XXL, fire this block **before** Gate 1.
+
+Initialize on first fire (if not already initialized by Gate 1): `<SCOPE_DOWN_COUNT> = 0`. Threaded through subsequent gate fires and shared with Gate 1's counter.
+
+**If `<SCOPE_DOWN_COUNT> < 2`**, render:
+
+```
+This classifies as XXL: <REASON>.
+
+Spans more than fits cleanly into one task. Suggested decomposition:
+<SUGGESTED_SPLIT, one bullet per line, verbatim from classifier output>
+
+Worth it? [split / treat as XL / abandon] (split cycles used: <SCOPE_DOWN_COUNT>/2)
+```
+
+Interpret user input:
+- `split` / `decompose` / `narrow` / `smaller` -> ask:
+  > Which slice do you want to tackle now? Pick one from the suggested decomposition by number, or describe a different scope reduction in your own words.
+
+  Take the user's reply, increment `<SCOPE_DOWN_COUNT>`, feed the reply as the new `<RAW_REQUEST>` into Step 0 Level 1 restatement, and run the normal intent loop. After re-classify, this block (or Gate 1) fires again per the resulting tier.
+- `treat as XL` / `treat-as-xl` / `keep as one` -> requires an **explicit affirmative word or phrase**; bare Enter is **not** a default - re-prompt instead. On accept, continue as XL for all downstream gates and record `EFFECTIVE_TIER: XL` for plan/challenge/implement/review stages. This path counts as if Gate 1 fired and the user picked `continue` - **Gate 1 does not re-fire this run**.
+- `abandon` / `n` / `no` / `stop` / `quit` -> stop the command; emit no `<!-- pipeline-complete -->`.
+
+**If `<SCOPE_DOWN_COUNT> >= 2` (cap reached)**, prompt with:
+
+`Split cycles used. Classified XXL: <REASON>. Worth it? [treat as XL / abandon]`
+
+(No `split` option.) `treat as XL` still requires explicit acknowledgment; `abandon` stops.
+
+XXL pushback cycles are **free** - they do not count toward the backward-edge budget.
+
 ### Gate 1: Pre-plan cost check (L/XL)
 
 <!-- Gate 1 exclusion: Gate 1 stays as prose (binary continue/abandon decision tied to cost confirmation). AskUserQuestion would add friction for a single-keystroke choice. See AGENTS.md Concise Surfacing Contract. -->
 
 <!-- Keep this block in sync with the matching gate block in the other command file (feature.md <-> plan.md). Edit both together. -->
+
+Skip Gate 1 if XXL pushback fired this run and the user chose `treat as XL` (cost confirmation already given via the pushback).
 
 After the classifier (or re-classifier) lands at L or XL **for the first time in this run**, pause before continuing to pre-flight (or, on re-classify, to Step 4).
 
@@ -119,12 +160,13 @@ The clarify loop is free - does NOT count toward the backward-edge budget.
 
 If `SCOPE_MOVED: yes`:
 - **Up to XL from L** → adopt XL gates going forward (multi-approach planner, plan-adherence reviewer already in L/XL, visual-verifier on UI).
+- **Up to XXL** (from L or XL) → fire the **XXL pushback** block from Step 1 here, before continuing. `split` re-enters Step 0 with the chosen slice as new RAW_REQUEST and increments `<SCOPE_DOWN_COUNT>`. `treat as XL` continues with XL gates from here. `abandon` stops.
 - **Up from M to L/XL** → you're in the wrong command - tell the user "classifies as L/XL now, continuing under /feature" (you're already here, just proceed with the new tier).
 - **Down** → keep current-tier gates, note downgrade, don't retract any step already executed.
 
 **Counts as one backward edge.**
 
-**Re-fire Gate 1**: if re-classify lands at L or XL AND Gate 1 has not yet fired in this run at L/XL (covers M->L/XL upgrade only - dormant in /feature in practice since Step 1 stops on S/M, kept for symmetry with /plan), fire the same Gate 1 block from Step 1 here, before continuing to Step 4. Use the current `<SCOPE_DOWN_COUNT>`. A scope-down here also re-enters Step 0 with the new RAW_REQUEST.
+**Re-fire Gate 1**: if re-classify lands at L or XL AND Gate 1 has not yet fired in this run at L/XL AND no XXL pushback this run already cleared cost confirmation (covers M->L/XL upgrade only - dormant in /feature in practice since Step 1 stops on S/M, kept for symmetry with /plan), fire the same Gate 1 block from Step 1 here, before continuing to Step 4. Use the current `<SCOPE_DOWN_COUNT>`. A scope-down here also re-enters Step 0 with the new RAW_REQUEST.
 
 ## Step 4: Plan
 
@@ -187,7 +229,11 @@ Gate each specialist on broad-pass finding OR touched files matching its domain.
 - `accessibility-reviewer` - touched files include UI components
 - `design-consistency-reviewer` - touched files include UI components
 - `ux-reviewer` - touched files include UI components
-- `visual-verifier` - XL and touched files include UI. Input `<TARGET>` (route/URL from project CLAUDE.md), `<CONFIRMED_INTENT>`, `<TOUCHED_FILES>`. Ask user before running on XL per the gate matrix.
+- `visual-verifier` - touched files include UI. Render inline offer before launching this step's parallel pass; the other specialists below fire regardless:
+  - XL: `UI touched. Run visual-verifier on <inferred route>? [Y/n] (default: yes - bare Enter runs)`
+  - L: `UI touched. Run visual-verifier on <inferred route>? [y/N] (default: no - bare Enter skips)`
+
+  Interpret: `y` / `yes` → launch with `<TARGET>` (route/URL from project CLAUDE.md), `<CONFIRMED_INTENT>`, `<TOUCHED_FILES>`. `n` / `no` / bare-Enter-when-default-N → skip.
 
 Nothing flagged and no domain match → skip Step 8.
 

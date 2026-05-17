@@ -30,6 +30,8 @@ Launch `complexity-classifier`:
 
 If COMPLEXITY is L or XL: tell the user "classifies as L/XL - re-run under `/feature` for the full pipeline." **STOP** this command.
 
+If COMPLEXITY is XXL: tell the user "classifies as XXL - too big for one task. Re-run under `/feature` for the full pipeline (it will surface a pushback with the suggested split before any other work). Classifier's suggested decomposition for reference:" then list the `SUGGESTED_SPLIT` bullets verbatim. **STOP** this command.
+
 S and M continue here.
 
 ## Step 2: Pre-flight
@@ -60,7 +62,7 @@ If the pre-flight results leave material ambiguities, enter the **clarify loop**
 
 Skip the loop entirely when the task is clear from pre-flight alone. The clarify loop is free - does NOT count toward the backward-edge budget.
 
-**Re-classify (backward edge)**: before exiting Step 3, if clarifier returned `SCOPE_SHIFT: up`, rerun `complexity-classifier` with `<CONFIRMED_INTENT>`, `<CLARIFY_OUTPUT>`, `<PRIOR_CLASSIFICATION>`. If `SCOPE_MOVED: yes` and new COMPLEXITY is L or XL, tell the user "reclassifies as L/XL - re-run under `/feature`" and **STOP**. Counts as one backward edge if it fires.
+**Re-classify (backward edge)**: before exiting Step 3, if clarifier returned `SCOPE_SHIFT: up`, rerun `complexity-classifier` with `<CONFIRMED_INTENT>`, `<CLARIFY_OUTPUT>`, `<PRIOR_CLASSIFICATION>`. If `SCOPE_MOVED: yes` and new COMPLEXITY is L or XL, tell the user "reclassifies as L/XL - re-run under `/feature`" and **STOP**. If new COMPLEXITY is XXL, tell the user "reclassifies as XXL - too big for one task. Re-run under `/feature`; it will surface a pushback with the suggested decomposition." then list the `SUGGESTED_SPLIT` bullets and **STOP**. Counts as one backward edge if it fires.
 
 ## Step 4: Implement
 
@@ -87,8 +89,7 @@ Gate each specialist on broad-pass finding OR touched files matching its domain.
 - `security-reviewer` - auth/permissions/session/input-handling code
 - `performance-reviewer` - db/query/hot-path code
 - UI specialists (`accessibility-reviewer`, `design-consistency-reviewer`, `ux-reviewer`) - UI files
-
-Visual-verifier stays out of the M pipeline.
+- `visual-verifier` - touched files include UI. Render inline offer: `UI touched. Run visual-verifier on <inferred route>? [y/N] (default: no - bare Enter skips)`. On `y` / `yes`, launch with `<TARGET>` (route/URL from project CLAUDE.md), `<CONFIRMED_INTENT>`, `<TOUCHED_FILES>`. On `n` / bare Enter, skip. Other specialists in this step fire in parallel regardless.
 
 ## Step 7: Self-heal
 

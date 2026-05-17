@@ -32,12 +32,52 @@ Launch `complexity-classifier` with `<CONFIRMED_INTENT>`.
 - **S**: Ask the user "this is a one-liner - do you want a lightweight approach sketch, or should we jump to `/fix`?" If they want a sketch, produce 2-3 sentences + files to touch and **STOP**. Otherwise tell them "re-run under `/fix`" and **STOP**.
 - **M**: continue without Gate 1.
 - **L/XL**: continue. **Insert canonical Gate 1 block immediately below.**
+- **XXL**: continue. **Fire the XXL pushback block first**, then Gate 1 (skipped if user chose `treat as XL`).
+
+### XXL pushback (XXL only, fires before Gate 1)
+
+<!-- XXL pushback exclusion: stays prose for the same reason as Gate 1 - cost confirmation with explicit-acknowledgment required for "treat as XL". A picker would let the user bare-Enter through it. See AGENTS.md Concise Surfacing Contract. -->
+
+<!-- Keep this block in sync with the matching XXL pushback block in the other command file (feature.md <-> plan.md). Edit both together. -->
+
+When the classifier (first pass or re-classify upgrade) returns COMPLEXITY: XXL, fire this block **before** Gate 1.
+
+Initialize on first fire (if not already initialized by Gate 1): `<SCOPE_DOWN_COUNT> = 0`. Threaded through subsequent gate fires and shared with Gate 1's counter.
+
+**If `<SCOPE_DOWN_COUNT> < 2`**, render:
+
+```
+This classifies as XXL: <REASON>.
+
+Spans more than fits cleanly into one task. Suggested decomposition:
+<SUGGESTED_SPLIT, one bullet per line, verbatim from classifier output>
+
+Worth it? [split / treat as XL / abandon] (split cycles used: <SCOPE_DOWN_COUNT>/2)
+```
+
+Interpret user input:
+- `split` / `decompose` / `narrow` / `smaller` -> ask:
+  > Which slice do you want to tackle now? Pick one from the suggested decomposition by number, or describe a different scope reduction in your own words.
+
+  Take the user's reply, increment `<SCOPE_DOWN_COUNT>`, feed the reply as the new `<RAW_REQUEST>` into Step 0 Level 1 restatement, and run the normal intent loop. After re-classify, this block (or Gate 1) fires again per the resulting tier.
+- `treat as XL` / `treat-as-xl` / `keep as one` -> requires an **explicit affirmative word or phrase**; bare Enter is **not** a default - re-prompt instead. On accept, continue as XL for all downstream gates and record `EFFECTIVE_TIER: XL` for plan/challenge stages. This path counts as if Gate 1 fired and the user picked `continue` - **Gate 1 does not re-fire this run**.
+- `abandon` / `n` / `no` / `stop` / `quit` -> stop the command; emit no `<!-- pipeline-complete -->`.
+
+**If `<SCOPE_DOWN_COUNT> >= 2` (cap reached)**, prompt with:
+
+`Split cycles used. Classified XXL: <REASON>. Worth it? [treat as XL / abandon]`
+
+(No `split` option.) `treat as XL` still requires explicit acknowledgment; `abandon` stops.
+
+XXL pushback cycles are **free** - they do not count toward the backward-edge budget.
 
 ### Gate 1: Pre-plan cost check (L/XL)
 
 <!-- Gate 1 exclusion: Gate 1 stays as prose (binary continue/abandon decision tied to cost confirmation). AskUserQuestion would add friction for a single-keystroke choice. See AGENTS.md Concise Surfacing Contract. -->
 
 <!-- Keep this block in sync with the matching gate block in the other command file (feature.md <-> plan.md). Edit both together. -->
+
+Skip Gate 1 if XXL pushback fired this run and the user chose `treat as XL` (cost confirmation already given via the pushback).
 
 After the classifier (or re-classifier) lands at L or XL **for the first time in this run**, pause before continuing to pre-flight (or, on re-classify, to Step 4).
 
@@ -95,7 +135,9 @@ The clarify loop is free - does NOT count toward the backward-edge budget.
 
 **Re-classify (backward edge)**: before exiting Step 3, if clarifier returned `SCOPE_SHIFT: up` or `down`, rerun `complexity-classifier` with `<CONFIRMED_INTENT>`, `<CLARIFY_OUTPUT>`, `<PRIOR_CLASSIFICATION>`. On `SCOPE_MOVED: yes`, note the new tier; the user will route to `/feature` or `/fix` when implementing. Counts as one backward edge if it fires.
 
-**Re-fire Gate 1**: if re-classify lands at L or XL AND Gate 1 has not yet fired in this run at L/XL (covers M->L/XL upgrade), fire the same Gate 1 block from Step 1 here, before continuing to Step 4. Use the current `<SCOPE_DOWN_COUNT>`.
+**Re-fire XXL pushback**: if re-classify lands at XXL (initial or upgrade), fire the **XXL pushback** block from Step 1 here, before continuing. `split` re-enters Step 0 with the chosen slice as new RAW_REQUEST and increments `<SCOPE_DOWN_COUNT>`. `treat as XL` continues with XL gates from here. `abandon` stops.
+
+**Re-fire Gate 1**: if re-classify lands at L or XL AND Gate 1 has not yet fired in this run at L/XL AND no XXL pushback this run already cleared cost confirmation (covers M->L/XL upgrade), fire the same Gate 1 block from Step 1 here, before continuing to Step 4. Use the current `<SCOPE_DOWN_COUNT>`.
 
 ## Step 4: Plan
 

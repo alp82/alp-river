@@ -27,6 +27,17 @@ L tasks: pick the single best approach directly - no multi-approach presentation
 - Reuse findings and prototype results explicitly referenced - show WHERE they're used
 - Follow existing project patterns, not new inventions
 - Implementation ordered by dependency
+- **Validation declared per acceptance criterion** - see `## Acceptance` below
+
+## Acceptance criteria + validation
+
+Pull every acceptance criterion from `<CLARIFY_OUTPUT>` (`ACCEPTANCE_CRITERIA_PROPOSED` entries the user accepted) into the plan's `## Acceptance` section. For each, attach a `VALIDATION` type stating how the criterion will be verified:
+
+- **test** - automated test (unit, integration, e2e). Default for logic, behavior contracts, error paths, anything reproducibly assertable.
+- **manual** - human verification required. Reserve for UI feel, complex multi-step flows, anything where automation is genuinely infeasible or pays back less than a manual check.
+- **observable** - code-level evidence visible without an explicit test (log statement, metric emit, state side-effect at a named location). Use when the criterion IS the observable behavior and a test would just re-assert what the code plainly does.
+
+Default to `test` when in doubt - `manual` is the costly choice (loops back to the user) and should be deliberate. If clarifier surfaced no acceptance criteria for this task, emit `## Acceptance` with the literal line `n/a - no acceptance criteria from clarifier`.
 
 ## Replan modes
 
@@ -103,8 +114,12 @@ Then, for the recommended (or only) approach, wrap the plan in an APPROVED_PLAN 
 ## Out of Scope
 - [Thing that might seem related but belongs in its own task, and why]
 
+## Acceptance
+- VALIDATION: [test|manual|observable] - [criterion text] - [where: test file path, manual-check description, or observable location like file:line]
+(one line per acceptance criterion from `<CLARIFY_OUTPUT>`; or the literal line `n/a - no acceptance criteria from clarifier` when none surfaced)
+
 ## Testing
-- [How to verify the implementation works]
+- [How to verify the implementation works overall - complements per-criterion validation above]
 
 </APPROVED_PLAN>
 ```

@@ -16,7 +16,7 @@ Do not re-review code quality, style, or tests - that's other agents' job.
 ## Checks
 
 - **Requirements fulfilled**: every requirement in the intent maps to code that implements it
-- **Acceptance criteria met**: each criterion is demonstrably satisfied by the implementation
+- **Acceptance criteria met**: each criterion is demonstrably satisfied AND its declared validation actually happened (see Validation tracking below)
 - **Plan adherence**: files listed in the plan were actually created/modified as described
 - **Scope drift - additions**: code that implements things not in the intent or plan
 - **Scope drift - out-of-scope**: "Out of Scope" items that got implemented anyway
@@ -24,6 +24,16 @@ Do not re-review code quality, style, or tests - that's other agents' job.
 - **Silent omissions**: requirements the implementation quietly skipped
 
 Trace each requirement to specific file:line evidence. If you can't find it, it's missing.
+
+## Validation tracking
+
+The plan's `## Acceptance` section attaches a `VALIDATION` type to each acceptance criterion. The declared validation IS part of the contract - a criterion with the right code but missing its declared validation is not `met`.
+
+- **VALIDATION: test** - confirm an automated test exists for this criterion. Grep test files (and check the implementer's TOUCHED_FILES for new test files) for assertions that exercise the criterion. If no test exists, mark `unmet` regardless of whether the production code looks right.
+- **VALIDATION: manual** - you cannot run a manual check. Mark `unverified-manual` and add the criterion to `ACTION_NEEDED` so the user verifies before shipping.
+- **VALIDATION: observable** - confirm the named observable behavior is present in the touched code (log statement, metric emit, state mutation at the location declared in the plan). If the observable is missing or in a different shape than declared, mark `unmet`.
+
+When the plan's Acceptance section says `n/a - no acceptance criteria from clarifier`, skip validation tracking and rely on REQUIREMENTS only.
 
 ## Input
 
@@ -44,8 +54,8 @@ REQUIREMENTS:
 (one line per requirement from the intent/plan)
 
 ACCEPTANCE_CRITERIA:
-- [likely|unsure] [met | unmet] [criterion] - [evidence or "not found"]
-(one line per criterion, if acceptance criteria were defined)
+- [likely|unsure] [met | unmet | unverified-manual] VALIDATION: [test|manual|observable] - [criterion] - [evidence: test file:line, observable location, or "not found" - for unverified-manual, the manual-check description from the plan]
+(one line per criterion from the plan's `## Acceptance`; skip when plan says `n/a - no acceptance criteria from clarifier`)
 
 SCOPE_DRIFT:
 - [likely|unsure] [added-beyond-scope | out-of-scope-implemented] [file_path:line] - [what and why it's drift]
@@ -58,4 +68,4 @@ PARTIAL_OR_STUBBED:
 ACTION_NEEDED: [specific gaps to close, or "none"]
 ```
 
-`pass` = all requirements fulfilled, no drift. `partial` = some requirements partial/missing or minor drift. `fail` = core requirement missing or significant drift.
+`pass` = all requirements fulfilled, every criterion `met` or `unverified-manual` (manual flagged in ACTION_NEEDED), no drift. `partial` = some requirements partial/missing, criteria `unmet`, or minor drift. `fail` = core requirement missing or significant drift.

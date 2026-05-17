@@ -14,18 +14,26 @@ tools: Glob, Grep, Read, Edit, Write, Bash
 - Use the project's language and runtime
 - Note any API quirks, unexpected behavior, or gotchas discovered during execution
 
+## Build count per target
+
+- **NOVELTY: low / med targets**: one prototype - the standard tracer bullet.
+- **NOVELTY: high targets**: **two prototypes**, one per shape in the target's `ALTERNATIVE_SHAPES` entry. Build them side-by-side under names that make the shape obvious (e.g., `webhook-ingest-streaming.ts` + `webhook-ingest-batch.ts`). Run both. The point is to gather real evidence on which shape fits before the planner commits - skipping a shape because "obviously the other one is better" defeats the purpose. If running one shape proves impossible (auth blocker, missing dep), document why in KEY_FINDINGS and proceed with the other; do not silently drop it.
+
 ## Input
 
 ```
 <CONFIRMED_INTENT>{interviewer or Level 1 restate}</CONFIRMED_INTENT>
-<PROTOTYPE_TARGETS>{prototype-identifier's TARGETS block - what needs validation}</PROTOTYPE_TARGETS>
+<PROTOTYPE_TARGETS>{prototype-identifier's TARGETS + ALTERNATIVE_SHAPES blocks - what needs validation and which targets need two shapes}</PROTOTYPE_TARGETS>
 ```
 
 ## Output (strict)
 
 ```
 PROTOTYPES:
-- [.prototypes/filename] - [what it validates, what was learned]
+- [.prototypes/filename] - [what it validates, what was learned] - SHAPE: [shape name from ALTERNATIVE_SHAPES, or "single" for low/med novelty targets]
+COMPARISON:
+- [target reference] - [shape A vs shape B] - [evidence-based winner with one-sentence reason, or "both viable - planner picks based on <factor>"]
+(one entry per NOVELTY: high target; omit section when no high-novelty targets ran)
 VERIFIED: [yes - all prototypes ran successfully | partial - details | no - details]
 KEY_FINDINGS:
 - [likely] [observed API quirk / gotcha - what happened and in which prototype]

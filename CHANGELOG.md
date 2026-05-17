@@ -2,6 +2,18 @@
 
 All notable changes to alp-river. Versions match `.claude-plugin/plugin.json`.
 
+## 0.2.5 - 2026-05-17
+
+Three changes that all push the pipeline toward "prove it, don't promise it":
+
+- **Validation per acceptance criterion.** The planner now attaches a validation type to every acceptance criterion in the plan - `test`, `manual`, or `observable`. The acceptance reviewer enforces it: a criterion with the right code but missing its declared test (or observable, or manual flag for the user) is no longer "met". Default is `test` when in doubt; `manual` becomes a deliberate choice rather than a quiet escape hatch.
+- **Visual reviewer becomes opt-in.** Auto-spawn is gone. When UI is touched, you get a single inline offer at the specialist pass - default yes on XL, default no on M/L. Stops playwright runs from firing on UI tweaks you already eyeballed; keeps the reviewer one keystroke away when you actually want it.
+- **Two prototypes on high novelty.** The prototype identifier now grades each target's novelty (low/med/high). On high - when the *shape* of the solution is genuinely uncertain (streaming vs batch, push vs poll, embed vs call) - the prototyper builds two differently-shaped tracer bullets side-by-side instead of one, and reports an evidence-based comparison. Low/med novelty still get one prototype.
+
+## 0.2.4 - 2026-05-17
+
+The classifier now grades tasks S/M/L/XL/**XXL**. XXL means the work spans more than fits cleanly into one task - the classifier suggests how to split it, and `/feature` and `/plan` pause before any other work to ask: pick one slice and run with that, treat as XL anyway (explicit acknowledgment required, no bare-Enter default), or drop it. `/fix` hands off to `/feature` with the suggested decomposition surfaced for reference. The "treat as XL" path counts as cost confirmation, so Gate 1 doesn't fire a second time.
+
 ## 0.2.3 - 2026-05-17
 
 Intent, clarify, and plan-critique rounds in `/feature`, `/fix`, and `/plan` now ask via a picker instead of dumping prose inline. Each option's description tells you what picking it does; the agent's recon stays in the transcript.

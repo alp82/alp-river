@@ -89,9 +89,11 @@ Before classification, confirm direction - a misread request misclassifies every
 Emit `<CONFIRMED_INTENT>` - every downstream agent reads it.
 
 ### Step 1: Classify
-Launch `complexity-classifier` (opus) with `<CONFIRMED_INTENT>`. Output `<CLASSIFICATION>` with COMPLEXITY (S|M|L|XL) + REASON. Gates which downstream steps run.
+Launch `complexity-classifier` (opus) with `<CONFIRMED_INTENT>`. Output `<CLASSIFICATION>` with COMPLEXITY (S|M|L|XL|XXL) + REASON, plus `SUGGESTED_SPLIT` on XXL. Gates which downstream steps run.
 
-**Pre-plan cost check (Gate 1) on L/XL**: after classification lands at L or XL (initial pass or re-classify upgrade from M), the main agent pauses and asks `Worth it? [continue / scope down / abandon]`. L treats bare Enter as continue; XL requires an explicit word. `scope down` asks the user what to drop, feeds the answer back as a new RAW_REQUEST through Step 0, and counts against a per-task cap of 2 cycles (counter rendered in the prompt). At the cap, the prompt drops the scope-down option and offers only continue / abandon. Gate 1 cycles are free - not backward edges. The canonical prompt block lives in `commands/feature.md` Step 1 and `commands/plan.md` Step 1 (kept verbatim in sync).
+**XXL pushback (on XXL)**: when the classifier returns XXL (first pass or re-classify upgrade), the main agent pauses **before Gate 1** and renders the SUGGESTED_SPLIT with `Worth it? [split / treat as XL / abandon]`. `split` enters the scope-down loop with the user picking one slice. `treat as XL` requires an explicit word (bare Enter is never a default) and substitutes for Gate 1 - this run continues at XL gates without a second cost prompt. `abandon` stops. The split counter shares the per-task cap of 2 with Gate 1; at the cap, `split` drops out and only `treat as XL / abandon` remain. The canonical block lives in `commands/feature.md` Step 1 and `commands/plan.md` Step 1 (kept verbatim in sync). `/fix` does not run XXL pushback - it hands off to `/feature` with the suggested split surfaced for reference.
+
+**Pre-plan cost check (Gate 1) on L/XL**: after classification lands at L or XL (initial pass or re-classify upgrade from M), the main agent pauses and asks `Worth it? [continue / scope down / abandon]`. L treats bare Enter as continue; XL requires an explicit word. `scope down` asks the user what to drop, feeds the answer back as a new RAW_REQUEST through Step 0, and counts against a per-task cap of 2 cycles (counter rendered in the prompt). At the cap, the prompt drops the scope-down option and offers only continue / abandon. Gate 1 cycles are free - not backward edges. Skipped when an XXL pushback this run already cleared cost confirmation. The canonical prompt block lives in `commands/feature.md` Step 1 and `commands/plan.md` Step 1 (kept verbatim in sync).
 
 ### Step 2: Pre-flight (M/L/XL)
 Parallel fan-out on the confirmed scope:
@@ -101,7 +103,7 @@ Parallel fan-out on the confirmed scope:
 - `researcher` - library/framework/domain knowledge (skip if interviewer flagged no external deps)
 
 **Health gate**: cleanup-first → wait user; proceed-with-cleanup → carry targets forward; proceed → continue.
-**Prototype gate**: launch `prototyper` (sonnet) if flagged, writing to `.prototypes/`.
+**Prototype gate**: launch `prototyper` (sonnet) if flagged, writing to `.prototypes/`. prototype-identifier tags each target with NOVELTY (low/med/high); on `high`, it also emits `ALTERNATIVE_SHAPES` and the prototyper builds **two** differently-shaped tracers for that target (Design It Twice at the prototype layer) and reports a `COMPARISON` so the planner picks on evidence rather than intuition.
 
 ### Step 3: Clarify (L/XL; M when ambiguity remains after pre-flight)
 Enter the **clarify loop**. Launch `requirements-clarifier` (opus) with intent + pre-flight outputs. Each round, apply the Concise Surfacing Contract 4-cap priority queue across QUESTIONS + [unsure] criteria + [unsure] assumptions; invoke `AskUserQuestion` with the resulting items. Thread DEFERRED_QUESTIONS forward. Append answers to `<PRIOR_ROUNDS>`, re-launch. Exit when `CLARITY: clear` AND `NEW_ASPECTS_FOUND: no`. Cap at 5 rounds - at the cap, present the latest state and ask the user to confirm or reshape. Emit `<CLARIFY_OUTPUT>`.
@@ -112,6 +114,8 @@ The clarifier also emits `WRITES_PROPOSED` (glossary terms) on exit when the rou
 
 ### Step 4: Plan (L/XL)
 Launch `planner` (opus) with intent, classification, clarify, pre-flight findings. XL presents 2-3 APPROACHES with ASCII diagrams + RECOMMENDATION. Approved output emits `<APPROVED_PLAN version="N">`.
+
+The plan's `## Acceptance` section attaches a `VALIDATION` type (`test`, `manual`, or `observable`) to each acceptance criterion pulled from `<CLARIFY_OUTPUT>`. The declared validation is part of the contract - acceptance-reviewer checks both the implementation AND that the named validation actually happened (test exists, observable is present at the named location, or manual is flagged for the user).
 
 ### Step 5: Challenge (L/XL)
 Launch `plan-challenger` (opus). XL challenges **all** approaches (not just the recommendation). Verdict:
@@ -156,7 +160,7 @@ Gate each specialist on broad-pass finding OR touched files matching its domain:
 | `accessibility-reviewer` | touched files include UI |
 | `design-consistency-reviewer` | touched files include UI |
 | `ux-reviewer` | touched files include UI |
-| `visual-verifier` | XL + UI (dev server at URL from project CLAUDE.md) |
+| `visual-verifier` | UI touched - inline offer (default-Y on XL, default-N on M/L); dev server at URL from project CLAUDE.md |
 
 Nothing flagged and no domain match → skip Step 8.
 
