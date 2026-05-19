@@ -131,9 +131,11 @@ Capture as `<CLASSIFICATION>` and `<EFFECTIVE_TIER>`. The remainder of the pipel
 
 On `TYPE_BIAS: diagnose` (detected at Step 0 Level 1), Step 1 is skipped on entry. The investigator's COMPLEXITY sets `EFFECTIVE_TIER` for the diagnose phase only. On Continue from the diagnose stop, the user restates intent (Step 0 Level 1 style), and the Step 1 classifier runs on that restatement to size downstream gates.
 
-#### Setup nudge (L/XL/XXL, first-fire)
+#### Setup nudge (M/L/XL/XXL, first-fire)
 
-On first L/XL/XXL classification in this run, before XXL pushback or Gate 1's prompt:
+The SessionStart hook (`hooks/inject-workflow.sh`) already nudges at the session boundary when `docs/INTENT.md` is missing and `alpRiver.skipSetup` is not set - that runs before any classification, on every session start, resume, and clear. This Step 1 pass is the in-pipeline reminder for runs where setup wasn't done despite the session-start hint.
+
+On first M/L/XL/XXL classification in this run, before XXL pushback or Gate 1's prompt:
 
 1. Check whether `docs/INTENT.md` exists.
 2. Read `.claude/settings.local.json` if present and look up `alpRiver.skipSetup`. Treat a missing file or missing key as `false`.
@@ -142,7 +144,7 @@ On first L/XL/XXL classification in this run, before XXL pushback or Gate 1's pr
 
    > Project context missing: no `docs/INTENT.md`. Consider `/alp-river:setup` first so planning and review run with your intent, stack, and glossary loaded. Dismiss permanently with `"alpRiver": {"skipSetup": true}` in `.claude/settings.local.json`.
 
-Advisory only - does not block, does not add an interaction step, does not re-fire on re-classify, does not count against the backward-edge budget.
+Advisory only - does not block, does not add an interaction step, does not re-fire on re-classify, does not count against the backward-edge budget. S tasks skip this gate; the session-start hint already covered the same ground, and re-prompting on a one-line fix would be noise.
 
 #### XXL pushback (XXL only, fires before Gate 1)
 

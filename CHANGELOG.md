@@ -2,9 +2,14 @@
 
 All notable changes to alp-river. Versions match `.claude-plugin/plugin.json`.
 
+## 0.3.1 - 2026-05-19
+
+- New chats in a project with no setup get a one-line nudge before you start typing.
+- The same nudge now shows up on medium tasks too, not just big ones.
+
 ## 0.3.0 - 2026-05-18
 
-Simplificatiaon: the four entry commands fold into one, and the assistant figures out what kind of work you mean from how you describe it.
+Simplification: the four entry commands fold into one, and the assistant figures out what kind of work you mean from how you describe it.
 
 - One command - `/alp-river:go` replaces the old `/feature`, `/plan`, `/investigate`, and `/fix`.
 - The assistant figures out from your text whether it's a bug or a feature.

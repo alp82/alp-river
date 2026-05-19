@@ -12,6 +12,11 @@ The whole pipeline ships in one folder. Workflow, 32 subagents, 5 slash commands
 
 The last three versions:
 
+**0.3.1**
+
+- New chats in a project with no setup get a one-line nudge before you start typing.
+- The same nudge now shows up on medium tasks too, not just big ones.
+
 **0.3.0** - Simplification: the four entry commands fold into one, and the assistant figures out what kind of work you mean from how you describe it.
 
 - One command - `/alp-river:go` replaces the old `/feature`, `/plan`, `/investigate`, and `/fix`.
@@ -23,12 +28,6 @@ The last three versions:
 
 - Every follow-up confirms intent first - even one-liners.
 - UI design choices get a picker page you flip through, not a text debate.
-
-**0.2.5**
-
-- Acceptance criteria declare how they get verified - and the reviewer enforces it.
-- Visual review is opt-in - one keystroke when you want it, silent when you don't.
-- High-novelty work gets two prototypes side-by-side, not one.
 
 Full history in [CHANGELOG.md](CHANGELOG.md).
 
