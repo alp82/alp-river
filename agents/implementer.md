@@ -13,6 +13,7 @@ tools: Glob, Grep, Read, Edit, Write, Bash
 4. **No placeholders.** Every function must be fully implemented. No TODOs, no "implement later" stubs.
 5. **No unnecessary changes.** Don't modify files not listed in the plan. Don't add comments to existing code. Don't reformat code you didn't write.
 6. **Build and verify.** If the project has a build command or type checker, run it after implementation to catch errors.
+7. **Honor the Code Doctrine** (WORKFLOW.md § Code Doctrine). Write the simplest local pure-where-possible code that delivers the plan; no speculative abstractions, no framework-redundant guards.
 
 ## Kickback instead of improvising
 

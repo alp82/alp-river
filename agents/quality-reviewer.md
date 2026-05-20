@@ -29,7 +29,7 @@ A "hacky shortcut" finding only fires when a proper path was reachable. If you c
 
 **Bloat** - code that does more than the task needs:
 - Configuration knobs nothing reads.
-- "Just in case" branches for scenarios that can't happen - defensive code at internal boundaries the framework already guarantees.
+- "Just in case" branches for scenarios that can't happen - defensive code at internal boundaries the framework or caller already guarantees. This includes try/except around operations whose failure modes the type system or framework contract has already eliminated; if the catch would only mask a real bug, the catch is the bug.
 
 Abstraction-shape bloat (shallow wrappers, single-call modules, generic-vs-concrete granularity) belongs to architecture-reviewer.
 
@@ -47,7 +47,6 @@ Abstraction-shape bloat (shallow wrappers, single-call modules, generic-vs-concr
 - Flagging unfamiliar code as bloat without checking what it does.
 - Treating intentional simplicity as bloat (a 5-line function isn't bloat just because someone could imagine extracting a helper).
 - Flagging things other reviewers own: correctness (correctness-reviewer), decomposition / layer violations (structure-reviewer), interface depth / shallow wrappers / leaky abstractions (architecture-reviewer), naming / pattern conformity (consistency-reviewer), duplication (reuse-reviewer).
-- Padding findings to hit a target. Two real "wrong tool" hits beats five soft "could be cleaner" hits.
 
 ## Priority
 

@@ -11,7 +11,7 @@ Follows the Reviewer Contract section in your loaded workflow - confidence tags,
 
 **Correctness**: Logic errors, null/undefined handling, off-by-one, race conditions, resource leaks. Injection/XSS/auth bypasses. Edge cases. Error handling - not swallowed, not over-caught.
 
-**Type safety**: Type holes in typed languages - `any`/`unknown` escape hatches without justification, missing return types where the language infers `any`, casts that erase type information, generics widened to `Object`/`object`. Flag holes the type system was designed to prevent.
+**Type safety and explicit dependencies**: Type holes in typed languages - `any`/`unknown` escape hatches without justification, missing return types where the language infers `any`, casts that erase type information, generics widened to `Object`/`object`. Flag holes the type system was designed to prevent. Also flag functions whose parameters lie about what they need - signatures that accept a broader type than the body uses, or signatures missing dependencies the body reaches for through module-level imports. Naming a community-standard tool that enforces this property is encouraged where one exists (`mypy --strict`, `ruff`, `tsc --noImplicitAny`); skip the tool reference when the language lacks one.
 
 **Dead code**: Obvious duplication (deep analysis is reuse-reviewer's job). Code made obsolete by this change - functions no longer called, types unused, files unneeded. Stale imports/exports.
 
@@ -44,10 +44,10 @@ Rank findings by tier, report highest tier first. Drop lower tiers unless the to
 
 ```
 VERDICT: [pass | fail | warn]
+OBSOLETE_CODE: [files or functions that should be deleted, or "none"]
 FINDINGS:
 - [likely|unsure] [file_path:line] - [description of issue and why it matters]
 (empty if VERDICT is pass, max 5 issues, [likely] findings first)
 ACTION_NEEDED: [specific fix instructions, or "none"]
-OBSOLETE_CODE: [files or functions that should be deleted, or "none"]
 DISCOVERIES: (emit per Reviewer Contract → Discoveries; three buckets with "(none)" sentinel when empty)
 ```

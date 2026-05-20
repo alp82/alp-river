@@ -12,21 +12,19 @@ The whole pipeline ships in one folder. Workflow, 32 subagents, 6 slash commands
 
 The last three versions:
 
+**0.3.4**
+
+- Planning, implementation, and review now lean toward simpler local code with explicit dependencies and strong types.
+- Reviews call out the AI-style code that creeps in - defensive branches no one needs, layers without a second use, hidden state.
+
+**0.3.3**
+
+- Eight pipeline agents now have an optional persona voice - prototyper as an optimist, plan-challenger as a skeptic, fixer as a cynic, security-reviewer as a defender, and others.
+- Override or swap any agent's persona under `alpRiver.psychologyOverrides` in `.claude/settings.local.json`. Available personas: pragmatist, craftsperson, skeptic, user-advocate, cynic, optimist, detective, defender, teacher.
+
 **0.3.2**
 
 - `/alp-river:reflect` looks back at the current session and surfaces friction worth tuning in the workflow.
-
-**0.3.1**
-
-- New chats in a project with no setup get a one-line nudge before you start typing.
-- The same nudge now shows up on medium tasks too, not just big ones.
-
-**0.3.0** - Simplification: the four entry commands fold into one, and the assistant figures out what kind of work you mean from how you describe it.
-
-- One command - `/alp-river:go` replaces the old `/feature`, `/plan`, `/investigate`, and `/fix`.
-- The assistant figures out from your text whether it's a bug or a feature.
-- On bigger tasks you get a Continue/Stop choice after the plan - design-only is one keystroke.
-- Plain chat works without the command. Same pipeline either way.
 
 Full history in [CHANGELOG.md](CHANGELOG.md).
 

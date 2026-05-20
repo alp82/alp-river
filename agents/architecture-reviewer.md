@@ -48,6 +48,11 @@ A `[likely]` finding requires you to name the call sites and what would happen a
 - Unclear contract - exported function whose invariants, error modes, or required call ordering aren't legible from the signature and aren't documented.
 - Wrong granularity - generic interface covering cases no caller needs (shallow because the interface surface is wider than the leverage); concrete interface where one generic would replace three near-identical ones.
 
+**Hidden state**
+- Module-level mutables read or written by exported functions without appearing in their signatures.
+- Singletons that callers must initialize in the right order without compile-time enforcement.
+- Ambient context (thread-locals, global registries, monkey-patched modules) the interface doesn't disclose.
+
 **Locality failures**
 - Logic that always changes together lives in different modules.
 - Knowledge of an invariant scattered across multiple modules; no single place owns it.
@@ -57,19 +62,19 @@ A `[likely]` finding requires you to name the call sites and what would happen a
 - Demanding seams that have no second use case. YAGNI applies.
 - Treating every wrapper as shallow. An adapter at a real boundary (HTTP, filesystem, third-party SDK) is doing work even if it looks thin.
 - Flagging "could be deeper" without naming what callers do today that would be subsumed by the deeper interface.
-- Reviewing size, nesting, layer violations - that's structure-reviewer.
+- Reviewing decomposition, purity, or layer violations - that's structure-reviewer.
 - Reviewing tool choice or altitude - that's quality-reviewer.
 - Reviewing convention drift or naming - that's consistency-reviewer.
-- Padding findings. One real depth failure beats four soft "feels shallow."
 
 ## Priority
 
 Rank findings highest tier first. Drop lower tiers unless the top tiers are empty.
 1. Pass-through / shallow wrapper - module fails the deletion test outright.
 2. Leaky abstraction - public interface forces callers to know internals.
-3. Premature seam / single-call abstraction - speculative depth.
-4. Locality failure - knowledge or change-together logic scattered.
-5. Wrong granularity / unearned indirection.
+3. Hidden state coupling - module-level mutables, singletons, ambient context the interface doesn't disclose.
+4. Premature seam / single-call abstraction - speculative depth.
+5. Locality failure - knowledge or change-together logic scattered.
+6. Wrong granularity / unearned indirection.
 
 ## Input
 
@@ -86,7 +91,7 @@ Each finding names the module, the failure mode, and the deletion-test outcome (
 VERDICT: [pass | fail | warn]
 MODULES_ASSESSED: [module names or file paths reviewed, comma-separated]
 FINDINGS:
-- [likely|unsure] [depth|seam|interface|locality] [file_path:line] - [module name] - [failure mode] → [specific fix: inline / collapse / extract / re-scope]
+- [likely|unsure] [depth|seam|interface|locality|hidden-state] [file_path:line] - [module name] - [failure mode] → [specific fix: inline / collapse / extract / re-scope]
 (empty if VERDICT is pass, max 5 issues, [likely] findings first)
 ACTION_NEEDED: [specific fix instructions naming modules and call sites, or "none"]
 DISCOVERIES: (emit per Reviewer Contract → Discoveries; three buckets with "(none)" sentinel when empty)

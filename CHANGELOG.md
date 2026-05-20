@@ -2,6 +2,16 @@
 
 All notable changes to alp-river. Versions match `.claude-plugin/plugin.json`.
 
+## 0.3.4 - 2026-05-20
+
+- Planning, implementation, and review now lean toward simpler local code with explicit dependencies and strong types.
+- Reviews call out the AI-style code that creeps in - defensive branches no one needs, layers without a second use, hidden state.
+
+## 0.3.3 - 2026-05-20
+
+- Eight pipeline agents now have an optional persona voice - prototyper as an optimist, plan-challenger as a skeptic, fixer as a cynic, security-reviewer as a defender, and others.
+- Override or swap any agent's persona under `alpRiver.psychologyOverrides` in `.claude/settings.local.json`.
+
 ## 0.3.2 - 2026-05-19
 
 - `/alp-river:reflect` looks back at the current session and surfaces friction worth tuning in the workflow.

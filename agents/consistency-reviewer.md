@@ -28,6 +28,7 @@ Always compare new code against 2-3 existing examples of the same kind before fl
 
 ```
 <TOUCHED_FILES>{file paths the implementer or main agent modified or created}</TOUCHED_FILES>
+<APPROVED_PLAN>{current APPROVED_PLAN block, or "none" on S/M without plan}</APPROVED_PLAN>
 ```
 
 ## Output (strict)

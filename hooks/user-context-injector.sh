@@ -1,13 +1,19 @@
 #!/usr/bin/env bash
-# PreToolUse(Agent) hook: auto-inject USER_CONTEXT and PROJECT_CONTEXT into subagents.
+# PreToolUse(Agent) hook: auto-inject USER_CONTEXT, PROJECT_CONTEXT, and PSYCHOLOGY into subagents.
 #
 # USER_CONTEXT: MEMORY.md + every linked markdown file for the current project.
 # PROJECT_CONTEXT: docs/INTENT.md, docs/STACK.md, docs/GLOSSARY.md (full bodies)
 #                  plus a summary list of docs/adr/*.md, gated per-agent by READ_MAP.
+# PSYCHOLOGY: opt-in persona block resolved per-agent via psychology/agent-map.json.
+#             Per-project overrides are read from .claude/settings.local.json under
+#             alpRiver.psychologyOverrides.<agent>; set to a persona name to swap, or
+#             omit to accept the sidecar default. Fails open on missing/corrupted files.
 #
-# The two axes are independent:
+# The three axes are independent:
 #   User-aware  = agent is listed in the case statement below → receives USER_CONTEXT.
 #   Project-aware = agent has an entry in READ_MAP → receives PROJECT_CONTEXT.
+#   Psychology = agent has an entry in psychology/agent-map.json (or a project override)
+#               → receives PSYCHOLOGY block.
 #
 # An agent can be user-aware only, project-aware only, both, or neither:
 #   User-aware Y + Project-aware Y: most agents - interviewer, planner,
@@ -319,18 +325,79 @@ ${body}"
   fi
 fi
 
-# Combine USER_CONTEXT and PROJECT_CONTEXT into one additionalContext payload.
-if [ -n "$user_context" ] && [ -n "$project_context" ]; then
-  assembled="${user_context}
+# Resolve the optional psychology block for this agent.
+# Returns the rendered block on stdout, or empty when the agent is unmapped,
+# the override resolves to nothing, or the persona file is missing (fail open).
+resolve_persona() {
+  local agent="$1"
+  local cwd="$2"
+
+  # Plugin root: prefer CLAUDE_PLUGIN_ROOT, fall back to two dirnames up from this script.
+  local plugin_root="${CLAUDE_PLUGIN_ROOT:-}"
+  if [ -z "$plugin_root" ]; then
+    plugin_root="$(dirname "$(dirname "${BASH_SOURCE[0]}")")"
+  fi
+
+  local map_file="$plugin_root/psychology/agent-map.json"
+  local settings_file="$cwd/.claude/settings.local.json"
+
+  # Per-project override. Type guard discards non-string values; "none"/empty
+  # fall through to the sidecar default (no per-project suppression).
+  local persona_name=""
+  if [ -f "$settings_file" ]; then
+    persona_name=$(jq -r --arg a "$agent" \
+      '.alpRiver.psychologyOverrides[$a] | select(type == "string") // empty' \
+      "$settings_file" 2>/dev/null || true)
+    if [ "$persona_name" = "none" ]; then
+      persona_name=""
+    fi
+  fi
+
+  # Fall back to the sidecar default when no usable override was found.
+  if [ -z "$persona_name" ]; then
+    if [ -f "$map_file" ]; then
+      if ! persona_name=$(jq -r --arg a "$agent" '.[$a] // empty' "$map_file" 2>/dev/null); then
+        echo "alp-river: warning: failed to parse psychology/agent-map.json" >&2
+        return 0
+      fi
+    fi
+  fi
+
+  [ -z "$persona_name" ] && return 0
+
+  local persona_file="$plugin_root/psychology/${persona_name}.md"
+  [ -f "$persona_file" ] || return 0
+
+  # Display name: hyphens-to-spaces, lowercase whole string, then uppercase first character.
+  local lowered first rest display_name
+  lowered=$(echo "$persona_name" | tr '-' ' ' | tr '[:upper:]' '[:lower:]')
+  first="${lowered:0:1}"
+  rest="${lowered:1}"
+  display_name="${first^^}${rest}"
+
+  printf '## PSYCHOLOGY: %s\n' "$display_name"
+  cat "$persona_file"
+}
+
+psychology_context=$(resolve_persona "$subagent_type" "$project_cwd")
+
+# Combine USER_CONTEXT, PROJECT_CONTEXT, and PSYCHOLOGY into one additionalContext
+# payload by sequential-append. Non-empty blocks join with "\n\n---\n\n".
+assembled=""
+for block in "$user_context" "$project_context" "$psychology_context"; do
+  [ -z "$block" ] && continue
+  if [ -z "$assembled" ]; then
+    assembled="$block"
+  else
+    assembled="${assembled}
 
 ---
 
-${project_context}"
-elif [ -n "$user_context" ]; then
-  assembled="$user_context"
-elif [ -n "$project_context" ]; then
-  assembled="$project_context"
-else
+${block}"
+  fi
+done
+
+if [ -z "$assembled" ]; then
   exit 0
 fi
 

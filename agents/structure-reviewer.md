@@ -16,12 +16,15 @@ Follows the Reviewer Contract section in your loaded workflow - confidence tags,
 - Single responsibility violations - identify the separate responsibilities
 - UI components handling multiple concerns (data fetching + rendering + state management)
 
+**Purity**
+- Side effects woven into computation - prefer pure transformation in the core and effects pushed to a single boundary (e.g. one I/O entry point, one DB caller). Flag mixed-mode functions that compute and write in the same body.
+
 **Layer violations**
 - UI calling DB directly, business logic in presentation, presentation mixed with data access.
 - Circular dependencies between modules.
 - Module reaches into another module's internals when the issue is the shape of the dependency graph (not the contract of the interface).
 
-Interface depth, shallow wrappers, leaky abstractions, and unclear contracts belong to architecture-reviewer.
+Interface depth, shallow wrappers, leaky abstractions, unclear contracts, and hidden state coupling belong to architecture-reviewer.
 
 ## Anti-patterns
 
