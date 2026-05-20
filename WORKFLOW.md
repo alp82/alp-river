@@ -4,7 +4,7 @@
 - Never guess, never assume, never improvise unagreed solutions.
 - Extracting actual intent is more important than moving fast.
 - Research before asking. Subagents exhaust filesystem, tools, and web first; questions only surface what those sources don't already answer.
-- Clarify in loops, not single passes. Intent and clarification stages re-run with prior rounds folded in until the latest exchange surfaces no new aspects. Loops within one step are free and do not count as backward edges.
+- Clarify in loops, not single passes. Intent and clarification steps re-run with prior rounds folded in until the latest exchange surfaces no new aspects. Loops within one step are free and do not count as backward edges.
 - Leave touched code better than you found it. Unrelated changes get their own task.
 - No TODOs, placeholders, or incomplete implementations.
 - No backwards compatibility. Obsolete code gets deleted, not preserved.
@@ -33,10 +33,11 @@
 
 MEMORY.md + linked files don't transfer to subagents automatically - they inherit nothing. Neither do project-level docs.
 
-The alp-river plugin's **PreToolUse(Agent) hook** (`user-context-injector`) handles both. It prepends up to two blocks to the Agent prompt:
+The alp-river plugin's **PreToolUse(Agent) hook** (`user-context-injector`) handles all three. It prepends up to three blocks to the Agent prompt:
 
 - `## USER_CONTEXT` - MEMORY.md + linked files (durable user preferences and feedback).
 - `## PROJECT_CONTEXT` - matching slices of the project's `docs/` folder (intent, stack, glossary, ADRs).
+- `## PSYCHOLOGY` - the persona block resolved per-agent via `psychology/agent-map.json` (opt-in voice and disposition shaping).
 
 The two axes are independent. User-aware status does not determine project-aware status, and vice versa.
 
@@ -170,7 +171,7 @@ Spans more than fits cleanly into one task. Suggested decomposition:
 - `multiSelect`: `false`
 - `options`:
   - `Split` - "Pick one slice from the suggested decomposition (or describe a different reduction) and run with it. Re-enters Step 0 with the chosen slice."
-  - `Treat as XL` - "Keep the work as one task. Continue at XL gates for all downstream stages. Counts as cost confirmation - Gate 1 does not fire."
+  - `Treat as XL` - "Keep the work as one task. Continue at XL gates for all downstream steps. Counts as cost confirmation - Gate 1 does not fire."
   - `Abandon` - "Stop the command."
 
 Interpret the user's selection:
@@ -178,7 +179,7 @@ Interpret the user's selection:
   > Which slice do you want to tackle now? Pick one from the suggested decomposition by number, or describe a different scope reduction in your own words.
 
   Take the reply, increment `<SCOPE_DOWN_COUNT>`, feed the reply as the new `<RAW_REQUEST>` into Step 0 Level 1 restatement, and run the normal intent loop. After re-classify, this block (or Gate 1) fires again per the resulting tier.
-- `Treat as XL` -> continue as XL for all downstream gates and record `EFFECTIVE_TIER: XL` for plan/challenge/implement/review stages. This path counts as if Gate 1 fired and the user picked `Continue` - **Gate 1 does not re-fire this run**.
+- `Treat as XL` -> continue as XL for all downstream gates and record `EFFECTIVE_TIER: XL` for plan/challenge/implement/review steps. This path counts as if Gate 1 fired and the user picked `Continue` - **Gate 1 does not re-fire this run**.
 - `Abandon` -> stop the pipeline; emit no `<!-- pipeline-complete -->`.
 
 **If `<SCOPE_DOWN_COUNT> >= 2` (cap reached)**, invoke `AskUserQuestion` with the locked options:
@@ -245,7 +246,7 @@ Bias-conditional. Same step semantically: gather information before designing.
 
   On `EFFECTIVE_TIER: S`, run `reuse-scanner` alone. The other three skip.
 
-- **`TYPE_BIAS: diagnose`**: launch `investigator` (see commands/investigate.md Step 2 for full spec). On `VERDICT: cannot-diagnose` with non-empty `MISSING_INFO`, run the wait-on-user free loop (request missing detail, re-invoke investigator).
+- **`TYPE_BIAS: diagnose`**: launch `investigator` (full spec in `agents/investigator.md`). On `VERDICT: cannot-diagnose` with non-empty `MISSING_INFO`, run the wait-on-user free loop (request missing detail, re-invoke investigator).
 
 Step 2's depth varies by tier (S = 1 agent, M+ = 4 agents) and its agent set varies by bias (diagnose = investigator alone).
 
@@ -370,7 +371,7 @@ The pipeline has two natural stops. Both fire automatically when reached; the us
   - `header`: `After plan`
   - `multiSelect`: `false`
   - `options`:
-    - `Continue-build (Recommended)` - "Run the implementation, review, and self-heal stages now."
+    - `Continue-build (Recommended)` - "Run the implementation, review, and self-heal steps now."
     - `Stop` - "Stop the run. The plan is on screen for you to act on later."
 
   On `Continue-build` → proceed to Step 6. On `Stop` → emit `<!-- pipeline-complete -->`. Bare Enter accepts Continue-build.
@@ -417,7 +418,7 @@ Step 0 Level 2 (interviewer) and Step 3 (clarifier) run as loops, not single pas
 2. Agent's `NEW_ASPECTS_FOUND: no`.
 3. User has no further additions.
 
-**Cap**: 5 rounds per stage. At the cap, present the latest state and ask the user to confirm explicitly or reshape the request. Do not loop silently.
+**Cap**: 5 rounds per step. At the cap, present the latest state and ask the user to confirm explicitly or reshape the request. Do not loop silently.
 
 **Round inputs**: re-invocations carry `<PRIOR_ROUNDS>` - a compressed log of prior questions and the user's answers (one line per Q&A, no reasoning). The agent uses it to detect whether the latest answer raised new aspects vs. reaffirmed prior ones, and to avoid re-asking what's already settled.
 
@@ -493,7 +494,7 @@ Does **not** count (separate budget of 2):
 - fixer self-heal rounds
 - reviewer reruns during self-heal
 
-Does **not** count (free, no cap beyond per-stage limits):
+Does **not** count (free, no cap beyond per-step limits):
 - intent loop (Step 0 Level 2 re-runs)
 - clarify loop (Step 3 re-runs)
 - investigator MISSING_INFO loop (Step 2 on bias=diagnose, re-launch with refreshed framing)

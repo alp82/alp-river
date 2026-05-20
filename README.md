@@ -4,7 +4,7 @@
 
 **Featured in:** [Alper Ortac's AI Stack](https://aistack.to/stacks/alper-ortac-unw0sl)
 
-Multi-stage agent refinement for Claude Code, scaled by automatic complexity classification. Small changes pass quickly. Bigger ones add stages: clarification, planning, adversarial challenge, implementation, broad review, specialist review, self-heal.
+Multi-step agent refinement for Claude Code, scaled by automatic complexity classification. Small changes pass quickly. Bigger ones add steps: clarification, planning, adversarial challenge, implementation, broad review, specialist review, self-heal.
 
 The whole pipeline ships in one folder. Workflow, 32 subagents, 6 slash commands, 8 quality hooks.
 
@@ -50,7 +50,7 @@ Describe what you want - in plain text, or via `/alp-river:go` if you want a dis
 
 Step 0 reads your request and picks the framing: bug-shaped requests ("why is X broken", a stack trace, a symptom) take the diagnose path (investigator runs alone in pre-flight); everything else takes the build path (full pre-flight fan-out). On affirmation, the pipeline runs.
 
-Each stage is run by a dedicated agent: classifier judges scope, scanners pre-flight the area, clarifier surfaces ambiguity, planner designs the approach, challenger pokes holes, implementer builds, reviewers cross-check, fixer heals findings.
+Each step is run by a dedicated agent: classifier judges scope, scanners pre-flight the area, clarifier surfaces ambiguity, planner designs the approach, challenger pokes holes, implementer builds, reviewers cross-check, fixer heals findings.
 
 You stay in the loop at a few well-defined moments:
 
@@ -63,11 +63,11 @@ You stay in the loop at a few well-defined moments:
 
 Everything else runs to completion. Reviewer findings feed the fixer automatically.
 
-Override the grade with natural language: *treat this as L*, *skip clarify*, *go straight to plan*.
+Override the complexity tier with natural language: *treat this as L*, *skip clarify*, *go straight to plan*.
 
 ## How the river flows
 
-A complexity classifier reads each task and grades it **S**, **M**, **L**, **XL**, or **XXL**. The grade decides which stages run. XXL is a pushback - the classifier judges the task too big for one run and proposes a decomposition before any other gate fires.
+A complexity classifier reads each task and assigns it a tier - **S**, **M**, **L**, **XL**, or **XXL**. The tier decides which steps run. XXL is a pushback - the classifier judges the task too big for one run and proposes a decomposition before any other gate fires.
 
 A SessionStart hook reads `WORKFLOW.md` and injects it into every Claude session as foundational context. The workflow is always loaded, no per-file imports, no skill matching. After `/compact`, it fires again to restore the workflow plus the canonical state (intent, classification, approved plan).
 
@@ -224,7 +224,7 @@ flowchart TB
 | Agent | Tier | Role |
 |-------|------|------|
 | *interviewer* | opus | Level 2 intent - probes scope, users, success criteria when the request has multiple readings or the Level 1 answer shifts scope. |
-| complexity-classifier | opus | Grades each task S / M / L / XL / XXL and gates which downstream stages run. On XXL, returns a suggested decomposition the main agent surfaces as a pushback (split / treat-as-XL / abandon). |
+| complexity-classifier | opus | Classifies each task S / M / L / XL / XXL and gates which downstream steps run. On XXL, returns a suggested decomposition the main agent surfaces as a pushback (split / treat-as-XL / abandon). |
 
 ### Prepare (Steps 2-3)
 
@@ -301,7 +301,7 @@ flowchart TB
 ## Slash commands
 
 ```
-/alp-river:go           Run the pipeline. Bias detected from your text, tier classified, stops at natural seams.
+/alp-river:go           Run the pipeline. Bias detected from your text, complexity classified, stops at natural seams.
 /alp-river:setup        Interactive bootstrap of docs/INTENT.md, docs/STACK.md, docs/GLOSSARY.md
 /alp-river:adr          Draft and write a single architectural decision record
 /alp-river:review       Review current changes for correctness + engineering quality

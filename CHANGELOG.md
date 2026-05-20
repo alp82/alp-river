@@ -96,11 +96,11 @@ Project context becomes a first-class input. Subagents read your project's inten
 
 ## 0.1.0 - 2026-04-26
 
-Initial release. A multi-stage pipeline that scales by task size - small tasks skip the heavy gates, big ones get full review and self-heal.
+Initial release. A multi-step pipeline that scales by task size - small tasks skip the heavy gates, big ones get full review and self-heal.
 
 Most code assistants either rush past intent and get the wrong thing, or pile every reviewer onto every task and add friction where none is needed. alp-river splits the difference. A classifier reads each task, picks the right depth, and runs the matching set of specialist agents underneath.
 
 - Tasks get classified S, M, L, or XL - small ones skip review, big ones get the full pipeline.
-- Plan, build, review, and self-heal are separate stages so they don't soften each other.
+- Plan, build, review, and self-heal are separate steps so they don't soften each other.
 - After-compaction state recovery so long sessions don't lose your intent or plan.
 - Six slash commands cover feature work, fixes, plans, investigations, reviews, and visual verification.

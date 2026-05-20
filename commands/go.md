@@ -7,7 +7,7 @@ argument-hint: Describe what you want done
 
 Task: $ARGUMENTS
 
-Start the pipeline at Step 0 per WORKFLOW.md `## Workflow`. The pipeline figures out the rest:
+Start the pipeline at Step 0 per WORKFLOW.md `## Pipeline`. The pipeline figures out the rest:
 
 - Step 0 Level 1 detects bug-framing vs outcome-framing from your text and restates accordingly. On affirmation, that detection sets the internal `TYPE_BIAS` (bug → `diagnose`; otherwise → `build`).
 - Classifier sizes the task to S/M/L/XL/XXL.

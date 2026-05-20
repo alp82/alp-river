@@ -11,7 +11,7 @@
     {
       "name": "alp-river",
       "source": "./",
-      "description": "Multi-stage agent refinement for Claude Code, scaled by automatic complexity classification.",
+      "description": "Multi-step agent refinement for Claude Code, scaled by automatic complexity classification.",
       "homepage": "https://github.com/alp82/alp-river",
       "repository": "https://github.com/alp82/alp-river",
       "license": "MIT",
