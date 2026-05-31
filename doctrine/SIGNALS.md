@@ -21,10 +21,9 @@ New topics are added here first, then used.
 | request-received | a new turn arrived | orchestrator seed | triage |
 | ambiguous | request has unresolved readings | triage, clarify | intent, clarify |
 | reshape | user redirected intent | orchestrator | intent |
-| intent-confirmed | outcome locked | intent | plan, classify-less downstream |
+| intent-confirmed | outcome locked | triage, interviewer | planner |
 | novel-domain | unfamiliar problem area | triage | research |
 | bug | a defect to diagnose before fixing - paired with `build`, never its own path | triage | investigator |
-| trivial | a build with no new logic (docs / config / version / copy / formatting / dependency edits) | triage | skip-tests, planner |
 | needs-tests | a build carrying real logic | triage | reuse-scanner, health-checker, prototype-identifier, plan-challenger, test-plan, the review lenses (acceptance, accessibility, architecture, assumptions, consistency, design-consistency, naming-clarity, performance, plan-adherence, quality, reuse-reviewer, structure, test-gap, test-verifier, ux, visual-verifier), capture-agent |
 
 ## shape / structure
@@ -82,11 +81,13 @@ New topics are added here first, then used.
 | tests-misaligned | tests don't match intent | test-review | test-author |
 | tests-green | suite passes | test-verify | convergence |
 | tests-missing:&lt;criterion&gt; | acceptance gap uncovered | test-gap lens | test-author |
-| green-light | code is cleared to start | skip-tests, test-review | implement |
+| tests-ready | implementer lock released | test-review | implementer's lock |
 
-The artifact `green-light` is what `implement` lists under `data.input`, so the order graph
-forbids code before it exists. On a logic build only `test-review` produces it (after
-validating the red tests - the TDD lock); on a trivial build `skip-tests` produces it directly.
+The implementer holds under a `{while:#needs-tests, until:#tests-ready}` lock (see
+`WORKFLOW.md` > `## Locks`). On a logic build `test-review` publishes `#tests-ready` after
+validating the red tests, releasing the lock - code cannot start against unvalidated tests.
+A trivial change carries no `#needs-tests`, so the lock is inactive and the implementer runs
+straight off the plan.
 
 ## findings  (review lenses)
 

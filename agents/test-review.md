@@ -7,13 +7,13 @@ stage:
   routes: [build]
   data:
     input: ['@tests', '@confirmed-intent', '@approved-plan']
-    output: ['@green-light']
+    output: []
   signals:
     subscribes: ['#tests-red']
-    publishes: ['#tests-misaligned', '#scope-shift']
+    publishes: ['#tests-ready', '#tests-misaligned', '#scope-shift']
 ---
 
 Check the red tests against the confirmed intent and the plan's acceptance criteria. A test is **misaligned** if it fails for the wrong reason, asserts the wrong behavior, tests the implementation rather than the outcome, or leaves a criterion uncovered.
 
-- Aligned: emit the `green-light` artifact. This is what `implement` lists under `input`, so code cannot start until the tests are validated - that is the TDD lock, enforced by the order graph.
+- Aligned: publish `#tests-ready`, which releases the implementer's lock (the TDD lock). Code cannot start until the tests are validated.
 - Misaligned: publish `tests-misaligned` with exactly what is wrong, looping back to test-author.

@@ -207,6 +207,7 @@
         "publishes": [
           "findings:correctness",
           "clean",
+          "needs-tests",
           "scope-shift"
         ],
         "subscribes": [
@@ -352,14 +353,19 @@
         "input": {
           "optional": [],
           "required": [
-            "approved-plan",
-            "green-light"
+            "approved-plan"
           ]
         },
         "output": [
           "diff"
         ]
       },
+      "lock": [
+        {
+          "until": "tests-ready",
+          "while": "needs-tests"
+        }
+      ],
       "name": "implementer",
       "routes": [
         "build"
@@ -568,7 +574,7 @@
         ],
         "subscribes": [
           "clarified",
-          "trivial"
+          "intent-confirmed"
         ]
       }
     },
@@ -797,29 +803,6 @@
         ]
       }
     },
-    "skip-tests": {
-      "data": {
-        "input": {
-          "optional": [],
-          "required": []
-        },
-        "output": [
-          "green-light"
-        ]
-      },
-      "name": "skip-tests",
-      "routes": [
-        "build"
-      ],
-      "signals": {
-        "publishes": [
-          "scope-shift"
-        ],
-        "subscribes": [
-          "trivial"
-        ]
-      }
-    },
     "spike-build": {
       "data": {
         "input": {
@@ -965,9 +948,7 @@
             "approved-plan"
           ]
         },
-        "output": [
-          "green-light"
-        ]
+        "output": []
       },
       "name": "test-review",
       "routes": [
@@ -975,6 +956,7 @@
       ],
       "signals": {
         "publishes": [
+          "tests-ready",
           "tests-misaligned",
           "scope-shift"
         ],
@@ -1041,7 +1023,7 @@
           "auth-surface",
           "secrets",
           "perms-change",
-          "trivial",
+          "intent-confirmed",
           "needs-tests",
           "est-size",
           "scope-shift"

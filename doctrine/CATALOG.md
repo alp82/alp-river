@@ -19,6 +19,9 @@ Every stage plays two roles:
   joins the route when **any** signal it `subscribes` to is live. `subscribes` is
   **OR**. The route grows when one stage publishes a signal another subscribes to.
 
+A triggered + satisfiable stage can still be **held** by an unmet lock `until` - a third,
+optional gate on top of membership + order (see `lock:` below).
+
 Sigils mark a value's type, and you author them in frontmatter: `@` required artifact,
 `?` optional artifact, `#` signal. `gen-catalog.py` strips them - splitting `input` into
 required/optional - and stores bare names, so the catalog and router never see a sigil.
@@ -45,6 +48,9 @@ stage:
     subscribes: ['#auth-surface', '#secrets', '#perms-change']
     publishes: ['#findings:security', '#scope-shift']
   guard: sticky
+  lock:
+    - while: '#needs-tests'
+      until: '#tests-ready'
 ---
 ```
 
@@ -60,6 +66,11 @@ stage:
   and never causes a drop when absent.
 - `signals.publishes` must include `#scope-shift` - every stage self-reports premise breaks.
 - `guard: sticky` only on safety stages (once triggered, never auto-dropped). Omit otherwise.
+- `lock: [{while: '#sig', until: '#sig'}]` - a scheduling gate. While `while` is live and
+  `until` is unpublished the stage is held: kept out of the dispatch route (shown with 🔒)
+  and reported in the `held` map. Multiple locks AND together. The implementer's
+  `{while:#needs-tests, until:#tests-ready}` lock is the TDD gate. Omit when the stage has no
+  gate.
 
 ## Signal naming
 

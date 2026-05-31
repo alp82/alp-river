@@ -10,6 +10,11 @@ The whole thing ships in one folder: a router-driven workflow, 40 composable sta
 
 ## Latest updates
 
+**1.0.6**
+
+- Documentation, config, and version-only changes now go straight to implementation, with no test-writing step when there is nothing to test.
+- Logic changes still hold the build until failing tests are written and validated first.
+
 **1.0.5**
 
 - Documentation, version, and configuration changes now finish in a few quick steps instead of the full process.
@@ -137,7 +142,7 @@ Two rules never bend: **precedence** (a stage can't run before the artifacts it 
 | test-gap | sonnet | Always-on coverage lens; pulls test-author back for untested behavior. |
 | test-verifier | sonnet | Runs the suite and gates green. |
 
-`implement` lists a green-light as an `input`, so the precedence graph forbids code before it exists. On a logic change only `test-review` mints that green-light, and only after validating the red tests - TDD is structural, not a guideline.
+The implementer holds under a `{#needs-tests -> #tests-ready}` lock, so on a logic change code cannot start until `test-review` publishes `#tests-ready` - and it does that only after validating the red tests. TDD is structural, not a guideline.
 
 ### Build, review, heal, capture
 | Agent | Model | Role |

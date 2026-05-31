@@ -14,7 +14,7 @@ import route
 import check_catalog
 
 
-def S(routes, req=(), opt=(), out=(), sub=(), pub=(), guard=None):
+def S(routes, req=(), opt=(), out=(), sub=(), pub=(), guard=None, lock=None):
     """Build a normalized catalog stage entry (matches gen-catalog output shape)."""
     s = {
         "routes": list(routes),
@@ -26,6 +26,8 @@ def S(routes, req=(), opt=(), out=(), sub=(), pub=(), guard=None):
     }
     if guard:
         s["guard"] = guard
+    if lock:
+        s["lock"] = lock
     return s
 
 
@@ -294,166 +296,383 @@ def test_real_catalog_new_lenses_off_spike():
 
 
 # ---------------------------------------------------------------------------
-# NEW TESTS (RED - assert post-change wiring not yet implemented)
+# LOCK / HELD UNIT TESTS (TC-U01 - TC-U21, RED - held key not yet in compute_route)
 # ---------------------------------------------------------------------------
 
-# EXCLUSION SET: all stages that must NOT appear in trivial route
-_EXCLUSION_SET = {
-    "acceptance-reviewer",
-    "accessibility-reviewer",
-    "architecture-reviewer",
-    "assumptions",
-    "consistency-reviewer",
-    "design-consistency-reviewer",
-    "naming-clarity",
-    "performance-reviewer",
-    "plan-adherence-reviewer",
-    "quality-reviewer",
-    "reuse-reviewer",
-    "structure-reviewer",
-    "test-gap",
-    "test-verifier",
-    "ux-reviewer",
-    "visual-verifier",
-    "capture-agent",
-    "reuse-scanner",
-    "health-checker",
-    "requirements-clarifier",
-    "prototype-identifier",
-    "plan-challenger",
-    "test-plan",
-}
-
-# The 16 deep lenses (exclusion set minus the non-lens stages)
-_DEEP_LENSES = {
-    "acceptance-reviewer",
-    "accessibility-reviewer",
-    "architecture-reviewer",
-    "assumptions",
-    "consistency-reviewer",
-    "design-consistency-reviewer",
-    "naming-clarity",
-    "performance-reviewer",
-    "plan-adherence-reviewer",
-    "quality-reviewer",
-    "reuse-reviewer",
-    "structure-reviewer",
-    "test-gap",
-    "test-verifier",
-    "ux-reviewer",
-    "visual-verifier",
-}
+# Synthetic catalog for lock tests; `impl` has configurable lock via S() kwarg.
 
 
-def test_real_catalog_trivial_route_minimal():
-    """Trivial path: skip-tests fires via trivial signal, planner fires via trivial,
-    none of the deep review stages or TDD chain appear."""
-    cat = _real_catalog()
-    res = route.compute_route(
-        cat,
-        {"build", "trivial"},
-        available={"request", "triage-read", "confirmed-intent"},
+def _lock_catalog(lock=None, extra_stages=None):
+    """Return a minimal catalog with a lockable `impl` stage and optional extras."""
+    stages = {
+        "impl": S(
+            ["build"],
+            req=["plan"],
+            out=["diff"],
+            sub=["plan-ready"],
+            pub=["code-written", "scope-shift"],
+            lock=lock,
+        ),
+    }
+    if extra_stages:
+        stages.update(extra_stages)
+    return {"stages": stages}
+
+
+def _rl(catalog, live, available=()):
+    """Driver for lock-catalog tests."""
+    return route.compute_route(catalog, set(live), set(available), set())
+
+
+# --- TC-U01 ---
+def test_lock_active_held_absent_from_route():
+    """Stage with active lock is absent from route and appears in held."""
+    cat = _lock_catalog(lock=[{"while": "needs-tests", "until": "tests-ready"}])
+    res = _rl(cat, ["plan-ready", "needs-tests"], available=["plan"])
+    assert "impl" not in res["route"], "locked impl must not be in route"
+    assert "impl" in res["held"], "locked impl must be in held"
+
+
+# --- TC-U02 ---
+def test_route_held_disjoint():
+    """route and held sets must be disjoint when a lock is active."""
+    cat = _lock_catalog(lock=[{"while": "needs-tests", "until": "tests-ready"}])
+    res = _rl(cat, ["plan-ready", "needs-tests"], available=["plan"])
+    assert (
+        set(res["route"]) & set(res["held"]) == set()
+    ), "route and held must be disjoint"
+
+
+# --- TC-U03 ---
+def test_lock_releases_when_until_published():
+    """Lock releases when the `until` signal is live - stage moves to route."""
+    cat = _lock_catalog(lock=[{"while": "needs-tests", "until": "tests-ready"}])
+    res = _rl(cat, ["plan-ready", "needs-tests", "tests-ready"], available=["plan"])
+    assert "impl" in res["route"], "impl must be in route once until-signal is live"
+    assert "impl" not in res.get("held", {}), "impl must not be held once lock released"
+
+
+# --- TC-U04 ---
+def test_lock_inactive_when_while_absent():
+    """Lock is inactive when the `while` signal is not live - stage runs normally."""
+    cat = _lock_catalog(lock=[{"while": "needs-tests", "until": "tests-ready"}])
+    res = _rl(cat, ["plan-ready"], available=["plan"])
+    assert "impl" in res["route"], "impl must be in route when while-signal absent"
+    assert res.get("held", {}) == {}, "held must be empty when no lock active"
+
+
+# --- TC-U05 ---
+def test_multiple_locks_and_both_active():
+    """Two active locks: stage is held; both unmet untils listed in held['impl']."""
+    cat = _lock_catalog(
+        lock=[
+            {"while": "needs-tests", "until": "tests-ready"},
+            {"while": "review-needed", "until": "review-done"},
+        ]
     )
-    assert "skip-tests" in res["route"], "skip-tests must be in trivial route"
-    assert "planner" in res["route"], "planner must be in trivial route"
-    route_set = set(res["route"])
-    for stage in _EXCLUSION_SET:
-        assert stage not in route_set, f"{stage} must NOT be in trivial route"
+    res = _rl(cat, ["plan-ready", "needs-tests", "review-needed"], available=["plan"])
+    assert "impl" in res["held"], "impl must be held when both locks active"
+    unmet = res["held"]["impl"]
+    assert "tests-ready" in unmet, "tests-ready must be listed as unmet until"
+    assert "review-done" in unmet, "review-done must be listed as unmet until"
 
 
-def test_real_catalog_trivial_route_post_code():
-    """After code is written on the trivial path, correctness-reviewer joins but deep
-    lenses do not (they are gated behind needs-tests, not code-written)."""
-    cat = _real_catalog()
-    res = route.compute_route(
-        cat,
-        {"build", "trivial", "code-written"},
-        available={
-            "request",
-            "triage-read",
-            "confirmed-intent",
-            "green-light",
-            "approved-plan",
-            "diff",
-        },
+# --- TC-U06 ---
+def test_multiple_locks_one_resolved():
+    """One lock resolved, one still active: stage remains held; held lists only the remaining until."""
+    cat = _lock_catalog(
+        lock=[
+            {"while": "needs-tests", "until": "tests-ready"},
+            {"while": "review-needed", "until": "review-done"},
+        ]
     )
-    assert (
-        "correctness-reviewer" in res["route"]
-    ), "correctness-reviewer must appear post-code"
-    route_set = set(res["route"])
-    for stage in _DEEP_LENSES:
-        assert (
-            stage not in route_set
-        ), f"deep lens {stage} must NOT be in trivial post-code route"
-
-
-def test_real_catalog_trivial_multi_file_no_prototype_identifier():
-    """LEAK GUARD: multi-file signal on trivial path must NOT trigger prototype-identifier.
-    After the fix, prototype-identifier subscribes needs-tests only, not multi-file."""
-    cat = _real_catalog()
-    res = route.compute_route(
+    res = _rl(
         cat,
-        {"build", "trivial", "multi-file"},
-        available={"request", "triage-read", "confirmed-intent"},
+        ["plan-ready", "needs-tests", "review-needed", "tests-ready"],
+        available=["plan"],
     )
+    assert "impl" in res["held"], "impl must still be held with one lock active"
+    unmet = res["held"]["impl"]
+    assert "review-done" in unmet, "review-done must still be listed as unmet until"
     assert (
-        "prototype-identifier" not in res["route"]
-    ), "prototype-identifier must not appear on trivial multi-file route"
-    assert (
-        res["triggered_by"].get("prototype-identifier") is None
-    ), "prototype-identifier must not be triggered on trivial multi-file path"
-    route_set = set(res["route"])
-    for stage in _EXCLUSION_SET:
-        assert (
-            stage not in route_set
-        ), f"{stage} must NOT be in trivial multi-file route"
+        "tests-ready" not in unmet
+    ), "tests-ready must not appear in unmet (already live)"
 
 
-def test_real_catalog_needs_tests_implementer_dropped_pre_test_chain():
-    """Before tests are written, implementer cannot satisfy its green-light requirement
-    so it must be dropped as unsatisfiable-input."""
-    cat = _real_catalog()
-    res = route.compute_route(
+# --- TC-U07 ---
+def test_multiple_locks_both_resolved_runs():
+    """Both locks resolved: stage is in route, not held."""
+    cat = _lock_catalog(
+        lock=[
+            {"while": "needs-tests", "until": "tests-ready"},
+            {"while": "review-needed", "until": "review-done"},
+        ]
+    )
+    res = _rl(
         cat,
-        {"build", "needs-tests", "plan-ready"},
-        available={"request", "triage-read", "confirmed-intent", "approved-plan"},
+        ["plan-ready", "needs-tests", "review-needed", "tests-ready", "review-done"],
+        available=["plan"],
     )
-    assert (
-        "implementer" not in res["route"]
-    ), "implementer must be absent before test chain"
-    assert (
-        res["dropped"].get("implementer") == "unsatisfiable-input"
-    ), "implementer must be dropped as unsatisfiable-input"
-    assert "test-plan" in res["route"], "test-plan must be in route when plan-ready"
+    assert "impl" in res["route"], "impl must be in route when both locks resolved"
+    assert "impl" not in res.get("held", {}), "impl must not be in held"
 
 
-def test_real_catalog_needs_tests_implementer_after_test_review():
-    """TDD LOCK: once tests are red and approved, test-review must precede implementer."""
-    cat = _real_catalog()
+# --- TC-U08 ---
+def test_family_prefix_until_released():
+    """Family-prefix match on until: `tests-ready:foo` in live releases a `tests-ready` until."""
+    cat = _lock_catalog(lock=[{"while": "needs-tests", "until": "tests-ready"}])
+    res = _rl(cat, ["plan-ready", "needs-tests", "tests-ready:foo"], available=["plan"])
+    assert (
+        "impl" in res["route"]
+    ), "impl must be in route: tests-ready:foo satisfies until=tests-ready"
+
+
+# --- TC-U09 ---
+def test_family_prefix_while_matched():
+    """Family-prefix match on while: `needs-tests:logic` in live activates a `needs-tests` while."""
+    cat = _lock_catalog(lock=[{"while": "needs-tests", "until": "tests-ready"}])
+    # needs-tests:logic present, tests-ready absent -> lock active -> impl held
+    res = _rl(cat, ["plan-ready", "needs-tests:logic"], available=["plan"])
+    assert (
+        "impl" in res["held"]
+    ), "impl must be held: needs-tests:logic satisfies while=needs-tests"
+
+
+# --- TC-U10 ---
+def test_held_payload_is_unmet_until():
+    """held['impl'] is a list and contains the unmet until signal name."""
+    cat = _lock_catalog(lock=[{"while": "needs-tests", "until": "tests-ready"}])
+    res = _rl(cat, ["plan-ready", "needs-tests"], available=["plan"])
+    assert isinstance(res["held"]["impl"], list), "held['impl'] must be a list"
+    assert (
+        "tests-ready" in res["held"]["impl"]
+    ), "held['impl'] must contain the unmet until"
+
+
+# --- TC-U11 ---
+def test_held_payload_never_deadlock_string():
+    """held values are lists of signal names, not the string 'deadlock'."""
+    cat = _lock_catalog(
+        lock=[
+            {"while": "needs-tests", "until": "tests-ready"},
+            {"while": "review-needed", "until": "review-done"},
+        ]
+    )
+    res = _rl(cat, ["plan-ready", "needs-tests", "review-needed"], available=["plan"])
+    for val in res["held"].values():
+        assert val != "deadlock", "held value must never be the string 'deadlock'"
+
+
+# --- TC-U12 ---
+def test_held_stage_excluded_from_toposort():
+    """A held stage does not contribute its outputs; downstream consumers become unsatisfiable.
+
+    impl (locked) produces 'diff'; reviewer requires 'diff'; both triggered.
+    impl held -> reviewer dropped unsatisfiable. impl in held, reviewer not in route.
+    """
+    cat = {
+        "stages": {
+            "impl": S(
+                ["build"],
+                req=["plan"],
+                out=["diff"],
+                sub=["plan-ready"],
+                pub=["code-written", "scope-shift"],
+                lock=[{"while": "needs-tests", "until": "tests-ready"}],
+            ),
+            "reviewer": S(
+                ["build"],
+                req=["diff"],
+                out=["findings"],
+                sub=["plan-ready"],
+                pub=["scope-shift"],
+            ),
+        }
+    }
     res = route.compute_route(
-        cat,
-        {"build", "needs-tests", "plan-ready", "test-cases-ready", "tests-red"},
-        available={
-            "request",
-            "triage-read",
-            "confirmed-intent",
-            "approved-plan",
-            "test-cases",
-            "tests",
-        },
+        cat, {"plan-ready", "needs-tests"}, available={"plan"}, already_run=frozenset()
     )
+    assert "impl" in res["held"], "impl must be in held"
     assert (
-        "implementer" in res["route"]
-    ), "implementer must be in route after test chain"
-    assert "test-review" in res["route"], "test-review must be in route"
-    order = res["route"]
-    assert order.index("test-review") < order.index(
-        "implementer"
-    ), "test-review must precede implementer"
-    assert "test-author" in res["route"], "test-author must be in route"
-    assert order.index("test-author") < order.index(
-        "test-review"
-    ), "test-author must precede test-review"
+        "reviewer" not in res["route"]
+    ), "reviewer must not be in route (diff unavailable)"
+
+
+# --- TC-U13 ---
+def test_held_key_present_even_when_empty():
+    """Result always has a 'held' key; it equals {} when no stage is held."""
+    cat = _lock_catalog()  # no lock
+    res = _rl(cat, ["plan-ready"], available=["plan"])
+    assert "held" in res, "'held' key must always be present in result"
+    assert res["held"] == {}, "held must be {} when no stage is locked"
+
+
+# --- TC-U14 ---
+def test_lock_inactive_cheap_path():
+    """Lock present but while-signal absent (cheap path): stage runs, held empty."""
+    cat = _lock_catalog(lock=[{"while": "needs-tests", "until": "tests-ready"}])
+    res = _rl(cat, ["plan-ready"], available=["plan"])
+    assert "impl" in res["route"], "impl must run on cheap path (while-signal absent)"
+    assert res.get("held", {}) == {}, "held must be empty on cheap path"
+
+
+# --- TC-U15 ---
+def test_normalize_lock_strips_hash():
+    """gen-catalog normalize_stage strips # sigils from lock while/until values."""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "gen_catalog",
+        Path(__file__).resolve().parents[1] / "gen-catalog.py",
+    )
+    gen_catalog = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(gen_catalog)
+    normalize_stage = gen_catalog.normalize_stage
+
+    stage_fm = {
+        "routes": ["build"],
+        "data": {"input": [], "output": []},
+        "signals": {"subscribes": [], "publishes": ["scope-shift"]},
+        "lock": [{"while": "#needs-tests", "until": "#tests-ready"}],
+    }
+    result = normalize_stage("impl", stage_fm)
+    assert result["lock"] == [
+        {"while": "needs-tests", "until": "tests-ready"}
+    ], f"lock sigils must be stripped, got {result.get('lock')}"
+
+
+# --- TC-U16 ---
+def test_normalize_lock_passthrough_bare():
+    """gen-catalog normalize_stage leaves bare (no-#) lock values unchanged."""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "gen_catalog",
+        Path(__file__).resolve().parents[1] / "gen-catalog.py",
+    )
+    gen_catalog = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(gen_catalog)
+    normalize_stage = gen_catalog.normalize_stage
+
+    stage_fm = {
+        "routes": ["build"],
+        "data": {"input": [], "output": []},
+        "signals": {"subscribes": [], "publishes": ["scope-shift"]},
+        "lock": [{"while": "needs-tests", "until": "tests-ready"}],
+    }
+    result = normalize_stage("impl", stage_fm)
+    assert result["lock"] == [
+        {"while": "needs-tests", "until": "tests-ready"}
+    ], f"bare lock values must pass through unchanged, got {result.get('lock')}"
+
+
+# --- TC-U17 ---
+def test_normalize_lock_raises_on_malformed():
+    """gen-catalog _normalize_lock raises ValueError when a lock entry is missing 'until'."""
+    import importlib.util
+    import pytest
+
+    spec = importlib.util.spec_from_file_location(
+        "gen_catalog",
+        Path(__file__).resolve().parents[1] / "gen-catalog.py",
+    )
+    gen_catalog = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(gen_catalog)
+
+    with pytest.raises(ValueError, match="until"):
+        gen_catalog._normalize_lock([{"while": "needs-tests"}], "impl")
+
+
+# --- TC-U18 ---
+def test_check_catalog_flags_lock_while_no_publisher():
+    """check() reports a problem when lock.while names an unpublished, non-seed signal."""
+    # Use request-received (a SEED_SIGNAL) for subscribes so orphan-subscribe check
+    # does not fire; only the lock.while invariant should trigger.
+    ghost_catalog = {
+        "stages": {
+            "impl": S(
+                ["build"],
+                req=[],
+                out=["diff"],
+                sub=["request-received"],
+                pub=["tests-ready", "scope-shift"],
+                lock=[{"while": "ghost-signal", "until": "tests-ready"}],
+            ),
+        }
+    }
+    problems = check_catalog.check(ghost_catalog)
+    assert any(
+        "ghost-signal" in p for p in problems
+    ), f"check() must flag ghost-signal in lock.while, problems={problems}"
+
+
+# --- TC-U18 ---
+def test_check_catalog_flags_lock_until_no_publisher():
+    """check() reports a problem when lock.until names an unpublished, non-seed signal."""
+    phantom_catalog = {
+        "stages": {
+            "impl": S(
+                ["build"],
+                req=[],
+                out=["diff"],
+                sub=["request-received"],
+                pub=["needs-tests", "scope-shift"],
+                lock=[{"while": "needs-tests", "until": "phantom-done"}],
+            ),
+        }
+    }
+    problems = check_catalog.check(phantom_catalog)
+    assert any(
+        "phantom-done" in p for p in problems
+    ), f"check() must flag phantom-done in lock.until, problems={problems}"
+
+
+# --- TC-U19 ---
+def test_check_catalog_passes_when_lock_signals_resolve():
+    """check() returns [] when lock.while is published by another stage and lock.until is published."""
+    clean_catalog = {
+        "stages": {
+            "impl": S(
+                ["build"],
+                req=[],
+                out=["diff"],
+                sub=["request-received"],
+                pub=["scope-shift"],
+                lock=[{"while": "needs-tests", "until": "tests-ready"}],
+            ),
+            "test-author": S(
+                ["build"],
+                out=["tests-ready"],
+                sub=["request-received"],
+                pub=["needs-tests", "tests-ready", "scope-shift"],
+            ),
+        }
+    }
+    problems = check_catalog.check(clean_catalog)
+    assert problems == [], f"check() must pass for valid lock signals, got {problems}"
+
+
+# --- TC-U20 ---
+def test_S_factory_lock_absent_by_default():
+    """S() without lock kwarg must not add a 'lock' key."""
+    s = S(["build"], sub=["go"], pub=["scope-shift"])
+    assert "lock" not in s, "S() must not add 'lock' key when lock kwarg is absent"
+
+
+# --- TC-U21 ---
+def test_S_factory_lock_present():
+    """S() with lock kwarg stores the value under 'lock'."""
+    lock_val = [{"while": "needs-tests", "until": "tests-ready"}]
+    s = S(["build"], sub=["go"], pub=["scope-shift"], lock=lock_val)
+    assert "lock" in s, "S() must add 'lock' key when lock kwarg is provided"
+    assert (
+        s["lock"] == lock_val
+    ), f"s['lock'] must equal the provided value, got {s.get('lock')}"
+
+
+# ---------------------------------------------------------------------------
+# RETAINED NON-TRIVIAL SYNTHETIC TESTS (unchanged from before)
+# ---------------------------------------------------------------------------
 
 
 def test_real_catalog_needs_tests_reuse_scanner_survives():
@@ -519,14 +738,317 @@ def test_optional_producer_in_route_creates_ordering_edge_without_artifact():
     ), "alpha must precede beta via optional ordering edge even without alpha-out in available"
 
 
-def test_real_catalog_needs_tests_stale_green_light_does_not_bypass_ordering():
-    """FLIP: green-light in available (stale/prior run) must not bypass test-review -> implementer
-    ordering. The XOR contract + orchestrator invalidation are not unit-testable at the router;
-    this asserts only the in-route-producer ordering edge."""
+# ---------------------------------------------------------------------------
+# INTEGRATION TESTS - REAL CATALOG (TC-I01 - TC-I11, RED until catalog regen)
+# ---------------------------------------------------------------------------
+
+# EXCLUSION SET: all stages that must NOT appear in cheap-path route (no needs-tests)
+_EXCLUSION_SET = {
+    "acceptance-reviewer",
+    "accessibility-reviewer",
+    "architecture-reviewer",
+    "assumptions",
+    "consistency-reviewer",
+    "design-consistency-reviewer",
+    "naming-clarity",
+    "performance-reviewer",
+    "plan-adherence-reviewer",
+    "quality-reviewer",
+    "reuse-reviewer",
+    "structure-reviewer",
+    "test-gap",
+    "test-verifier",
+    "ux-reviewer",
+    "visual-verifier",
+    "capture-agent",
+    "reuse-scanner",
+    "health-checker",
+    "requirements-clarifier",
+    "prototype-identifier",
+    "plan-challenger",
+    "test-plan",
+}
+
+# The 16 deep lenses (exclusion set minus the non-lens stages)
+_DEEP_LENSES = {
+    "acceptance-reviewer",
+    "accessibility-reviewer",
+    "architecture-reviewer",
+    "assumptions",
+    "consistency-reviewer",
+    "design-consistency-reviewer",
+    "naming-clarity",
+    "performance-reviewer",
+    "plan-adherence-reviewer",
+    "quality-reviewer",
+    "reuse-reviewer",
+    "structure-reviewer",
+    "test-gap",
+    "test-verifier",
+    "ux-reviewer",
+    "visual-verifier",
+}
+
+
+# --- TC-I01 ---
+def test_real_catalog_has_39_stages_no_skip_tests():
+    """After migration, catalog has 39 stages and skip-tests is absent."""
+    cat = _real_catalog()
+    stages = cat["stages"]
+    assert len(stages) == 39, f"expected 39 stages, got {len(stages)}"
+    assert "skip-tests" not in stages, "skip-tests must NOT exist in migrated catalog"
+
+
+# --- TC-I02 ---
+def test_real_catalog_implementer_contract():
+    """implementer: required input == ['approved-plan'] only; lock present with TDD guard."""
+    stages = _real_catalog()["stages"]
+    s = stages["implementer"]
+    assert s["data"]["input"]["required"] == [
+        "approved-plan"
+    ], f"implementer required must be ['approved-plan'], got {s['data']['input']['required']}"
+    assert (
+        "green-light" not in s["data"]["input"]["required"]
+    ), "green-light must NOT be in implementer required input"
+    assert "lock" in s, "implementer must have a 'lock' field"
+    assert s["lock"] == [
+        {"while": "needs-tests", "until": "tests-ready"}
+    ], f"implementer lock must be [{{while:needs-tests,until:tests-ready}}], got {s.get('lock')}"
+
+
+# --- TC-I03 ---
+def test_real_catalog_test_review_contract():
+    """test-review: data.output == []; 'tests-ready' in publishes."""
+    stages = _real_catalog()["stages"]
+    s = stages["test-review"]
+    assert (
+        s["data"]["output"] == []
+    ), f"test-review output must be [], got {s['data']['output']}"
+    assert (
+        "tests-ready" in s["signals"]["publishes"]
+    ), "tests-ready must be in test-review publishes"
+    assert (
+        "green-light" not in s["data"]["output"]
+    ), "green-light must NOT be in test-review output"
+
+
+# --- TC-I04 ---
+def test_real_catalog_triage_publishes_intent_confirmed_not_trivial():
+    """triage: publishes intent-confirmed and needs-tests; does not publish trivial."""
+    stages = _real_catalog()["stages"]
+    pubs = stages["triage"]["signals"]["publishes"]
+    assert "intent-confirmed" in pubs, "triage must publish intent-confirmed"
+    assert "needs-tests" in pubs, "triage must publish needs-tests"
+    assert "trivial" not in pubs, "triage must NOT publish trivial after migration"
+
+
+# --- TC-I05 ---
+def test_real_catalog_planner_subscribes_intent_confirmed_not_trivial():
+    """planner: subscribes has 'clarified' + 'intent-confirmed'; does not subscribe trivial."""
+    stages = _real_catalog()["stages"]
+    s = stages["planner"]
+    subs = s["signals"]["subscribes"]
+    assert "clarified" in subs, f"planner must subscribe clarified, got {subs}"
+    assert (
+        "intent-confirmed" in subs
+    ), f"planner must subscribe intent-confirmed, got {subs}"
+    assert "trivial" not in subs, f"planner must NOT subscribe trivial, got {subs}"
+
+
+# --- TC-I06 ---
+def test_real_catalog_correctness_publishes_needs_tests():
+    """correctness-reviewer publishes needs-tests (it gates the TDD chain)."""
+    stages = _real_catalog()["stages"]
+    s = stages["correctness-reviewer"]
+    assert (
+        "needs-tests" in s["signals"]["publishes"]
+    ), "correctness-reviewer must publish needs-tests"
+
+
+# --- TC-I07 ---
+def test_real_catalog_implementer_held_before_tests_ready():
+    """TDD LOCK: before tests-ready, implementer is in held (lock active), not route."""
     cat = _real_catalog()
     res = route.compute_route(
         cat,
-        {"build", "needs-tests", "plan-ready", "test-cases-ready", "tests-red"},
+        {"build", "needs-tests", "plan-ready"},
+        available={"confirmed-intent", "approved-plan"},
+    )
+    assert (
+        "implementer" not in res["route"]
+    ), "implementer must be absent from route before tests-ready"
+    assert (
+        "implementer" in res["held"]
+    ), "implementer must be in held (lock active) before tests-ready"
+
+
+# --- TC-I08 ---
+def test_real_catalog_implementer_in_route_after_tests_ready():
+    """TDD LOCK released: with tests-ready live, implementer is in route, not held."""
+    cat = _real_catalog()
+    res = route.compute_route(
+        cat,
+        {
+            "build",
+            "needs-tests",
+            "plan-ready",
+            "test-cases-ready",
+            "tests-red",
+            "tests-ready",
+        },
+        available={"confirmed-intent", "approved-plan", "test-cases", "tests"},
+    )
+    assert (
+        "implementer" in res["route"]
+    ), "implementer must be in route once tests-ready is live"
+    assert "implementer" not in res.get(
+        "held", {}
+    ), "implementer must not be held once lock released"
+
+
+# --- TC-I09 ---
+def test_real_catalog_trivial_build_implementer_runs():
+    """Cheap path (no needs-tests): implementer lock inactive, runs normally, held empty."""
+    cat = _real_catalog()
+    res = route.compute_route(
+        cat,
+        {"build", "plan-ready"},
+        available={"confirmed-intent", "approved-plan"},
+    )
+    assert (
+        "implementer" in res["route"]
+    ), "implementer must be in route on cheap path (no needs-tests)"
+    assert (
+        res.get("held", {}).get("implementer") is None
+    ), "implementer must not be in held on cheap path"
+
+
+# --- TC-I10 ---
+def test_real_catalog_coherence_after_migration():
+    """check_catalog.check() returns [] on the migrated catalog."""
+    assert check_catalog.check(_real_catalog()) == []
+
+
+# --- TC-I11 ---
+def test_real_catalog_route_held_disjoint():
+    """route and held sets are disjoint when implementer's lock is active."""
+    cat = _real_catalog()
+    res = route.compute_route(
+        cat,
+        {"build", "needs-tests", "plan-ready"},
+        available={"confirmed-intent", "approved-plan"},
+    )
+    assert (
+        set(res["route"]) & set(res["held"]) == set()
+    ), "route and held must be disjoint"
+
+
+# ---------------------------------------------------------------------------
+# REWRITTEN MIGRATION TESTS (cheap-path variants replacing trivial/skip-tests)
+# ---------------------------------------------------------------------------
+
+
+def test_real_catalog_cheap_path_route_minimal():
+    """Cheap path (no needs-tests signal): planner fires via intent-confirmed,
+    implementer runs immediately, none of the deep review stages or TDD chain appear."""
+    cat = _real_catalog()
+    res = route.compute_route(
+        cat,
+        {"build", "intent-confirmed"},
+        available={"request", "triage-read", "confirmed-intent"},
+    )
+    assert "planner" in res["route"], "planner must be in cheap-path route"
+    assert (
+        "skip-tests" not in res["route"]
+    ), "skip-tests must not exist in migrated catalog"
+    route_set = set(res["route"])
+    for stage in _EXCLUSION_SET:
+        assert stage not in route_set, f"{stage} must NOT be in cheap-path route"
+
+
+def test_real_catalog_cheap_path_post_code():
+    """Cheap path after code written: correctness-reviewer joins but deep lenses do not
+    (they are gated behind needs-tests)."""
+    cat = _real_catalog()
+    res = route.compute_route(
+        cat,
+        {"build", "intent-confirmed", "code-written"},
+        available={
+            "request",
+            "triage-read",
+            "confirmed-intent",
+            "approved-plan",
+            "diff",
+        },
+    )
+    assert (
+        "correctness-reviewer" in res["route"]
+    ), "correctness-reviewer must appear post-code on cheap path"
+    route_set = set(res["route"])
+    for stage in _DEEP_LENSES:
+        assert (
+            stage not in route_set
+        ), f"deep lens {stage} must NOT be in cheap-path post-code route"
+
+
+def test_real_catalog_cheap_path_multi_file_no_prototype_identifier():
+    """LEAK GUARD: multi-file on cheap path must NOT trigger prototype-identifier.
+    prototype-identifier subscribes needs-tests only."""
+    cat = _real_catalog()
+    res = route.compute_route(
+        cat,
+        {"build", "intent-confirmed", "multi-file"},
+        available={"request", "triage-read", "confirmed-intent"},
+    )
+    assert (
+        "prototype-identifier" not in res["route"]
+    ), "prototype-identifier must not appear on cheap-path multi-file route"
+    assert (
+        res["triggered_by"].get("prototype-identifier") is None
+    ), "prototype-identifier must not be triggered on cheap-path multi-file"
+    route_set = set(res["route"])
+    for stage in _EXCLUSION_SET:
+        assert (
+            stage not in route_set
+        ), f"{stage} must NOT be in cheap-path multi-file route"
+
+
+def test_real_catalog_needs_tests_implementer_held_pre_test_chain():
+    """Before tests are written, implementer's lock is active - it is in held, not dropped."""
+    cat = _real_catalog()
+    res = route.compute_route(
+        cat,
+        {"build", "needs-tests", "plan-ready"},
+        available={"request", "triage-read", "confirmed-intent", "approved-plan"},
+    )
+    assert (
+        "implementer" not in res["route"]
+    ), "implementer must be absent from route before test chain"
+    assert (
+        "implementer" in res["held"]
+    ), "implementer must be in held (not dropped) before test chain"
+    assert (
+        res["dropped"].get("implementer") != "unsatisfiable-input"
+    ), "implementer must NOT be dropped as unsatisfiable-input (it is held)"
+    assert "test-plan" in res["route"], "test-plan must be in route when plan-ready"
+
+
+def test_real_catalog_needs_tests_implementer_after_tests_ready():
+    """TDD LOCK (release side): implementer becomes runnable only once `tests-ready` is
+    live, which only test-review can publish - so test-review necessarily ran first. The
+    ordering is enforced temporally across recomposes (test-review is already_run by the
+    time the lock releases), not within one order array."""
+    cat = _real_catalog()
+    res = route.compute_route(
+        cat,
+        {
+            "build",
+            "needs-tests",
+            "plan-ready",
+            "test-cases-ready",
+            "tests-red",
+            "tests-ready",
+        },
         available={
             "request",
             "triage-read",
@@ -534,116 +1056,55 @@ def test_real_catalog_needs_tests_stale_green_light_does_not_bypass_ordering():
             "approved-plan",
             "test-cases",
             "tests",
-            "green-light",  # green-light STALE in available
+        },
+        already_run={
+            "triage",
+            "reuse-scanner",
+            "health-checker",
+            "prototype-identifier",
+            "requirements-clarifier",
+            "planner",
+            "plan-challenger",
+            "test-plan",
+            "test-author",
+            "test-review",
         },
     )
-    assert "implementer" in res["route"], "implementer must be in route"
-    assert "test-review" in res["route"], "test-review must be in route"
-    order = res["route"]
-    assert order.index("test-review") < order.index(
-        "implementer"
-    ), "test-review must precede implementer even with stale green-light in available"
+    assert (
+        "implementer" in res["route"]
+    ), "implementer is runnable once tests-ready is live"
+    assert (
+        "implementer" not in res["held"]
+    ), "implementer is no longer held after release"
+    assert (
+        "test-review" not in res["route"]
+    ), "test-review already ran (sole publisher of tests-ready), so it is not re-routed"
 
 
-def test_real_catalog_coherence_post_migration():
-    """Catalog coherence check passes after migration."""
-    assert check_catalog.check(_real_catalog()) == []
+def test_real_catalog_needs_tests_stale_tests_ready_artifact_does_not_release_lock():
+    """Lock checks LIVE SIGNALS, not available artifacts.
 
-
-def test_real_catalog_has_40_stages_with_skip_tests():
-    """After adding skip-tests, catalog must have 40 stages."""
+    `tests-ready` in available (stale artifact from a prior run) must NOT release
+    the lock. The lock only releases when `tests-ready` appears in live signals.
+    """
     cat = _real_catalog()
-    stages = cat["stages"]
-    assert len(stages) == 40, f"expected 40 stages, got {len(stages)}"
-    assert "skip-tests" in stages, "skip-tests stage must exist in catalog"
-
-
-def test_real_catalog_no_stage_outputs_validated_tests():
-    """After migration, no stage should output validated-tests (replaced by green-light)."""
-    cat = _real_catalog()
-    for name, stage in cat["stages"].items():
-        assert (
-            "validated-tests" not in stage["data"]["output"]
-        ), f"{name} must not output validated-tests"
-
-
-def test_real_catalog_skip_tests_stage_contract():
-    """skip-tests: routes==[build], input.required==[], input.optional==[], subscribes==[trivial],
-    green-light in output, scope-shift in publishes."""
-    stages = _real_catalog()["stages"]
-    assert "skip-tests" in stages, "skip-tests must exist"
-    s = stages["skip-tests"]
-    assert s["routes"] == [
-        "build"
-    ], f"skip-tests routes must be ['build'], got {s['routes']}"
+    res = route.compute_route(
+        cat,
+        {"build", "needs-tests", "plan-ready"},  # tests-ready NOT in live
+        available={
+            "request",
+            "triage-read",
+            "confirmed-intent",
+            "approved-plan",
+            "tests-ready",  # stale artifact in available, NOT a live signal
+        },
+    )
     assert (
-        s["data"]["input"]["required"] == []
-    ), f"skip-tests required input must be [], got {s['data']['input']['required']}"
+        "implementer" not in res["route"]
+    ), "implementer must NOT be in route: stale tests-ready artifact does not release lock"
     assert (
-        s["data"]["input"]["optional"] == []
-    ), f"skip-tests optional input must be [], got {s['data']['input']['optional']}"
-    assert s["signals"]["subscribes"] == [
-        "trivial"
-    ], f"skip-tests subscribes must be ['trivial'], got {s['signals']['subscribes']}"
-    assert (
-        "green-light" in s["data"]["output"]
-    ), f"green-light must be in skip-tests output"
-    assert (
-        "scope-shift" in s["signals"]["publishes"]
-    ), "scope-shift must be in skip-tests publishes"
-
-
-def test_real_catalog_test_review_outputs_green_light():
-    """After migration, test-review outputs green-light (not validated-tests)."""
-    stages = _real_catalog()["stages"]
-    s = stages["test-review"]
-    assert (
-        "green-light" in s["data"]["output"]
-    ), "green-light must be in test-review output"
-    assert (
-        "validated-tests" not in s["data"]["output"]
-    ), "validated-tests must NOT be in test-review output"
-
-
-def test_real_catalog_implementer_requires_green_light():
-    """After migration, implementer requires green-light (not validated-tests)."""
-    stages = _real_catalog()["stages"]
-    s = stages["implementer"]
-    assert (
-        "green-light" in s["data"]["input"]["required"]
-    ), "green-light must be in implementer required input"
-    assert (
-        "validated-tests" not in s["data"]["input"]["required"]
-    ), "validated-tests must NOT be in implementer required input"
-
-
-def test_real_catalog_triage_publishes_trivial_and_needs_tests():
-    """After migration, triage publishes both trivial and needs-tests signals, and
-    triage (not only interviewer) outputs confirmed-intent so a clear build's pre-flight
-    is never starved."""
-    stages = _real_catalog()["stages"]
-    pubs = stages["triage"]["signals"]["publishes"]
-    assert "trivial" in pubs, "triage must publish trivial"
-    assert "needs-tests" in pubs, "triage must publish needs-tests"
-    assert "confirmed-intent" in stages["triage"]["data"]["output"]
-
-
-def test_real_catalog_planner_subscribes_trivial_and_clarified():
-    """After migration, planner subscribes both trivial and clarified."""
-    stages = _real_catalog()["stages"]
-    s = stages["planner"]
-    subs = s["signals"]["subscribes"]
-    assert "trivial" in subs, f"planner must subscribe trivial, got subscribes={subs}"
-    assert (
-        "clarified" in subs
-    ), f"planner must subscribe clarified, got subscribes={subs}"
-    assert (
-        "confirmed-intent" in s["data"]["input"]["required"]
-    ), "planner must require confirmed-intent"
-    assert (
-        "clarified-intent" in s["data"]["input"]["optional"]
-        or "clarified-intent" in s["data"]["input"]["required"]
-    ), "planner must accept clarified-intent (required or optional)"
+        "implementer" in res["held"]
+    ), "implementer must be in held: lock checks live, not available"
 
 
 if __name__ == "__main__":

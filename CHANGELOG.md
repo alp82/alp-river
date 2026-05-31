@@ -2,6 +2,11 @@
 
 All notable changes to alp-river. Versions match `.claude-plugin/plugin.json`.
 
+## 1.0.6 - 2026-05-31
+
+- Documentation, config, and version-only changes now go straight to implementation, with no test-writing step when there is nothing to test.
+- Logic changes still hold the build until failing tests are written and validated first.
+
 ## 1.0.5 - 2026-05-31
 
 - Documentation, version, and configuration changes now finish in a few quick steps instead of the full process.

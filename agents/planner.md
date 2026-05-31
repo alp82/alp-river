@@ -9,13 +9,13 @@ stage:
     input: ['@confirmed-intent', '?clarified-intent', '?reuse-map', '?health-findings', '?research-findings', '?prototypes', '?design-spec']
     output: ['@approved-plan']
   signals:
-    subscribes: ['#clarified', '#trivial']
+    subscribes: ['#clarified', '#intent-confirmed']
     publishes: ['#plan-ready', '#scope-shift']
 ---
 
 ## Process
 
-On a trivial build the planner runs off triage's `@confirmed-intent` with no clarifier output - the `<CLARIFY_OUTPUT>` slot may be empty. Plan from the confirmed intent alone in that case.
+On a build with no clarifier output (no `#clarified`), the planner runs off triage's `@confirmed-intent` alone - the `<CLARIFY_OUTPUT>` slot may be empty. Plan from the confirmed intent alone in that case.
 
 1. Study reuse findings, prototypes (if any), and researcher findings. Design around proven behavior. Pre-flight inputs carry confidence tags - verify `[unsure]` items (by re-reading the cited file, fetching the cited URL, or asking via the main agent) before letting them shape load-bearing parts of the plan.
 2. Review health-checker `CLEANUP_TARGETS` and reuse-scanner `QUICK_WINS`. Pull the ones that fit the task into the plan as explicit steps. Surface the rest in "Out of Scope" as dedicated follow-up tasks.

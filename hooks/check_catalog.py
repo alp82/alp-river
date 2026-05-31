@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
 """Coherence check over generated/catalog.json - the second gate beside the router tests.
 
-Verifies the four invariants a composed route relies on:
+Verifies the invariants a composed route relies on:
 
   1. every subscribed signal has a publisher (family-aware) or is an external seed
   2. every REQUIRED input has an in-catalog producer or is an external-seed artifact
   3. `scope-shift` is published by every stage (each self-reports premise breaks)
   4. `routes` is present, non-empty, and a subset of build/spike/talk on every stage
+  5. every `lock` while/until signal has a publisher (family-aware) or is an external seed
 
 Runnable standalone (`python3 hooks/check_catalog.py`, exits 1 on any problem) and imported
 by the router tests. External seeds are values that enter a route from outside any stage -
 the orchestrator seed, user/gate decisions, or the /alp-river:adr command - listed below.
 """
+
 import json
 import sys
 from pathlib import Path
@@ -31,8 +33,10 @@ SEED_ARTIFACTS = {"request", "decision-summary"}
 def _family_match(sub, published):
     """Satisfied by an exact topic, a qualified member of the family (sub `findings` <- pub
     `findings:security`), or the family base (sub `findings:x` <- pub `findings`)."""
-    return any(p == sub or p.startswith(sub + ":") or sub.startswith(p + ":")
-               for p in published)
+    return any(
+        p == sub or p.startswith(sub + ":") or sub.startswith(p + ":")
+        for p in published
+    )
 
 
 def check(catalog):
@@ -56,6 +60,12 @@ def check(catalog):
         for art in s["data"]["input"]["required"]:
             if art not in SEED_ARTIFACTS and art not in produced:
                 problems.append(f"{name}: requires `{art}` - no producer or seed")
+        for lk in s.get("lock", []):
+            for sig in (lk["while"], lk["until"]):
+                if sig not in SEED_SIGNALS and not _family_match(sig, published):
+                    problems.append(
+                        f"{name}: lock signal '{sig}' has no publisher or seed"
+                    )
     return problems
 
 
@@ -66,7 +76,8 @@ def main():
         sys.stderr.write("check-catalog: FAIL\n  " + "\n  ".join(problems) + "\n")
         sys.exit(1)
     sys.stderr.write(
-        f"check-catalog: clean - {len(catalog['stages'])} stages, all invariants hold\n")
+        f"check-catalog: clean - {len(catalog['stages'])} stages, all invariants hold\n"
+    )
 
 
 if __name__ == "__main__":

@@ -15,6 +15,7 @@ start of a YAML scalar. Storage is bare names; required-vs-optional is a structu
 never a sigil. Every stage MUST declare a `routes` list (a subset of build/spike/talk) -
 the generator errors loudly if one is missing or names an unknown path.
 """
+
 import json
 import sys
 from pathlib import Path
@@ -68,6 +69,22 @@ def _strip_signal(item):
     return s[1:] if s.startswith("#") else s
 
 
+def _normalize_lock(raw, stage_name="<unknown>"):
+    items = raw if isinstance(raw, list) else [raw]
+    out = []
+    for e in items:
+        if "while" not in e or "until" not in e:
+            missing = [k for k in ("while", "until") if k not in e]
+            raise ValueError(
+                f"gen-catalog: stage '{stage_name}' has a lock entry missing required "
+                f"key(s): {missing}. Entry: {e!r}"
+            )
+        out.append(
+            {"while": _strip_signal(e["while"]), "until": _strip_signal(e["until"])}
+        )
+    return out
+
+
 def _strip_artifact(item):
     """Drop a leading @/? sigil from a data artifact, leaving the bare type name."""
     s = str(item).strip()
@@ -109,6 +126,8 @@ def normalize_stage(name, stage):
     }
     if stage.get("guard"):
         entry["guard"] = stage["guard"]
+    if stage.get("lock"):
+        entry["lock"] = _normalize_lock(stage["lock"], name)
     return entry
 
 
@@ -125,7 +144,9 @@ def build_catalog():
             continue
         unknown = [r for r in routes if r not in PATHS]
         if unknown:
-            errors.append(f"{name}: unknown route(s) {unknown} (allowed: {list(PATHS)})")
+            errors.append(
+                f"{name}: unknown route(s) {unknown} (allowed: {list(PATHS)})"
+            )
             continue
         stages[name] = normalize_stage(name, fm["stage"])
     if errors:
@@ -139,8 +160,12 @@ def main():
         return  # hook fired on a non-agent edit; nothing to do
     catalog = build_catalog()
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps(catalog, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    sys.stderr.write(f"gen-catalog: {len(catalog['stages'])} stages -> {OUT.relative_to(ROOT)}\n")
+    OUT.write_text(
+        json.dumps(catalog, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    sys.stderr.write(
+        f"gen-catalog: {len(catalog['stages'])} stages -> {OUT.relative_to(ROOT)}\n"
+    )
 
 
 if __name__ == "__main__":

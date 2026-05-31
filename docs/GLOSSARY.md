@@ -64,12 +64,12 @@ Canonical terms for this project. Agents read this to avoid renaming the same co
 **Definition:** The always-on seed stage. Reads the request, publishes the path and opening signals (`ambiguous`, `bug`, risk sniffs, an advisory `est-size`); the router composes from there.
 **Avoid:** "classifier" (retired), "router" (triage seeds, the router composes).
 
-### Green-light
-**Definition:** The artifact that clears the implementer to start. On a trivial build `skip-tests` mints it directly; on a logic build `test-review` mints it after validating the red tests. The implementer lists it as an `input`, so the precedence graph forbids code before it exists.
-**Avoid:** "approval", "go-ahead".
+### Lock
+**Definition:** A `{while, until}` signal gate on a stage. The stage is held out of the dispatch route while `while` is live and `until` is unpublished; it rejoins once `until` fires. The implementer's `{#needs-tests -> #tests-ready}` lock is the TDD gate. A scheduling gate, not a data input. See WORKFLOW.md > Locks.
+**Avoid:** "green-light", "gate artifact".
 
 ### Trivial
-**Definition:** A build with no new logic - docs, config, version, copy, formatting, or dependency edits. Published by `triage`; routes the short path (`skip-tests` + `planner`, then implement and a correctness check), skipping the test chain.
+**Definition:** A build with no new logic - docs, config, version, copy, formatting, or dependency edits. Published by `triage` as the absence of `needs-tests`; routes the short path (`planner`, then implement and a correctness check), skipping the test chain. The implementer's TDD lock is inactive because `#needs-tests` is absent.
 **Avoid:** "small", "simple".
 
 ### Needs-tests

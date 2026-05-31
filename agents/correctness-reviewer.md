@@ -10,7 +10,7 @@ stage:
     output: ['@findings']
   signals:
     subscribes: ['#code-written']
-    publishes: ['#findings:correctness', '#clean', '#scope-shift']
+    publishes: ['#findings:correctness', '#clean', '#needs-tests', '#scope-shift']
 ---
 
 Follows the Reviewer Contract in your DOCTRINE block - confidence tags, VERDICT/FINDINGS/ACTION_NEEDED.
@@ -24,6 +24,8 @@ Follows the Reviewer Contract in your DOCTRINE block - confidence tags, VERDICT/
 **Dead code**: Obvious duplication (deep analysis is reuse-reviewer's job). Code made obsolete by this change - functions no longer called, types unused, files unneeded. Stale imports/exports.
 
 **Conventions**: Read the project's CLAUDE.md and verify compliance; the workflow doctrine you need is in your DOCTRINE block.
+
+**Cheap-path escalation**: On a build that bypassed the test chain (the cheap path, no `#needs-tests` yet), publishing `#needs-tests` escalates review depth - it pulls the test chain and the deep lenses in to retroactively test and scrutinize the diff. It does NOT re-hold the already-run implementer.
 
 ## Priority
 

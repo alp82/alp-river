@@ -92,17 +92,17 @@ Each turn:
    echo '{"live":[...],"available":[...],"already_run":[...]}' | python3 hooks/route.py
    ```
 2. **Render.** Show the route as inline markdown - emit it directly from state, no script, no Bash. Render **every turn** so progress is never invisible: the full route on the first turn and at any gate (legibility A), the delta on a plain recompose (legibility B). This is a status surface, not a question - it never interrupts; asking the user is what a gate stage does when it runs (step 3, see `## Gates`). Formats:
-   - **Full (A)** - a header `path · size · N stages`, then one line per stage `• name ← #signal-that-pulled-it-in`, marking the running stage (`▶`), done stages (`✓`), and `[sticky]` guards. Example:
+   - **Full (A)** - a header `path · size · N stages`, then one line per stage `• name ← #signal-that-pulled-it-in`, marking the running stage (`▶`), done stages (`✓`), held stages (`🔒 name (held until #until-signal)`), and `[sticky]` guards. The render composes `route` + `held` so a gated stage stays visible. Example:
      ```
      build · M · 5 stages
        ✓ triage
        ▶ reuse-scanner ← #needs-tests
        • planner ← #clarified
-       • implementer ← #plan-ready
+       🔒 implementer (held until #tests-ready)
        • correctness-reviewer ← #code-written
      ```
    - **Delta (B)** - lead with the why (the new signal's message), then `+added / -removed (now size/N)`. Example: `+security-reviewer ← #auth-surface (now L/6)`.
-3. **Run** the next not-yet-run stage in route order. Spawn its agent (the `model` lives in the agent's frontmatter); hand it the artifacts its `input` names, plus the `premises`. Pass each input as the **verbatim output** of the stage that produced it, never paraphrased, stubbed, or hand-written (Input Template Contract); if an `input` does not exist yet its producer has not run, so run the producer - **never fabricate a predecessor's artifact** to start a dependent stage early, which only forces the downstream stage to redo the missing work and degrades its output. Stages that share inputs but feed none of each other - the review fan-out over `@diff` is the canonical case - may run in one parallel batch; a stage whose `input` is another stage's `output` waits for that producer to return. Parallelism is for independent stages only; the `input`/`output` precedence graph is the one rule never bent (`doctrine/CATALOG.md`). Spawn each stage at the cheapest model its frontmatter allows, and expect a **structured return, not a transcript** (Context Discipline) - the agent's wrapped output block is the artifact; its reasoning and reads stay behind it. Do not paste a subagent's full output into the conversation; surface only the line(s) the render, the next stage, or a gate actually needs.
+3. **Run** the next not-yet-run stage in route order. Held stages are NOT in `route` - a lock keeps a held stage out of the dispatch list until its `until` signal fires (see `## Locks`). Spawn the running stage's agent (the `model` lives in the agent's frontmatter); hand it the artifacts its `input` names, plus the `premises`. Pass each input as the **verbatim output** of the stage that produced it, never paraphrased, stubbed, or hand-written (Input Template Contract); if an `input` does not exist yet its producer has not run, so run the producer - **never fabricate a predecessor's artifact** to start a dependent stage early, which only forces the downstream stage to redo the missing work and degrades its output. Stages that share inputs but feed none of each other - the review fan-out over `@diff` is the canonical case - may run in one parallel batch; a stage whose `input` is another stage's `output` waits for that producer to return. Parallelism is for independent stages only; the `input`/`output` precedence graph is the one rule never bent (`doctrine/CATALOG.md`). Spawn each stage at the cheapest model its frontmatter allows, and expect a **structured return, not a transcript** (Context Discipline) - the agent's wrapped output block is the artifact; its reasoning and reads stay behind it. Do not paste a subagent's full output into the conversation; surface only the line(s) the render, the next stage, or a gate actually needs.
 4. **Update.** Add the stage's `output` to `available`, its published signals to `live` (each carries a one-line message = the why), and record it in `ran`. A published `scope-shift` logs a broken premise. These updates are the state the next turn's step 1 recomposes from.
 
 Repeat until **convergence**: the router returns an empty route (no live signal triggers an unrun stage) and every review lens that ran came back `clean`.
@@ -111,7 +111,7 @@ Repeat until **convergence**: the router returns an empty route (no live signal 
 
 The route is rooted by the always-on `triage` stage. It reads the request and publishes exactly one **path** - `build`, `spike`, or `talk` - plus early signals (`ambiguous`, `novel-domain`, a bug-framing `bug`, risk sniffs) and one advisory `est-size:<tier>`. The router composes from there. The path is sticky but re-evaluated every turn: `talk` flips to `build` on "do it"; a `spike` graduates to `build` on the kept code.
 
-- **`build`** - the full composed route. A bug is a build: `triage` pairs `build` with a `bug` signal, the `investigator` diagnoses inside the route, and the build spine fixes the cause. There is no separate `diagnose` path. `triage` also sub-classifies the build as `trivial` or `needs-tests`: `implement` can't run before a `green-light`, which on a logic change only `test-review` produces (after validating the red tests); a trivial change gets its `green-light` from `skip-tests` and skips the test chain.
+- **`build`** - the full composed route. A bug is a build: `triage` pairs `build` with a `bug` signal, the `investigator` diagnoses inside the route, and the build spine fixes the cause. There is no separate `diagnose` path. The implementer carries a `{while:#needs-tests, until:#tests-ready}` lock (the TDD gate, see `## Locks`): on a logic change `triage` publishes `#needs-tests`, so the implementer holds until `test-review` publishes `#tests-ready` after validating the red tests; a trivial change carries no `#needs-tests`, so the lock is inactive and the implementer runs straight off the plan.
 - **`talk`** - the spine is parked; the `discuss` stage converses - options with worked examples, honest tradeoffs, one sharp question, never code. Recon stages (research, investigator, reuse-scan, design-explorer) stay summonable on demand, but nothing produces a `diff` and nothing is reviewed or captured.
 - **`spike`** - sandboxed throwaway (`.prototypes/`). `spike-build` runs relaxed; the build-only ceremony band (challenge, capture, plan-adherence, the quality/architecture/consistency lenses) is filtered off the path by each stage's `routes`. Correctness and security still apply. Graduating flips to `build`.
 
@@ -122,7 +122,7 @@ The route is rooted by the always-on `triage` stage. It reads the request and pu
 Four `echo STATE | python3 hooks/route.py` traces:
 
 - **build** - `{"live":["build","code-written","auth-surface"],"available":["confirmed-intent","diff"]}` composes `reuse-scanner` + `health-checker`, the full review fan-out (correctness, quality, architecture, structure, consistency, performance, reuse, acceptance, plan-adherence, test-gap, test-verifier, ux, accessibility, design-consistency, visual), `security-reviewer` pulled in by `auth-surface`, and `capture-agent`. Size XXL.
-- **trivial build** - `{"live":["build","trivial"],"available":["request","triage-read","confirmed-intent"]}` composes `skip-tests` + `planner`, then `implementer` + `correctness-reviewer` once a diff exists. Size S. None of the deep lenses, pre-flight, clarify, test-chain, challenge, or capture join - they wait on `#needs-tests`.
+- **trivial build** - `{"live":["build"],"available":["request","triage-read","confirmed-intent"]}` composes `planner`, then `implementer` (its TDD lock inactive - no `#needs-tests` is live) + `correctness-reviewer` once a diff exists. Size S. None of the deep lenses, pre-flight, clarify, test-chain, challenge, or capture join - they wait on `#needs-tests`.
 - **spike** - `{"live":["spike","code-written"],"available":["confirmed-intent","diff"]}` composes just `spike-build` then `correctness-reviewer`; the 15 build-only lenses are dropped `off-path` by the `routes` filter. Size S.
 - **talk** - `{"live":["talk","ambiguous"],"available":["request","triage-read"]}` composes `interviewer` (pulled by `ambiguous`) then `discuss`, ordered after it because `discuss` optionally consumes the interviewer's `confirmed-intent`. No diff, nothing reviewed.
 
@@ -211,9 +211,41 @@ unrun stage and every lens that ran is `clean`. The only loop guard is oscillati
 `scope-shift` that re-fires without resolving is surfaced to the user, not retried
 silently. See `## Pipeline` > The loop.
 
-On a `scope-shift` that re-classifies a build from `trivial` to `needs-tests`, the
-orchestrator drops a stale `@green-light` from `available` so the implementer re-gates on
-`test-review`.
+A `#needs-tests` published late - e.g. by `correctness-reviewer` on a cheap-path build -
+does NOT re-hold the already-run implementer (the loop skips `already_run`). It escalates
+review depth: the late signal pulls the test chain and the deep lenses in to retroactively
+test and scrutinize the existing diff.
+
+## Locks
+
+A stage may declare a scheduling gate in frontmatter:
+
+```yaml
+lock:
+  - while: '#needs-tests'
+    until: '#tests-ready'
+```
+
+A lock has three states:
+
+- **Inactive** - `while` is not live. The lock does nothing and the stage runs normally.
+  This is the cheap path.
+- **Held** - `while` is live and `until` is not yet published. The stage is kept OUT of
+  `route` (the dispatch list) and reported in a separate `held` map keyed by the unmet
+  `until` signals. A held stage produces no output, so any downstream consumer left without
+  a producer is dropped too.
+- **Released** - `until` goes live. The lock clears and the stage rejoins the route.
+
+Multiple locks **AND** together (every one must be inactive or released for the stage to
+run). `while` and `until` match on family prefix, like every other signal. A lock is a
+**scheduling gate, not a data input** - it gates *when* a stage may run, never *what* it
+reads.
+
+The implementer's `{while:#needs-tests, until:#tests-ready}` lock is the **TDD gate**. On a
+logic build `triage` publishes `#needs-tests`, so the implementer is held until `test-review`
+publishes `#tests-ready` after validating the red tests - code cannot start against
+unvalidated tests. A trivial change carries no `#needs-tests`, so the lock is inactive and
+the implementer runs straight off the plan.
 
 ## Input Template Contract
 

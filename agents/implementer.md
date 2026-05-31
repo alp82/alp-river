@@ -6,11 +6,14 @@ tools: Glob, Grep, Read, Edit, Write, Bash
 stage:
   routes: [build]
   data:
-    input: ['@approved-plan', '@green-light']
+    input: ['@approved-plan']
     output: ['@diff']
   signals:
     subscribes: ['#plan-ready']
     publishes: ['#code-written', '#scope-shift']
+  lock:
+    - while: '#needs-tests'
+      until: '#tests-ready'
 ---
 
 ## Rules

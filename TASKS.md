@@ -1,38 +1,36 @@
+issue with follow-ups on subagents:
+ 
+ SendMessage isn't available in this harness, so I'll spawn a fresh planner with v1 plus the precise correction package and have it emit v2. The corrections are surgical and I'll specify the corrected formulas exactly so v2 is unambiguous.
 
-simple path without intent etc. -> XS / trivial
-prototyper path
-non-code path
+---
 
-detect "not sure" and start brainstorming with auto suggestions and prototypes
+paths:
+    talk
+    spike: brainstorming, prototyping, diagramming, visualizing
+    build: code, os-level CLI work, tooling
 
-better parallelization
-less waiting
-only meaningful interruptions
+dynamic stages:
+    detect uncertainty or misalignment
+    detect change of intent
+    detect test suite gaps
+    detect review needs
 
-dynamically detect discussion type:
-    coding
-    brainstorming
-    prototyping
-    tooling
-    talking
-dynamically decide if intent clarification is needed (scope change, refinement, different reqs, etc.)
-dynamically decide if interviews are about low or high fidelity
-dynamically detect scope changes
-dynamically create prototypes
-dynamically add tests during the process
-dynamically decide review needs
+orchestration DAG:
+    better parallelization
+    less waiting
+    only meaningful interruptions
 
 ---
 
 XXL as sequence of tasks
-remove backwards edges
 goal based looping
-forced formal verification (e.g. TDD)
 
 ---
 
-vocab changes:
-    doctrine
+formal verification
+    linter
+    TDD
+    etc.
 
 ---
 
