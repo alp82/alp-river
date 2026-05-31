@@ -4,7 +4,7 @@ description: Validates that the red tests actually assert the intended behavior 
 model: opus
 tools: Read, Grep, Glob
 stage:
-  routes: [build]
+  routes: [code]
   data:
     input: ['@tests', '@confirmed-intent', '@approved-plan']
     output: []

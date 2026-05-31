@@ -4,7 +4,7 @@ description: Focused performance review - only spawned when changes touch databa
 model: sonnet
 tools: Glob, Grep, Read, Bash
 stage:
-  routes: [build]
+  routes: [code]
   data:
     input: ['@diff']
     output: ['@findings']

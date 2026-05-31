@@ -2,6 +2,15 @@
 
 All notable changes to alp-river. Versions match `.claude-plugin/plugin.json`.
 
+## 1.1.0 - 2026-05-31
+
+The pipeline now recognizes four kinds of work instead of three, each routed to the steps it actually needs.
+
+- Loose discussion stays fast and inline; a web search or a quick visual is offered before it runs, never forced.
+- Throwaway exploration now spans code, diagrams, and mockups in one sandbox, not just code.
+- System and OS-level work - configs, troubleshooting, command-line tooling - is its own track, with a safety check before anything destructive or irreversible runs.
+- Independent checks now run in parallel instead of one after another, so results come back sooner.
+
 ## 1.0.8 - 2026-05-31
 
 - When the workflow reworks an earlier plan after a correction, it now amends that exact plan instead of redrafting it from scratch, so your prior decisions survive.

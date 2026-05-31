@@ -70,7 +70,7 @@ fi
 user_aware=1
 case "$subagent_type" in
   # User-aware: yes. Project-aware: depends on READ_MAP.
-  interviewer|planner|plan-challenger|implementer|fixer|investigator|setup-agent|capture-agent|adr-drafter|design-explorer|discuss|spike-build)
+  interviewer|code-planner|plan-challenger|code-implementer|fixer|code-investigator|setup-agent|capture-agent|adr-drafter|design-explorer|discuss|sketch-build|system-planner|system-executor|system-investigator|system-verifier|safety-gate)
     ;;
   requirements-clarifier|reuse-scanner|visual-verifier)
     ;;
@@ -119,10 +119,15 @@ declare -A READ_MAP=(
   [prototype-identifier]="stack"
   [researcher]="stack"
   [prototyper]="stack"
-  [planner]="intent stack glossary adrs"
+  [code-planner]="intent stack glossary adrs"
+  [system-planner]="stack glossary adrs"
+  [system-executor]="stack glossary"
+  [system-investigator]="stack glossary"
+  [system-verifier]="stack"
+  [safety-gate]="stack"
   [plan-challenger]="intent stack glossary adrs"
   [design-explorer]="intent stack glossary adrs"
-  [implementer]="stack glossary adrs"
+  [code-implementer]="stack glossary adrs"
   [correctness-reviewer]="stack glossary"
   [quality-reviewer]="intent stack glossary"
   [acceptance-reviewer]="intent glossary"
@@ -137,11 +142,11 @@ declare -A READ_MAP=(
   [ux-reviewer]="intent"
   [design-consistency-reviewer]="intent stack"
   [fixer]="stack glossary adrs"
-  [investigator]="stack glossary adrs"
+  [code-investigator]="stack glossary adrs"
   [capture-agent]="intent stack glossary"
   [adr-drafter]="intent stack glossary adrs"
   [discuss]="intent stack glossary adrs"
-  [spike-build]="stack glossary"
+  [sketch-build]="stack glossary"
 )
 
 # DOCTRINE_MAP: per-agent doctrine slices, resolved to doctrine/<token>.md.
@@ -164,11 +169,14 @@ declare -A DOCTRINE_MAP=(
   [accessibility-reviewer]="reviewer-contract confidence-tagging"
   [ux-reviewer]="reviewer-contract confidence-tagging"
   [design-consistency-reviewer]="reviewer-contract confidence-tagging"
-  [implementer]="code-doctrine discoveries"
-  [planner]="code-doctrine"
+  [code-implementer]="code-doctrine discoveries"
+  [code-planner]="code-doctrine"
   [plan-challenger]="code-doctrine"
   [fixer]="discoveries"
-  [investigator]="discoveries"
+  [code-investigator]="discoveries"
+  [system-planner]="code-doctrine"
+  [system-executor]="code-doctrine discoveries"
+  [system-investigator]="discoveries"
 )
 
 # Summarize active ADRs as a markdown bullet list. Empty string when nothing

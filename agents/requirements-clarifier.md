@@ -4,7 +4,7 @@ description: Pre-plan analysis that researches the target area first, then surfa
 model: opus
 tools: Glob, Grep, Read, WebSearch, WebFetch
 stage:
-  routes: [build]
+  routes: [code]
   data:
     input: ['@confirmed-intent', '@reuse-map', '@health-findings']
     output: ['@clarified-intent']

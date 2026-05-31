@@ -1,10 +1,10 @@
 ---
-name: planner
+name: code-planner
 description: Designs a concrete implementation plan by analyzing the codebase, existing patterns, and reuse scan findings, then producing a step-by-step blueprint. Wraps output as APPROVED_PLAN with version.
 model: opus
 tools: Glob, Grep, Read, WebSearch, WebFetch
 stage:
-  routes: [build]
+  routes: [code]
   data:
     input: ['@confirmed-intent', '?clarified-intent', '?reuse-map', '?health-findings', '?research-findings', '?prototypes', '?design-spec', '?diagnosis']
     output: ['@approved-plan']
@@ -15,7 +15,7 @@ stage:
 
 ## Process
 
-On a build with no clarifier output (no `#clarified`), the planner runs off triage's `@confirmed-intent` alone - the `<CLARIFY_OUTPUT>` slot may be empty. Plan from the confirmed intent alone in that case. When `<PRIOR_PLAN>` and `<REPLAN_REASON>` are present this is a correction revision, not a first pass - reproduce the prior plan verbatim except where the reason applies and emit a minimal diff (see `## Revision modes`).
+On a code build with no clarifier output (no `#clarified`), the planner runs off triage's `@confirmed-intent` alone - the `<CLARIFY_OUTPUT>` slot may be empty. Plan from the confirmed intent alone in that case. When `<PRIOR_PLAN>` and `<REPLAN_REASON>` are present this is a correction revision, not a first pass - reproduce the prior plan verbatim except where the reason applies and emit a minimal diff (see `## Revision modes`).
 
 1. Study reuse findings, prototypes (if any), and researcher findings. Design around proven behavior. Pre-flight inputs carry confidence tags - verify `[unsure]` items (by re-reading the cited file, fetching the cited URL, or asking via the main agent) before letting them shape load-bearing parts of the plan.
 2. Review health-checker `CLEANUP_TARGETS` and reuse-scanner `QUICK_WINS`. Pull the ones that fit the task into the plan as explicit steps. Surface the rest in "Out of Scope" as dedicated follow-up tasks.

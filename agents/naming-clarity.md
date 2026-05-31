@@ -4,7 +4,7 @@ description: Reviews changed code for intrinsic name clarity - names that are va
 model: sonnet
 tools: Glob, Grep, Read, Bash
 stage:
-  routes: [build]
+  routes: [code]
   data:
     input: ['@diff']
     output: ['@findings']

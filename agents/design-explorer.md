@@ -4,7 +4,7 @@ description: Pre-plan UI design exploration. Confirms which visual/interaction p
 model: opus
 tools: Glob, Grep, Read, Edit, Write, Bash, WebSearch, WebFetch
 stage:
-  routes: [build, talk]
+  routes: [code, sketch, talk]
   data:
     input: ['@clarified-intent']
     output: ['@design-spec']

@@ -36,21 +36,21 @@ def S(routes, req=(), opt=(), out=(), sub=(), pub=(), guard=None, lock=None):
 CATALOG = {
     "stages": {
         "scan": S(
-            ["build", "talk"],
+            ["code", "talk"],
             req=["intent"],
             out=["reuse-map"],
-            sub=["build"],
+            sub=["code"],
             pub=["missing-infra", "scope-shift"],
         ),
         "impl": S(
-            ["build"],
+            ["code"],
             req=["plan", "tests"],
             out=["diff"],
             sub=["plan-ready"],
             pub=["code-written", "scope-shift"],
         ),
         "sec": S(
-            ["build", "spike"],
+            ["code", "sketch"],
             req=["diff"],
             out=["findings"],
             sub=["auth-surface"],
@@ -58,7 +58,7 @@ CATALOG = {
             guard="sticky",
         ),
         "proto": S(
-            ["build"],
+            ["code"],
             req=["intent"],
             out=["tracer"],
             sub=["missing-infra"],
@@ -66,7 +66,7 @@ CATALOG = {
         ),
         # optional `reuse-map`: plan runs without it, but orders after scan when scan is present
         "plan": S(
-            ["build"],
+            ["code"],
             req=["intent"],
             opt=["reuse-map"],
             out=["blueprint"],
@@ -74,9 +74,9 @@ CATALOG = {
             pub=["plan-ready", "scope-shift"],
         ),
         # three single-purpose stages on the same signal to exercise the routes filter
-        "buildonly": S(["build"], sub=["ping"], pub=["scope-shift"]),
-        "spikeonly": S(["spike"], sub=["ping"], pub=["scope-shift"]),
-        "both": S(["build", "spike"], sub=["ping"], pub=["scope-shift"]),
+        "codeonly": S(["code"], sub=["ping"], pub=["scope-shift"]),
+        "sketchonly": S(["sketch"], sub=["ping"], pub=["scope-shift"]),
+        "both": S(["code", "sketch"], sub=["ping"], pub=["scope-shift"]),
     }
 }
 
@@ -87,7 +87,7 @@ def r(live, available=(), already_run=()):
 
 def test_or_subscribe_triggers_on_any_signal():
     assert "sec" in r(["auth-surface"], available=["diff"])["route"]
-    assert "sec" not in r(["build"], available=["diff"])["route"]
+    assert "sec" not in r(["code"], available=["diff"])["route"]
 
 
 def test_and_required_drops_unsatisfiable_input():
@@ -106,53 +106,53 @@ def test_optional_input_never_drops_and_orders_after_producer():
     # optional producer absent -> the stage still runs (optional never drops)
     assert "plan" in r(["plan-needed"], available=["intent"])["route"]
     # optional producer present (scan -> reuse-map) -> plan orders after scan
-    order = r(["build", "plan-needed"], available=["intent"])["route"]
+    order = r(["code", "plan-needed"], available=["intent"])["route"]
     assert "plan" in order and "scan" in order
     assert order.index("scan") < order.index("plan")
 
 
 def test_routes_filter_drops_off_path_stage():
-    on_build = r(["build", "ping"], available=["intent"])
-    assert "buildonly" in on_build["route"] and "both" in on_build["route"]
-    assert "spikeonly" not in on_build["route"]
-    assert on_build["dropped"].get("spikeonly") == "off-path"
-    on_spike = r(["spike", "ping"], available=["intent"])
-    assert "spikeonly" in on_spike["route"] and "both" in on_spike["route"]
-    assert "buildonly" not in on_spike["route"]
-    assert on_spike["dropped"].get("buildonly") == "off-path"
+    on_build = r(["code", "ping"], available=["intent"])
+    assert "codeonly" in on_build["route"] and "both" in on_build["route"]
+    assert "sketchonly" not in on_build["route"]
+    assert on_build["dropped"].get("sketchonly") == "off-path"
+    on_spike = r(["sketch", "ping"], available=["intent"])
+    assert "sketchonly" in on_spike["route"] and "both" in on_spike["route"]
+    assert "codeonly" not in on_spike["route"]
+    assert on_spike["dropped"].get("codeonly") == "off-path"
 
 
 def test_no_path_signal_skips_routes_filter():
     # pre-triage seed: no build/spike/talk live -> nothing is filtered by route
     res = r(["ping"])
-    assert {"buildonly", "spikeonly", "both"} <= set(res["route"])
+    assert {"codeonly", "sketchonly", "both"} <= set(res["route"])
 
 
 def test_multi_path_stage_survives_on_each_path():
-    assert "both" in r(["build", "ping"], available=["intent"])["route"]
-    assert "both" in r(["spike", "ping"], available=["intent"])["route"]
+    assert "both" in r(["code", "ping"], available=["intent"])["route"]
+    assert "both" in r(["sketch", "ping"], available=["intent"])["route"]
 
 
 def test_size_is_stage_count():
     assert route.size_label(1) == "XS"
     assert route.size_label(2) == "S"
     assert route.size_label(5) == "M"
-    assert r(["build"], available=["intent"])["size"] == "XS"
+    assert r(["code"], available=["intent"])["size"] == "XS"
 
 
 def test_route_grows_and_shrinks_with_signals():
-    base = r(["build"], available=["intent"])
+    base = r(["code"], available=["intent"])
     assert base["route"] == ["scan"]
-    grown = r(["build", "missing-infra"], available=["intent"])
+    grown = r(["code", "missing-infra"], available=["intent"])
     assert set(grown["route"]) == {"scan", "proto"}  # proto joins via missing-infra
-    shrunk = r(["build"], available=["intent"])
+    shrunk = r(["code"], available=["intent"])
     assert shrunk["route"] == ["scan"]  # signal gone -> proto drops
 
 
 def test_sticky_guard_persists_across_recompose():
-    prev = r(["build", "auth-surface"], available=["intent", "diff"])
+    prev = r(["code", "auth-surface"], available=["intent", "diff"])
     assert "sec" in prev["route"]
-    now = r(["build"], available=["intent", "diff"])  # auth-surface gone
+    now = r(["code"], available=["intent", "diff"])  # auth-surface gone
     assert "sec" not in now["route"]  # would drop...
     merged = route.merge_sticky(CATALOG, prev["route"], now)
     assert "sec" in merged["route"]  # ...but sticky keeps it
@@ -164,6 +164,41 @@ def test_deterministic_same_input_same_route():
     assert a == b
 
 
+# ---------------------------------------------------------------------------
+# WAVE SCHEDULING - parallel cohorts from the topo levels (additive `waves` key)
+# ---------------------------------------------------------------------------
+
+
+def test_waves_present_and_flatten_to_route():
+    res = r(["plan-ready", "auth-surface"], available=["plan", "tests"])
+    assert "waves" in res
+    assert [n for w in res["waves"] for n in w] == res["route"]
+
+
+def test_waves_independent_stages_share_a_wave():
+    # scan, buildonly, both all trigger with no inter-dependency -> one parallel cohort
+    res = r(["code", "ping"], available=["intent"])
+    wave = next(w for w in res["waves"] if "codeonly" in w)
+    assert "both" in wave
+
+
+def test_waves_producer_and_consumer_split_across_waves():
+    # impl produces diff; sec consumes it -> impl's wave precedes sec's wave
+    res = r(["plan-ready", "auth-surface"], available=["plan", "tests"])
+    wi = next(i for i, w in enumerate(res["waves"]) if "impl" in w)
+    ws = next(i for i, w in enumerate(res["waves"]) if "sec" in w)
+    assert wi < ws
+
+
+def test_waves_single_stage_is_one_wave():
+    assert r(["code"], available=["intent"])["waves"] == [["scan"]]
+
+
+def test_waves_empty_route_has_empty_waves():
+    res = r([])
+    assert res["route"] == [] and res["waves"] == []
+
+
 def _real_catalog():
     return route.load_catalog(
         Path(__file__).resolve().parents[2] / "generated" / "catalog.json"
@@ -173,13 +208,13 @@ def _real_catalog():
 def test_real_catalog_build_spine():
     cat = _real_catalog()
     assert set(cat["stages"]) >= {
-        "implementer",
+        "code-implementer",
         "reuse-scanner",
         "security-reviewer",
         "discuss",
-        "spike-build",
+        "sketch-build",
     }
-    res = route.compute_route(cat, {"build"}, available={"confirmed-intent"})
+    res = route.compute_route(cat, {"code"}, available={"confirmed-intent"})
     # reuse-scanner now subscribes needs-tests, so it does NOT trigger on {build} alone
     assert "reuse-scanner" not in res["route"]
     assert "discuss" not in res["route"]  # talk-only stage stays off the build path
@@ -191,10 +226,10 @@ def test_real_catalog_routes_filter_on_spike():
     cat = _real_catalog()
     res = route.compute_route(
         cat,
-        {"spike", "needs-tests", "code-written"},
+        {"sketch", "needs-tests", "code-written"},
         available={"confirmed-intent", "diff"},
     )
-    assert "spike-build" in res["route"]
+    assert "sketch-build" in res["route"]
     assert "correctness-reviewer" in res["route"]  # routes include spike
     assert "quality-reviewer" not in res["route"]  # build-only lens, filtered off spike
     assert res["dropped"].get("quality-reviewer") == "off-path"
@@ -221,7 +256,7 @@ def test_family_prefix_subscribe_matches_qualified():
     cat = {
         "stages": {
             "fix": S(
-                ["build"],
+                ["code"],
                 req=["findings"],
                 out=["diff"],
                 sub=["findings"],
@@ -247,7 +282,7 @@ def test_real_catalog_new_lenses_contract():
         ("assumptions", "findings:assumptions"),
     ):
         s = stages[name]
-        assert s["routes"] == ["build"]
+        assert s["routes"] == ["code"]
         assert s["data"]["input"]["required"] == ["diff"]
         assert s["data"]["output"] == ["findings"]
         # lenses now subscribe needs-tests (was code-written)
@@ -262,7 +297,7 @@ def test_real_catalog_new_lenses_compose_on_code_written():
     cat = _real_catalog()
     res = route.compute_route(
         cat,
-        {"build", "needs-tests", "code-written"},
+        {"code", "needs-tests", "code-written"},
         available={"confirmed-intent", "diff"},
     )
     assert "naming-clarity" in res["route"]
@@ -274,7 +309,7 @@ def test_real_catalog_new_lenses_compose_on_code_written():
 def test_real_catalog_new_lenses_need_diff():
     cat = _real_catalog()
     res = route.compute_route(
-        cat, {"build", "needs-tests", "code-written"}, available={"confirmed-intent"}
+        cat, {"code", "needs-tests", "code-written"}, available={"confirmed-intent"}
     )  # no diff
     assert "naming-clarity" not in res["route"]
     assert "assumptions" not in res["route"]
@@ -289,12 +324,14 @@ def test_real_catalog_new_lenses_off_spike():
     cat = _real_catalog()
     res = route.compute_route(
         cat,
-        {"spike", "needs-tests", "code-written"},
+        {"sketch", "needs-tests", "code-written"},
         available={"confirmed-intent", "diff"},
     )
     assert res["dropped"].get("naming-clarity") == "off-path"
     assert res["dropped"].get("assumptions") == "off-path"
-    assert "spike-build" in res["route"]  # positive control: spike route still composes
+    assert (
+        "sketch-build" in res["route"]
+    )  # positive control: spike route still composes
 
 
 # ---------------------------------------------------------------------------
@@ -308,7 +345,7 @@ def _lock_catalog(lock=None, extra_stages=None):
     """Return a minimal catalog with a lockable `impl` stage and optional extras."""
     stages = {
         "impl": S(
-            ["build"],
+            ["code"],
             req=["plan"],
             out=["diff"],
             sub=["plan-ready"],
@@ -475,7 +512,7 @@ def test_held_stage_excluded_from_toposort():
     cat = {
         "stages": {
             "impl": S(
-                ["build"],
+                ["code"],
                 req=["plan"],
                 out=["diff"],
                 sub=["plan-ready"],
@@ -483,7 +520,7 @@ def test_held_stage_excluded_from_toposort():
                 lock=[{"while": "needs-tests", "until": "tests-ready"}],
             ),
             "reviewer": S(
-                ["build"],
+                ["code"],
                 req=["diff"],
                 out=["findings"],
                 sub=["plan-ready"],
@@ -532,7 +569,7 @@ def test_normalize_lock_strips_hash():
     normalize_stage = gen_catalog.normalize_stage
 
     stage_fm = {
-        "routes": ["build"],
+        "routes": ["code"],
         "data": {"input": [], "output": []},
         "signals": {"subscribes": [], "publishes": ["scope-shift"]},
         "lock": [{"while": "#needs-tests", "until": "#tests-ready"}],
@@ -557,7 +594,7 @@ def test_normalize_lock_passthrough_bare():
     normalize_stage = gen_catalog.normalize_stage
 
     stage_fm = {
-        "routes": ["build"],
+        "routes": ["code"],
         "data": {"input": [], "output": []},
         "signals": {"subscribes": [], "publishes": ["scope-shift"]},
         "lock": [{"while": "needs-tests", "until": "tests-ready"}],
@@ -593,7 +630,7 @@ def test_check_catalog_flags_lock_while_no_publisher():
     ghost_catalog = {
         "stages": {
             "impl": S(
-                ["build"],
+                ["code"],
                 req=[],
                 out=["diff"],
                 sub=["request-received"],
@@ -614,7 +651,7 @@ def test_check_catalog_flags_lock_until_no_publisher():
     phantom_catalog = {
         "stages": {
             "impl": S(
-                ["build"],
+                ["code"],
                 req=[],
                 out=["diff"],
                 sub=["request-received"],
@@ -635,7 +672,7 @@ def test_check_catalog_passes_when_lock_signals_resolve():
     clean_catalog = {
         "stages": {
             "impl": S(
-                ["build"],
+                ["code"],
                 req=[],
                 out=["diff"],
                 sub=["request-received"],
@@ -643,7 +680,7 @@ def test_check_catalog_passes_when_lock_signals_resolve():
                 lock=[{"while": "needs-tests", "until": "tests-ready"}],
             ),
             "test-author": S(
-                ["build"],
+                ["code"],
                 out=["tests-ready"],
                 sub=["request-received"],
                 pub=["needs-tests", "tests-ready", "scope-shift"],
@@ -657,7 +694,7 @@ def test_check_catalog_passes_when_lock_signals_resolve():
 # --- TC-U20 ---
 def test_S_factory_lock_absent_by_default():
     """S() without lock kwarg must not add a 'lock' key."""
-    s = S(["build"], sub=["go"], pub=["scope-shift"])
+    s = S(["code"], sub=["go"], pub=["scope-shift"])
     assert "lock" not in s, "S() must not add 'lock' key when lock kwarg is absent"
 
 
@@ -665,7 +702,7 @@ def test_S_factory_lock_absent_by_default():
 def test_S_factory_lock_present():
     """S() with lock kwarg stores the value under 'lock'."""
     lock_val = [{"while": "needs-tests", "until": "tests-ready"}]
-    s = S(["build"], sub=["go"], pub=["scope-shift"], lock=lock_val)
+    s = S(["code"], sub=["go"], pub=["scope-shift"], lock=lock_val)
     assert "lock" in s, "S() must add 'lock' key when lock kwarg is provided"
     assert (
         s["lock"] == lock_val
@@ -682,7 +719,7 @@ def test_real_catalog_needs_tests_reuse_scanner_survives():
     cat = _real_catalog()
     res = route.compute_route(
         cat,
-        {"build", "needs-tests"},
+        {"code", "needs-tests"},
         available={"request", "triage-read", "confirmed-intent"},
     )
     assert (
@@ -698,7 +735,7 @@ def test_real_catalog_needs_tests_reuse_scanner_dropped_without_confirmed_intent
     cat = _real_catalog()
     res = route.compute_route(
         cat,
-        {"build", "needs-tests"},
+        {"code", "needs-tests"},
         available={"request", "triage-read"},  # NO confirmed-intent
     )
     assert (
@@ -717,13 +754,13 @@ def test_optional_producer_in_route_creates_ordering_edge_without_artifact():
     cat = {
         "stages": {
             "alpha": S(
-                ["build"],
+                ["code"],
                 out=["alpha-out"],
                 sub=["go"],
                 pub=["scope-shift"],
             ),
             "beta": S(
-                ["build"],
+                ["code"],
                 req=[],
                 opt=["alpha-out"],
                 out=["beta-out"],
@@ -732,7 +769,7 @@ def test_optional_producer_in_route_creates_ordering_edge_without_artifact():
             ),
         }
     }
-    res = route.compute_route(cat, {"build", "go"}, available=set())
+    res = route.compute_route(cat, {"code", "go"}, available=set())
     assert "alpha" in res["route"], "alpha must be in route"
     assert "beta" in res["route"], "beta must be in route"
     assert res["route"].index("alpha") < res["route"].index(
@@ -800,7 +837,7 @@ def test_real_catalog_has_39_stages_no_skip_tests():
     """After migration, catalog has 39 stages and skip-tests is absent."""
     cat = _real_catalog()
     stages = cat["stages"]
-    assert len(stages) == 39, f"expected 39 stages, got {len(stages)}"
+    assert len(stages) == 44, f"expected 44 stages, got {len(stages)}"
     assert "skip-tests" not in stages, "skip-tests must NOT exist in migrated catalog"
 
 
@@ -808,7 +845,7 @@ def test_real_catalog_has_39_stages_no_skip_tests():
 def test_real_catalog_implementer_contract():
     """implementer: required input == ['approved-plan'] only; lock present with TDD guard."""
     stages = _real_catalog()["stages"]
-    s = stages["implementer"]
+    s = stages["code-implementer"]
     assert s["data"]["input"]["required"] == [
         "approved-plan"
     ], f"implementer required must be ['approved-plan'], got {s['data']['input']['required']}"
@@ -851,7 +888,7 @@ def test_real_catalog_triage_publishes_intent_confirmed_not_trivial():
 def test_real_catalog_planner_subscribes_intent_confirmed_not_trivial():
     """planner: subscribes has 'clarified' + 'intent-confirmed'; does not subscribe trivial."""
     stages = _real_catalog()["stages"]
-    s = stages["planner"]
+    s = stages["code-planner"]
     subs = s["signals"]["subscribes"]
     assert "clarified" in subs, f"planner must subscribe clarified, got {subs}"
     assert (
@@ -876,14 +913,14 @@ def test_real_catalog_implementer_held_before_tests_ready():
     cat = _real_catalog()
     res = route.compute_route(
         cat,
-        {"build", "needs-tests", "plan-ready"},
+        {"code", "needs-tests", "plan-ready"},
         available={"confirmed-intent", "approved-plan"},
     )
     assert (
-        "implementer" not in res["route"]
+        "code-implementer" not in res["route"]
     ), "implementer must be absent from route before tests-ready"
     assert (
-        "implementer" in res["held"]
+        "code-implementer" in res["held"]
     ), "implementer must be in held (lock active) before tests-ready"
 
 
@@ -894,7 +931,7 @@ def test_real_catalog_implementer_in_route_after_tests_ready():
     res = route.compute_route(
         cat,
         {
-            "build",
+            "code",
             "needs-tests",
             "plan-ready",
             "test-cases-ready",
@@ -904,9 +941,9 @@ def test_real_catalog_implementer_in_route_after_tests_ready():
         available={"confirmed-intent", "approved-plan", "test-cases", "tests"},
     )
     assert (
-        "implementer" in res["route"]
+        "code-implementer" in res["route"]
     ), "implementer must be in route once tests-ready is live"
-    assert "implementer" not in res.get(
+    assert "code-implementer" not in res.get(
         "held", {}
     ), "implementer must not be held once lock released"
 
@@ -917,14 +954,14 @@ def test_real_catalog_trivial_build_implementer_runs():
     cat = _real_catalog()
     res = route.compute_route(
         cat,
-        {"build", "plan-ready"},
+        {"code", "plan-ready"},
         available={"confirmed-intent", "approved-plan"},
     )
     assert (
-        "implementer" in res["route"]
+        "code-implementer" in res["route"]
     ), "implementer must be in route on cheap path (no needs-tests)"
     assert (
-        res.get("held", {}).get("implementer") is None
+        res.get("held", {}).get("code-implementer") is None
     ), "implementer must not be in held on cheap path"
 
 
@@ -940,7 +977,7 @@ def test_real_catalog_route_held_disjoint():
     cat = _real_catalog()
     res = route.compute_route(
         cat,
-        {"build", "needs-tests", "plan-ready"},
+        {"code", "needs-tests", "plan-ready"},
         available={"confirmed-intent", "approved-plan"},
     )
     assert (
@@ -959,10 +996,10 @@ def test_real_catalog_cheap_path_route_minimal():
     cat = _real_catalog()
     res = route.compute_route(
         cat,
-        {"build", "intent-confirmed"},
+        {"code", "intent-confirmed"},
         available={"request", "triage-read", "confirmed-intent"},
     )
-    assert "planner" in res["route"], "planner must be in cheap-path route"
+    assert "code-planner" in res["route"], "planner must be in cheap-path route"
     assert (
         "skip-tests" not in res["route"]
     ), "skip-tests must not exist in migrated catalog"
@@ -977,7 +1014,7 @@ def test_real_catalog_cheap_path_post_code():
     cat = _real_catalog()
     res = route.compute_route(
         cat,
-        {"build", "intent-confirmed", "code-written"},
+        {"code", "intent-confirmed", "code-written"},
         available={
             "request",
             "triage-read",
@@ -1002,7 +1039,7 @@ def test_real_catalog_cheap_path_multi_file_no_prototype_identifier():
     cat = _real_catalog()
     res = route.compute_route(
         cat,
-        {"build", "intent-confirmed", "multi-file"},
+        {"code", "intent-confirmed", "multi-file"},
         available={"request", "triage-read", "confirmed-intent"},
     )
     assert (
@@ -1023,17 +1060,17 @@ def test_real_catalog_needs_tests_implementer_held_pre_test_chain():
     cat = _real_catalog()
     res = route.compute_route(
         cat,
-        {"build", "needs-tests", "plan-ready"},
+        {"code", "needs-tests", "plan-ready"},
         available={"request", "triage-read", "confirmed-intent", "approved-plan"},
     )
     assert (
-        "implementer" not in res["route"]
+        "code-implementer" not in res["route"]
     ), "implementer must be absent from route before test chain"
     assert (
-        "implementer" in res["held"]
+        "code-implementer" in res["held"]
     ), "implementer must be in held (not dropped) before test chain"
     assert (
-        res["dropped"].get("implementer") != "unsatisfiable-input"
+        res["dropped"].get("code-implementer") != "unsatisfiable-input"
     ), "implementer must NOT be dropped as unsatisfiable-input (it is held)"
     assert "test-plan" in res["route"], "test-plan must be in route when plan-ready"
 
@@ -1047,7 +1084,7 @@ def test_real_catalog_needs_tests_implementer_after_tests_ready():
     res = route.compute_route(
         cat,
         {
-            "build",
+            "code",
             "needs-tests",
             "plan-ready",
             "test-cases-ready",
@@ -1068,7 +1105,7 @@ def test_real_catalog_needs_tests_implementer_after_tests_ready():
             "health-checker",
             "prototype-identifier",
             "requirements-clarifier",
-            "planner",
+            "code-planner",
             "plan-challenger",
             "test-plan",
             "test-author",
@@ -1076,10 +1113,10 @@ def test_real_catalog_needs_tests_implementer_after_tests_ready():
         },
     )
     assert (
-        "implementer" in res["route"]
+        "code-implementer" in res["route"]
     ), "implementer is runnable once tests-ready is live"
     assert (
-        "implementer" not in res["held"]
+        "code-implementer" not in res["held"]
     ), "implementer is no longer held after release"
     assert (
         "test-review" not in res["route"]
@@ -1095,7 +1132,7 @@ def test_real_catalog_needs_tests_stale_tests_ready_artifact_does_not_release_lo
     cat = _real_catalog()
     res = route.compute_route(
         cat,
-        {"build", "needs-tests", "plan-ready"},  # tests-ready NOT in live
+        {"code", "needs-tests", "plan-ready"},  # tests-ready NOT in live
         available={
             "request",
             "triage-read",
@@ -1105,10 +1142,10 @@ def test_real_catalog_needs_tests_stale_tests_ready_artifact_does_not_release_lo
         },
     )
     assert (
-        "implementer" not in res["route"]
+        "code-implementer" not in res["route"]
     ), "implementer must NOT be in route: stale tests-ready artifact does not release lock"
     assert (
-        "implementer" in res["held"]
+        "code-implementer" in res["held"]
     ), "implementer must be in held: lock checks live, not available"
 
 
@@ -1128,7 +1165,7 @@ def _run_cli(stdin_text):
 
 def test_main_rejects_unknown_key():
     """A typo'd top-level key (`liv` for `live`) fails loudly, not silently as empty."""
-    proc = _run_cli('{"liv":["build"]}')
+    proc = _run_cli('{"liv":["code"]}')
     assert proc.returncode != 0, "unknown request key must fail nonzero"
     assert (
         "liv" in proc.stderr
@@ -1188,15 +1225,15 @@ def test_real_catalog_planner_orders_after_investigator_on_bug():
     cat = _real_catalog()
     res = route.compute_route(
         cat,
-        {"build", "bug", "intent-confirmed"},
+        {"code", "bug", "intent-confirmed"},
         available={"request", "triage-read", "confirmed-intent"},
     )
     assert (
-        "investigator" in res["route"]
+        "code-investigator" in res["route"]
     ), "investigator must be in route on a bug build"
-    assert "planner" in res["route"], "planner must be in route on a bug build"
-    assert res["route"].index("investigator") < res["route"].index(
-        "planner"
+    assert "code-planner" in res["route"], "planner must be in route on a bug build"
+    assert res["route"].index("code-investigator") < res["route"].index(
+        "code-planner"
     ), "planner must be ordered after the investigator (via optional ?diagnosis edge)"
 
 
@@ -1206,12 +1243,12 @@ def test_real_catalog_planner_runs_without_diagnosis():
     cat = _real_catalog()
     res = route.compute_route(
         cat,
-        {"build", "intent-confirmed"},
+        {"code", "intent-confirmed"},
         available={"request", "triage-read", "confirmed-intent"},
     )
-    assert "planner" in res["route"], "planner must run without a diagnosis"
+    assert "code-planner" in res["route"], "planner must run without a diagnosis"
     assert (
-        "investigator" not in res["route"]
+        "code-investigator" not in res["route"]
     ), "investigator must be absent when no bug signal is live"
 
 
@@ -1226,7 +1263,7 @@ def test_real_catalog_ui_lenses_off_non_ui_logic_build():
     cat = _real_catalog()
     res = route.compute_route(
         cat,
-        {"build", "needs-tests", "code-written"},
+        {"code", "needs-tests", "code-written"},
         available={"confirmed-intent", "diff"},
     )
     route_set = set(res["route"])
@@ -1248,7 +1285,7 @@ def test_real_catalog_ui_lenses_on_ui_touched():
     cat = _real_catalog()
     res = route.compute_route(
         cat,
-        {"build", "needs-tests", "code-written", "ui-touched"},
+        {"code", "needs-tests", "code-written", "ui-touched"},
         available={"confirmed-intent", "diff"},
     )
     route_set = set(res["route"])
@@ -1268,7 +1305,7 @@ def test_real_catalog_visual_verifier_opt_in_only():
     cat = _real_catalog()
     opted_in = route.compute_route(
         cat,
-        {"build", "run-visual", "code-written"},
+        {"code", "run-visual", "code-written"},
         available={"confirmed-intent", "diff"},
     )
     assert (
@@ -1276,12 +1313,98 @@ def test_real_catalog_visual_verifier_opt_in_only():
     ), "visual-verifier must fire when run-visual is live"
     no_opt = route.compute_route(
         cat,
-        {"build", "needs-tests", "ui-touched", "code-written"},
+        {"code", "needs-tests", "ui-touched", "code-written"},
         available={"confirmed-intent", "diff"},
     )
     assert (
         "visual-verifier" not in no_opt["route"]
     ), "visual-verifier must NOT fire without run-visual"
+
+
+# ---------------------------------------------------------------------------
+# SYSTEM PATH - spine, safety gate, and bug disambiguation by path
+# ---------------------------------------------------------------------------
+
+
+def test_real_catalog_system_spine_composes():
+    """On the system path, the system-planner composes and the code-planner is off-path."""
+    cat = _real_catalog()
+    res = route.compute_route(
+        cat,
+        {"system", "intent-confirmed"},
+        available={"request", "triage-read", "confirmed-intent"},
+    )
+    assert (
+        "system-planner" in res["route"]
+    ), "system-planner must compose on the system path"
+    assert "code-planner" not in res["route"], "code-planner is off the system path"
+    assert res["dropped"].get("code-planner") == "off-path"
+
+
+def test_real_catalog_system_executor_held_on_destructive_op():
+    """A destructive-op arms the safety gate and holds the system-executor by its lock."""
+    cat = _real_catalog()
+    res = route.compute_route(
+        cat,
+        {"system", "plan-ready", "destructive-op"},
+        available={"confirmed-intent", "system-plan"},
+    )
+    assert "system-executor" not in res["route"], "executor must be held, not routed"
+    assert (
+        "system-executor" in res["held"]
+    ), "executor must be in held under the safety lock"
+    assert "safety-gate" in res["route"], "safety-gate must be armed by destructive-op"
+
+
+def test_real_catalog_system_executor_runs_after_safety_approved():
+    """safety-approved releases the executor's lock - it rejoins the route."""
+    cat = _real_catalog()
+    res = route.compute_route(
+        cat,
+        {"system", "plan-ready", "destructive-op", "safety-approved"},
+        available={"confirmed-intent", "system-plan"},
+    )
+    assert (
+        "system-executor" in res["route"]
+    ), "executor runs once safety-approved is live"
+    assert "system-executor" not in res.get(
+        "held", {}
+    ), "executor no longer held after approval"
+
+
+def test_real_catalog_bug_routes_to_matching_investigator():
+    """`#bug` is shared; `routes` sends it to the path's own investigator, not the other's."""
+    cat = _real_catalog()
+    sys_res = route.compute_route(
+        cat,
+        {"system", "bug", "intent-confirmed"},
+        available={"request", "triage-read", "confirmed-intent"},
+    )
+    assert "system-investigator" in sys_res["route"]
+    assert "code-investigator" not in sys_res["route"]
+    code_res = route.compute_route(
+        cat,
+        {"code", "bug", "intent-confirmed"},
+        available={"request", "triage-read", "confirmed-intent"},
+    )
+    assert "code-investigator" in code_res["route"]
+    assert "system-investigator" not in code_res["route"]
+
+
+def test_real_catalog_system_executor_runs_clean_when_no_destructive_op():
+    """No destructive-op: the executor's lock is inactive and it runs straight off the plan."""
+    cat = _real_catalog()
+    res = route.compute_route(
+        cat,
+        {"system", "plan-ready"},
+        available={"confirmed-intent", "system-plan"},
+    )
+    assert (
+        "system-executor" in res["route"]
+    ), "executor runs when no destructive-op is live"
+    assert (
+        res.get("held", {}).get("system-executor") is None
+    ), "no lock held on the clean path"
 
 
 if __name__ == "__main__":

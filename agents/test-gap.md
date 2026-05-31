@@ -4,7 +4,7 @@ description: Always-on coverage lens. After code is written, checks acceptance c
 model: sonnet
 tools: Read, Grep, Glob
 stage:
-  routes: [build]
+  routes: [code]
   data:
     input: ['@diff']
     output: ['@findings']

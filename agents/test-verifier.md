@@ -4,7 +4,7 @@ description: Runs the project's test suite and verifies that changes pass. Ident
 model: sonnet
 tools: Bash, Read, Glob, Grep
 stage:
-  routes: [build]
+  routes: [code]
   data:
     input: ['@diff']
     output: ['@findings']

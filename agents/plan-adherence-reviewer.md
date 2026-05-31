@@ -4,7 +4,7 @@ description: Post-implementation check that the implementer followed the approve
 model: sonnet
 tools: Glob, Grep, Read, Bash
 stage:
-  routes: [build]
+  routes: [code]
   data:
     input: ['@diff']
     output: ['@findings']

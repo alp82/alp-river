@@ -4,7 +4,7 @@ description: Drafts a single ADR from a decision summary, mirroring the canonica
 model: opus
 tools: Glob, Grep, Read
 stage:
-  routes: [build, talk]
+  routes: [code, talk]
   data:
     input: ['@decision-summary']
     output: ['@adr-draft']

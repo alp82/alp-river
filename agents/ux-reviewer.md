@@ -4,7 +4,7 @@ description: Reviews UX quality of UI changes - loading states, error states, em
 model: sonnet
 tools: Glob, Grep, Read, Bash
 stage:
-  routes: [build]
+  routes: [code]
   data:
     input: ['@diff']
     output: ['@findings']

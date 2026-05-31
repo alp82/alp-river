@@ -4,7 +4,7 @@ description: Reviews UI changes for visual consistency with the existing design 
 model: sonnet
 tools: Glob, Grep, Read, Bash
 stage:
-  routes: [build]
+  routes: [code]
   data:
     input: ['@diff']
     output: ['@findings']

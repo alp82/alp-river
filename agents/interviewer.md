@@ -4,7 +4,7 @@ description: Level 2 intent verification. Researches the target area first (file
 model: opus
 tools: Glob, Grep, Read, WebSearch, WebFetch
 stage:
-  routes: [build, talk]
+  routes: [code, talk]
   data:
     input: ['@request']
     output: ['@confirmed-intent']

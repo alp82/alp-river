@@ -4,7 +4,7 @@ description: Captures novel project-context items (glossary terms, stack/intent 
 model: opus
 tools: Glob, Grep, Read, Edit
 stage:
-  routes: [build]
+  routes: [code]
   data:
     input: ['@diff']
     output: ['@discoveries-captured']

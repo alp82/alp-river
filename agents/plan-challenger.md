@@ -4,7 +4,7 @@ description: Adversarial review of a planner's output. Pokes holes, names failur
 model: opus
 tools: Glob, Grep, Read, WebSearch, WebFetch
 stage:
-  routes: [build]
+  routes: [code]
   data:
     input: ['@approved-plan']
     output: ['@plan-challenge']

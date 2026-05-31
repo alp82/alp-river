@@ -4,7 +4,7 @@ description: Focused security review - only spawned when changes touch auth, per
 model: sonnet
 tools: Glob, Grep, Read, Bash, WebSearch, WebFetch
 stage:
-  routes: [build, spike]
+  routes: [code, sketch, system]
   data:
     input: ['@diff']
     output: ['@findings']

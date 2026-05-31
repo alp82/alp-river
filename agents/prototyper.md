@@ -4,7 +4,7 @@ description: Builds single-file tracer bullets in .prototypes/ that hit real API
 model: sonnet
 tools: Glob, Grep, Read, Edit, Write, Bash
 stage:
-  routes: [build]
+  routes: [code]
   data:
     input: ['@prototype-identification']
     output: ['@prototypes']

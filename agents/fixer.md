@@ -4,7 +4,7 @@ description: Fixes issues identified by quality gates. Receives structured findi
 model: sonnet
 tools: Glob, Grep, Read, Edit, Write, Bash
 stage:
-  routes: [build, spike]
+  routes: [code, sketch]
   data:
     input: ['@findings']
     output: ['@diff']

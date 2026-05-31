@@ -4,7 +4,7 @@ description: Pre-flight code health assessment of the target area. Scores health
 model: haiku
 tools: Glob, Grep, Read, Bash
 stage:
-  routes: [build, talk]
+  routes: [code, talk]
   data:
     input: []
     output: ['@health-findings']

@@ -40,7 +40,7 @@ description: ...
 model: opus
 tools: ...
 stage:
-  routes: [build, spike]            # subset of build/spike/talk - MANDATORY
+  routes: [code, sketch]            # subset of talk/sketch/code/system - MANDATORY
   data:
     input: ['@diff']                # @ required, ? optional (e.g. '?reuse-map')
     output: ['@findings']
@@ -55,11 +55,11 @@ stage:
 ```
 
 - **Stage name** = the agent's `name:`.
-- **`routes` is mandatory** - the subset of paths (`build`/`spike`/`talk`) the stage may run
-  on. Multi-path is normal (`triage: [build, spike, talk]`, `reuse-scanner: [build, talk]`,
-  `correctness-reviewer: [build, spike]`). The router drops a triggered stage whose `routes`
-  exclude the live path; `gen-catalog` errors loudly if a stage omits `routes` or names a
-  path outside `build`/`spike`/`talk`.
+- **`routes` is mandatory** - the subset of paths (`talk`/`sketch`/`code`/`system`) the stage
+  may run on. Multi-path is normal (`triage: [talk, sketch, code, system]`, `reuse-scanner:
+  [code]`, `correctness-reviewer: [code, sketch]`, `security-reviewer: [code, sketch, system]`).
+  The router drops a triggered stage whose `routes` exclude the live path; `gen-catalog` errors
+  loudly if a stage omits `routes` or names a path outside `talk`/`sketch`/`code`/`system`.
 - **Sigils:** `@` = required artifact, `?` = optional artifact (inline in `input`, no
   separate field), `#` = signal. Quote them (`'@diff'`, `'?reuse-map'`, `'#code-written'`).
   An optional input orders its stage after the producer when that producer is in the route,
@@ -77,8 +77,8 @@ stage:
 - lowercase-kebab topics: `auth-surface`, `code-written`, `plan-ready`.
 - families take a `:qualifier`: `findings:security`, `missing-infra:email`, `risk:auth`,
   `code-changed:auth`. The router matches on the full topic.
-- path topics: `build`, `spike`, `talk` (published by `triage`, exactly one per turn). A
-  bug is `build` plus a `bug` signal, not a separate path.
+- path topics: `talk`, `sketch`, `code`, `system` (published by `triage`, exactly one per
+  turn). A bug is `code` or `system` plus a `bug` signal, not a separate path.
 - `scope-shift` is reserved and mandatory on every stage.
 
 ## Generation

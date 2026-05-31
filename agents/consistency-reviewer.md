@@ -4,7 +4,7 @@ description: Reviews new code for consistency with existing codebase conventions
 model: sonnet
 tools: Glob, Grep, Read, Bash
 stage:
-  routes: [build]
+  routes: [code]
   data:
     input: ['@diff']
     output: ['@findings']

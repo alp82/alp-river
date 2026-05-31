@@ -20,7 +20,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 CATALOG = ROOT / "generated" / "catalog.json"
-PATHS = ("build", "spike", "talk")
+# The four routing paths a stage's `routes` may name.
+PATHS = ("talk", "sketch", "code", "system")
 
 # Signals that enter from outside any stage (orchestrator seed, user/gate decision, the
 # /alp-river:adr command) - subscribing to one is not an orphan.

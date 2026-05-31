@@ -4,7 +4,7 @@ description: Post-implementation review for engineering judgment - hacky shortcu
 model: opus
 tools: Glob, Grep, Read, Bash
 stage:
-  routes: [build]
+  routes: [code]
   data:
     input: ['@diff']
     output: ['@findings']

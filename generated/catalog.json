@@ -14,7 +14,7 @@
       },
       "name": "acceptance-reviewer",
       "routes": [
-        "build"
+        "code"
       ],
       "signals": {
         "publishes": [
@@ -40,7 +40,7 @@
       },
       "name": "accessibility-reviewer",
       "routes": [
-        "build"
+        "code"
       ],
       "signals": {
         "publishes": [
@@ -67,7 +67,7 @@
       },
       "name": "adr-drafter",
       "routes": [
-        "build",
+        "code",
         "talk"
       ],
       "signals": {
@@ -94,7 +94,7 @@
       },
       "name": "architecture-reviewer",
       "routes": [
-        "build"
+        "code"
       ],
       "signals": {
         "publishes": [
@@ -121,7 +121,7 @@
       },
       "name": "assumptions",
       "routes": [
-        "build"
+        "code"
       ],
       "signals": {
         "publishes": [
@@ -148,7 +148,7 @@
       },
       "name": "capture-agent",
       "routes": [
-        "build"
+        "code"
       ],
       "signals": {
         "publishes": [
@@ -156,6 +156,103 @@
         ],
         "subscribes": [
           "needs-tests"
+        ]
+      }
+    },
+    "code-implementer": {
+      "data": {
+        "input": {
+          "optional": [],
+          "required": [
+            "approved-plan"
+          ]
+        },
+        "output": [
+          "diff"
+        ]
+      },
+      "lock": [
+        {
+          "until": "tests-ready",
+          "while": "needs-tests"
+        }
+      ],
+      "name": "code-implementer",
+      "routes": [
+        "code"
+      ],
+      "signals": {
+        "publishes": [
+          "code-written",
+          "ui-touched",
+          "scope-shift"
+        ],
+        "subscribes": [
+          "plan-ready"
+        ]
+      }
+    },
+    "code-investigator": {
+      "data": {
+        "input": {
+          "optional": [],
+          "required": [
+            "request"
+          ]
+        },
+        "output": [
+          "diagnosis"
+        ]
+      },
+      "name": "code-investigator",
+      "routes": [
+        "code",
+        "talk"
+      ],
+      "signals": {
+        "publishes": [
+          "root-cause-found",
+          "cannot-diagnose",
+          "missing-info",
+          "scope-shift"
+        ],
+        "subscribes": [
+          "bug"
+        ]
+      }
+    },
+    "code-planner": {
+      "data": {
+        "input": {
+          "optional": [
+            "clarified-intent",
+            "reuse-map",
+            "health-findings",
+            "research-findings",
+            "prototypes",
+            "design-spec",
+            "diagnosis"
+          ],
+          "required": [
+            "confirmed-intent"
+          ]
+        },
+        "output": [
+          "approved-plan"
+        ]
+      },
+      "name": "code-planner",
+      "routes": [
+        "code"
+      ],
+      "signals": {
+        "publishes": [
+          "plan-ready",
+          "scope-shift"
+        ],
+        "subscribes": [
+          "clarified",
+          "intent-confirmed"
         ]
       }
     },
@@ -173,7 +270,7 @@
       },
       "name": "consistency-reviewer",
       "routes": [
-        "build"
+        "code"
       ],
       "signals": {
         "publishes": [
@@ -200,8 +297,8 @@
       },
       "name": "correctness-reviewer",
       "routes": [
-        "build",
-        "spike"
+        "code",
+        "sketch"
       ],
       "signals": {
         "publishes": [
@@ -229,7 +326,7 @@
       },
       "name": "design-consistency-reviewer",
       "routes": [
-        "build"
+        "code"
       ],
       "signals": {
         "publishes": [
@@ -256,7 +353,8 @@
       },
       "name": "design-explorer",
       "routes": [
-        "build",
+        "code",
+        "sketch",
         "talk"
       ],
       "signals": {
@@ -308,8 +406,8 @@
       },
       "name": "fixer",
       "routes": [
-        "build",
-        "spike"
+        "code",
+        "sketch"
       ],
       "signals": {
         "publishes": [
@@ -334,7 +432,7 @@
       },
       "name": "health-checker",
       "routes": [
-        "build",
+        "code",
         "talk"
       ],
       "signals": {
@@ -346,39 +444,6 @@
         ],
         "subscribes": [
           "needs-tests"
-        ]
-      }
-    },
-    "implementer": {
-      "data": {
-        "input": {
-          "optional": [],
-          "required": [
-            "approved-plan"
-          ]
-        },
-        "output": [
-          "diff"
-        ]
-      },
-      "lock": [
-        {
-          "until": "tests-ready",
-          "while": "needs-tests"
-        }
-      ],
-      "name": "implementer",
-      "routes": [
-        "build"
-      ],
-      "signals": {
-        "publishes": [
-          "code-written",
-          "ui-touched",
-          "scope-shift"
-        ],
-        "subscribes": [
-          "plan-ready"
         ]
       }
     },
@@ -396,7 +461,7 @@
       },
       "name": "interviewer",
       "routes": [
-        "build",
+        "code",
         "talk"
       ],
       "signals": {
@@ -407,35 +472,6 @@
         "subscribes": [
           "ambiguous",
           "reshape"
-        ]
-      }
-    },
-    "investigator": {
-      "data": {
-        "input": {
-          "optional": [],
-          "required": [
-            "request"
-          ]
-        },
-        "output": [
-          "diagnosis"
-        ]
-      },
-      "name": "investigator",
-      "routes": [
-        "build",
-        "talk"
-      ],
-      "signals": {
-        "publishes": [
-          "root-cause-found",
-          "cannot-diagnose",
-          "missing-info",
-          "scope-shift"
-        ],
-        "subscribes": [
-          "bug"
         ]
       }
     },
@@ -453,7 +489,7 @@
       },
       "name": "naming-clarity",
       "routes": [
-        "build"
+        "code"
       ],
       "signals": {
         "publishes": [
@@ -480,7 +516,7 @@
       },
       "name": "performance-reviewer",
       "routes": [
-        "build"
+        "code"
       ],
       "signals": {
         "publishes": [
@@ -507,7 +543,7 @@
       },
       "name": "plan-adherence-reviewer",
       "routes": [
-        "build"
+        "code"
       ],
       "signals": {
         "publishes": [
@@ -533,7 +569,7 @@
       },
       "name": "plan-challenger",
       "routes": [
-        "build"
+        "code"
       ],
       "signals": {
         "publishes": [
@@ -543,41 +579,6 @@
         ],
         "subscribes": [
           "needs-tests"
-        ]
-      }
-    },
-    "planner": {
-      "data": {
-        "input": {
-          "optional": [
-            "clarified-intent",
-            "reuse-map",
-            "health-findings",
-            "research-findings",
-            "prototypes",
-            "design-spec",
-            "diagnosis"
-          ],
-          "required": [
-            "confirmed-intent"
-          ]
-        },
-        "output": [
-          "approved-plan"
-        ]
-      },
-      "name": "planner",
-      "routes": [
-        "build"
-      ],
-      "signals": {
-        "publishes": [
-          "plan-ready",
-          "scope-shift"
-        ],
-        "subscribes": [
-          "clarified",
-          "intent-confirmed"
         ]
       }
     },
@@ -595,7 +596,7 @@
       },
       "name": "prototype-identifier",
       "routes": [
-        "build"
+        "code"
       ],
       "signals": {
         "publishes": [
@@ -622,7 +623,7 @@
       },
       "name": "prototyper",
       "routes": [
-        "build"
+        "code"
       ],
       "signals": {
         "publishes": [
@@ -648,7 +649,7 @@
       },
       "name": "quality-reviewer",
       "routes": [
-        "build"
+        "code"
       ],
       "signals": {
         "publishes": [
@@ -677,7 +678,7 @@
       },
       "name": "requirements-clarifier",
       "routes": [
-        "build"
+        "code"
       ],
       "signals": {
         "publishes": [
@@ -706,7 +707,7 @@
       },
       "name": "researcher",
       "routes": [
-        "build",
+        "code",
         "talk"
       ],
       "signals": {
@@ -734,7 +735,7 @@
       },
       "name": "reuse-reviewer",
       "routes": [
-        "build"
+        "code"
       ],
       "signals": {
         "publishes": [
@@ -760,7 +761,7 @@
       },
       "name": "reuse-scanner",
       "routes": [
-        "build",
+        "code",
         "talk"
       ],
       "signals": {
@@ -773,6 +774,37 @@
         ],
         "subscribes": [
           "needs-tests"
+        ]
+      }
+    },
+    "safety-gate": {
+      "data": {
+        "input": {
+          "optional": [
+            "system-plan",
+            "approved-plan"
+          ],
+          "required": []
+        },
+        "output": [
+          "safety-verdict"
+        ]
+      },
+      "guard": "sticky",
+      "name": "safety-gate",
+      "routes": [
+        "system",
+        "code"
+      ],
+      "signals": {
+        "publishes": [
+          "safety-approved",
+          "abandon",
+          "scope-shift"
+        ],
+        "subscribes": [
+          "destructive-op",
+          "irreversible"
         ]
       }
     },
@@ -791,8 +823,9 @@
       "guard": "sticky",
       "name": "security-reviewer",
       "routes": [
-        "build",
-        "spike"
+        "code",
+        "sketch",
+        "system"
       ],
       "signals": {
         "publishes": [
@@ -806,7 +839,7 @@
         ]
       }
     },
-    "spike-build": {
+    "sketch-build": {
       "data": {
         "input": {
           "optional": [],
@@ -818,9 +851,9 @@
           "diff"
         ]
       },
-      "name": "spike-build",
+      "name": "sketch-build",
       "routes": [
-        "spike"
+        "sketch"
       ],
       "signals": {
         "publishes": [
@@ -828,7 +861,7 @@
           "scope-shift"
         ],
         "subscribes": [
-          "spike"
+          "sketch"
         ]
       }
     },
@@ -846,7 +879,7 @@
       },
       "name": "structure-reviewer",
       "routes": [
-        "build"
+        "code"
       ],
       "signals": {
         "publishes": [
@@ -856,6 +889,133 @@
         ],
         "subscribes": [
           "needs-tests"
+        ]
+      }
+    },
+    "system-executor": {
+      "data": {
+        "input": {
+          "optional": [],
+          "required": [
+            "system-plan"
+          ]
+        },
+        "output": [
+          "diff",
+          "exec-log"
+        ]
+      },
+      "lock": [
+        {
+          "until": "safety-approved",
+          "while": "destructive-op"
+        }
+      ],
+      "name": "system-executor",
+      "routes": [
+        "system"
+      ],
+      "signals": {
+        "publishes": [
+          "code-written",
+          "config-changed",
+          "scope-shift"
+        ],
+        "subscribes": [
+          "plan-ready",
+          "findings:system"
+        ]
+      }
+    },
+    "system-investigator": {
+      "data": {
+        "input": {
+          "optional": [],
+          "required": [
+            "confirmed-intent"
+          ]
+        },
+        "output": [
+          "diagnosis"
+        ]
+      },
+      "name": "system-investigator",
+      "routes": [
+        "system",
+        "talk"
+      ],
+      "signals": {
+        "publishes": [
+          "root-cause-found",
+          "cannot-diagnose",
+          "missing-info",
+          "scope-shift"
+        ],
+        "subscribes": [
+          "bug"
+        ]
+      }
+    },
+    "system-planner": {
+      "data": {
+        "input": {
+          "optional": [
+            "diagnosis",
+            "clarified-intent"
+          ],
+          "required": [
+            "confirmed-intent"
+          ]
+        },
+        "output": [
+          "system-plan"
+        ]
+      },
+      "name": "system-planner",
+      "routes": [
+        "system"
+      ],
+      "signals": {
+        "publishes": [
+          "plan-ready",
+          "destructive-op",
+          "irreversible",
+          "scope-shift"
+        ],
+        "subscribes": [
+          "intent-confirmed",
+          "clarified"
+        ]
+      }
+    },
+    "system-verifier": {
+      "data": {
+        "input": {
+          "optional": [
+            "exec-log",
+            "diff"
+          ],
+          "required": [
+            "system-plan"
+          ]
+        },
+        "output": [
+          "verify-report"
+        ]
+      },
+      "name": "system-verifier",
+      "routes": [
+        "system"
+      ],
+      "signals": {
+        "publishes": [
+          "verified",
+          "findings:system",
+          "scope-shift"
+        ],
+        "subscribes": [
+          "code-written",
+          "config-changed"
         ]
       }
     },
@@ -873,7 +1033,7 @@
       },
       "name": "test-author",
       "routes": [
-        "build"
+        "code"
       ],
       "signals": {
         "publishes": [
@@ -901,7 +1061,7 @@
       },
       "name": "test-gap",
       "routes": [
-        "build"
+        "code"
       ],
       "signals": {
         "publishes": [
@@ -929,7 +1089,7 @@
       },
       "name": "test-plan",
       "routes": [
-        "build"
+        "code"
       ],
       "signals": {
         "publishes": [
@@ -955,7 +1115,7 @@
       },
       "name": "test-review",
       "routes": [
-        "build"
+        "code"
       ],
       "signals": {
         "publishes": [
@@ -982,7 +1142,7 @@
       },
       "name": "test-verifier",
       "routes": [
-        "build"
+        "code"
       ],
       "signals": {
         "publishes": [
@@ -1010,15 +1170,17 @@
       },
       "name": "triage",
       "routes": [
-        "build",
-        "spike",
-        "talk"
+        "talk",
+        "sketch",
+        "code",
+        "system"
       ],
       "signals": {
         "publishes": [
-          "build",
-          "spike",
           "talk",
+          "sketch",
+          "code",
+          "system",
           "bug",
           "ambiguous",
           "novel-domain",
@@ -1026,6 +1188,8 @@
           "auth-surface",
           "secrets",
           "perms-change",
+          "destructive-op",
+          "irreversible",
           "intent-confirmed",
           "needs-tests",
           "est-size",
@@ -1050,7 +1214,7 @@
       },
       "name": "ux-reviewer",
       "routes": [
-        "build"
+        "code"
       ],
       "signals": {
         "publishes": [
@@ -1077,7 +1241,7 @@
       },
       "name": "visual-verifier",
       "routes": [
-        "build"
+        "code"
       ],
       "signals": {
         "publishes": [

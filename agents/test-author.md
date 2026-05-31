@@ -4,7 +4,7 @@ description: Writes the failing (red) tests from the test cases, before implemen
 model: sonnet
 tools: Read, Grep, Glob, Edit, Write, Bash
 stage:
-  routes: [build]
+  routes: [code]
   data:
     input: ['@test-cases']
     output: ['@tests']

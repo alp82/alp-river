@@ -94,13 +94,13 @@ Each turn:
    ```
    The router rejects an unrecognized top-level key (a typo like `liv` for `live`): it writes the offending key to stderr and exits nonzero rather than silently dropping it and returning an empty route, so a malformed call is never mistaken for convergence.
 2. **Render.** Show the route as inline markdown - emit it directly from state, no script, no Bash. Render **every turn** so progress is never invisible: the full route on the first turn and at any gate (legibility A), the delta on a plain recompose (legibility B). This is a status surface, not a question - it never interrupts; asking the user is what a gate stage does when it runs (step 3, see `## Gates`). Formats:
-   - **Full (A)** - a header `path · size · N stages`, then one line per stage `• name ← #signal-that-pulled-it-in`, marking the running stage (`▶`), done stages (`✓`), held stages (`🔒 name (held until #until-signal)`), and `[sticky]` guards. The render composes `route` + `held` so a gated stage stays visible. Example:
+   - **Full (A)** - a header `path · size · N stages`, then one line per stage `• name ← #signal-that-pulled-it-in`, marking running stages (`▶`), done stages (`✓`), held stages (`🔒 name (held until #until-signal)`), and `[sticky]` guards. The router returns `waves` (the topo levels); stages in one wave share no precedence edge and dispatch as a single parallel batch, each marked `▶`. The render composes `route` + `held` so a gated stage stays visible. Example:
      ```
-     build · M · 5 stages
+     code · M · 5 stages
        ✓ triage
        ▶ reuse-scanner ← #needs-tests
-       • planner ← #clarified
-       🔒 implementer (held until #tests-ready)
+       • code-planner ← #clarified
+       🔒 code-implementer (held until #tests-ready)
        • correctness-reviewer ← #code-written
      ```
    - **Delta (B)** - lead with the why (the new signal's message), then `+added / -removed (now size/N)`. Example: `+security-reviewer ← #auth-surface (now L/6)`.
@@ -111,26 +111,30 @@ Repeat until **convergence**: the router returns an empty route (no live signal 
 
 ### Seed and path
 
-The route is rooted by the always-on `triage` stage. It reads the request and publishes exactly one **path** - `build`, `spike`, or `talk` - plus early signals (`ambiguous`, `novel-domain`, a bug-framing `bug`, risk sniffs) and one advisory `est-size:<tier>`. The router composes from there. The path is sticky but re-evaluated every turn: `talk` flips to `build` on "do it"; a `spike` graduates to `build` on the kept code.
+The route is rooted by the always-on `triage` stage. It reads the request and publishes exactly one **path** - `talk`, `sketch`, `code`, or `system` - plus early signals (`ambiguous`, `novel-domain`, a bug-framing `bug`, risk sniffs) and one advisory `est-size:<tier>`. The router composes from there. The path is sticky but re-evaluated every turn: `talk` flips to `code`/`system` on "do it"; a `sketch` graduates to `code`/`system` on the kept work.
 
-- **`build`** - the full composed route. A bug is a build: `triage` pairs `build` with a `bug` signal, the `investigator` diagnoses inside the route, and the build spine fixes the cause. There is no separate `diagnose` path. The implementer carries a `{while:#needs-tests, until:#tests-ready}` lock (the TDD gate, see `## Locks`): on a logic change `triage` publishes `#needs-tests`, so the implementer holds until `test-review` publishes `#tests-ready` after validating the red tests; a trivial change carries no `#needs-tests`, so the lock is inactive and the implementer runs straight off the plan.
-- **`talk`** - the spine is parked; the `discuss` stage converses - options with worked examples, honest tradeoffs, one sharp question, never code. Recon stages (research, investigator, reuse-scan, design-explorer) stay summonable on demand, but nothing produces a `diff` and nothing is reviewed or captured.
-- **`spike`** - sandboxed throwaway (`.prototypes/`). `spike-build` runs relaxed; the build-only ceremony band (challenge, capture, plan-adherence, the quality/architecture/consistency lenses) is filtered off the path by each stage's `routes`. Correctness and security still apply. Graduating flips to `build`.
+A path is defined by **what it leaves behind**: `talk` leaves nothing, `sketch` leaves a throwaway artifact in a sandbox, `code` leaves a reviewed change in the codebase, `system` leaves a verified change to the machine.
+
+- **`talk`** - inline-first. The main agent answers directly and reads freely (reads never prompt); the spine is parked. The only moves that ask first are the expensive ones - spawning a recon subagent (`discuss`, `researcher`, an investigator, `design-explorer`) or producing a diagram/visual - each a one-tap confirm. Nothing produces a `diff`, nothing is reviewed or captured.
+- **`sketch`** - sandboxed throwaway (`.prototypes/`) in any medium: a code tracer-bullet (`sketch-build`), a diagram, a UI mockup, an idea sketch. Runs relaxed; the code-only ceremony band (challenge, capture, plan-adherence, the quality/architecture/consistency lenses) is filtered off the path by each stage's `routes`. Correctness and security still apply. Graduating flips to `code`/`system`.
+- **`code`** - the full composed route. A bug is a code build: `triage` pairs `code` with a `bug` signal, the `code-investigator` diagnoses inside the route, and the code spine fixes the cause. There is no separate `diagnose` path. The `code-implementer` carries a `{while:#needs-tests, until:#tests-ready}` lock (the TDD gate, see `## Locks`): on a logic change `triage` publishes `#needs-tests`, so the implementer holds until `test-review` publishes `#tests-ready` after validating the red tests; a trivial change carries no `#needs-tests`, so the lock is inactive and the implementer runs straight off the plan.
+- **`system`** - OS-level work: configs, troubleshooting, CLI tooling. The spine is `system-planner` (ordered steps, each with backup / dry-run / rollback) -> `system-executor` (runs them) -> `system-verifier` (confirms the desired state actually holds). A bug here pairs `system` with `bug`: the `system-investigator` diagnoses from service state, logs, and configs. No TDD chain and no code-convention lenses; instead the executor carries a `{while:#destructive-op, until:#safety-approved}` lock - on a destructive or irreversible step the `safety-gate` holds it until the user clears the action (see `## Locks`). Security still applies.
 
 `est-size` is advisory only: it feeds the cost gate's upfront estimate and never picks stages. The real size stays the final route count.
 
 ### Worked routes
 
-Four `echo STATE | python3 hooks/route.py` traces:
+Five `echo STATE | python3 hooks/route.py` traces:
 
-- **build** - `{"live":["build","needs-tests","code-written","ui-touched","run-visual","auth-surface"],"available":["confirmed-intent","diff"]}` composes `reuse-scanner` + `health-checker`, the full review fan-out (correctness, quality, architecture, structure, consistency, performance, reuse, acceptance, plan-adherence, test-gap, test-verifier, ux, accessibility, design-consistency, visual), `security-reviewer` pulled in by `auth-surface`, and `capture-agent`. `ui-touched` (emitted because the diff touches UI) pulls the UI lenses; `run-visual` opts into `visual-verifier`. Size XXL.
-- **trivial build** - `{"live":["build"],"available":["request","triage-read","confirmed-intent"]}` composes `planner`, then `implementer` (its TDD lock inactive - no `#needs-tests` is live) + `correctness-reviewer` once a diff exists. Size S. None of the deep lenses, pre-flight, clarify, test-chain, challenge, or capture join - they wait on `#needs-tests`.
-- **spike** - `{"live":["spike","code-written"],"available":["confirmed-intent","diff"]}` composes just `spike-build` then `correctness-reviewer`; the 15 build-only lenses are dropped `off-path` by the `routes` filter. Size S.
+- **code** - `{"live":["code","needs-tests","code-written","ui-touched","run-visual","auth-surface"],"available":["confirmed-intent","diff"]}` composes `reuse-scanner` + `health-checker`, the full review fan-out (correctness, quality, architecture, structure, consistency, performance, reuse, acceptance, plan-adherence, test-gap, test-verifier, ux, accessibility, design-consistency, visual), `security-reviewer` pulled in by `auth-surface`, and `capture-agent`. The lenses share `@diff`, so they land in one parallel wave. `ui-touched` pulls the UI lenses; `run-visual` opts into `visual-verifier`. Size XXL.
+- **trivial code** - `{"live":["code"],"available":["request","triage-read","confirmed-intent"]}` composes `code-planner`, then `code-implementer` (its TDD lock inactive - no `#needs-tests` is live) + `correctness-reviewer` once a diff exists. Size S. None of the deep lenses, pre-flight, clarify, test-chain, challenge, or capture join - they wait on `#needs-tests`.
+- **sketch** - `{"live":["sketch","code-written"],"available":["confirmed-intent","diff"]}` composes just `sketch-build` then `correctness-reviewer`; the code-only lenses are dropped `off-path` by the `routes` filter. Size S.
+- **system** - `{"live":["system","plan-ready","destructive-op"],"available":["confirmed-intent","system-plan"]}` composes `safety-gate` (armed by `destructive-op`) and holds `system-executor` in `held` until `#safety-approved`; `system-verifier` follows once the executor runs. No TDD chain, no code lenses.
 - **talk** - `{"live":["talk","ambiguous"],"available":["request","triage-read"]}` composes `interviewer` (pulled by `ambiguous`) then `discuss`, ordered after it because `discuss` optionally consumes the interviewer's `confirmed-intent`. No diff, nothing reviewed.
 
 ### Intent
 
-`triage` settles framing. When the request is clear, **state the one-line interpretation and proceed** - no confirmation gate; the user corrects in their next message if it is wrong. `triage` mints `@confirmed-intent` on a clear build, so its pre-flight is satisfied without the interviewer. When `triage` publishes `ambiguous` (any genuine doubt - low bar), the `interviewer` stage joins and loops until intent is confirmed. Intent is always *stated*, never silently assumed (see Principles), but a clear ask is not stopped.
+`triage` settles framing. When the request is clear, **state the one-line interpretation and proceed** - no confirmation gate; the user corrects in their next message if it is wrong. `triage` mints `@confirmed-intent` on a clear code or system ask, so its pre-flight is satisfied without the interviewer. When `triage` publishes `ambiguous` (any genuine doubt - low bar), the `interviewer` stage joins and loops until intent is confirmed. Intent is always *stated*, never silently assumed (see Principles), but a clear ask is not stopped.
 
 ### Gates
 
@@ -247,7 +251,9 @@ run). `while` and `until` match on family prefix, like every other signal. A loc
 **scheduling gate, not a data input** - it gates *when* a stage may run, never *what* it
 reads.
 
-The implementer's `{while:#needs-tests, until:#tests-ready}` lock is the **TDD gate**. On a
+The `system-executor` carries a `{while:#destructive-op, until:#safety-approved}` lock (the **safety gate**): on a destructive or irreversible system step, `system-planner` (or `triage`) publishes `#destructive-op`, so the executor is held until the `safety-gate` stage carries the action to the user and `#safety-approved` fires - no destructive command runs unconfirmed.
+
+The `code-implementer`'s `{while:#needs-tests, until:#tests-ready}` lock is the **TDD gate**. On a
 logic build `triage` publishes `#needs-tests`, so the implementer is held until `test-review`
 publishes `#tests-ready` after validating the red tests - code cannot start against
 unvalidated tests. A trivial change carries no `#needs-tests`, so the lock is inactive and
@@ -275,7 +281,7 @@ This harness has no live follow-up to a running subagent. Every re-production of
 Each agent fills these three roles with its own speaking-named slots; there is no shared generic tag.
 
 **Correction revision.** Re-emits the agent's OWN artifact with targeted fixes, keeping a stable tag and bumping the version. The guard applies. Instances:
-- `planner` - prior version `<PRIOR_PLAN>`, corrections `<REPLAN_REASON>`; emits `<APPROVED_PLAN version="N+1">`.
+- `code-planner` - prior version `<PRIOR_PLAN>`, corrections `<REPLAN_REASON>`; emits `<APPROVED_PLAN version="N+1">`.
 - `test-author` - prior version is the on-disk tests it wrote (re-read, not folded in), corrections `<TEST_CORRECTIONS>`; amends the suite in place.
 
 **Non-revision boundary.** An agent that makes forward edits to a shared mutable artifact from OTHERS' findings is not revising. `fixer` is the canonical case: it edits the live working tree from reviewers' findings each round, and its `<ROUND>` is an oscillation counter, not a prior-version fold. The guard does not apply to it.

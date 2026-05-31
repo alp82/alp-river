@@ -25,7 +25,8 @@ import json
 from pathlib import Path
 
 _SIZES = [(1, "XS"), (3, "S"), (6, "M"), (10, "L"), (15, "XL")]
-PATHS = ("build", "spike", "talk")
+# The four routing paths a stage may run on; triage publishes exactly one per turn.
+PATHS = ("talk", "sketch", "code", "system")
 _REQUEST_KEYS = frozenset({"catalog", "live", "available", "already_run"})
 
 
@@ -68,19 +69,26 @@ def _toposort(stages, names):
             if n not in edges[p]:
                 edges[p].add(n)
                 indeg[n] += 1
-    queue = sorted(n for n in names if indeg[n] == 0)
-    order = []
-    while queue:
-        n = queue.pop(0)
-        order.append(n)
-        for m in sorted(edges[n]):
-            indeg[m] -= 1
-            if indeg[m] == 0:
-                queue.append(m)
-                queue.sort()
-    if len(order) < len(names):  # cycle guard (data graph is acyclic)
-        order += sorted(names - set(order))
-    return order
+    # Kahn's algorithm by levels: each frontier is a parallel cohort (a "wave") whose
+    # data-deps are all satisfied by earlier waves. The flat order is the waves flattened
+    # (alpha within each level) and stays a valid topological order: producer before consumer.
+    frontier = sorted(n for n in names if indeg[n] == 0)
+    waves = []
+    seen = set()
+    while frontier:
+        waves.append(frontier)
+        seen.update(frontier)
+        nxt = set()
+        for n in frontier:
+            for m in edges[n]:
+                indeg[m] -= 1
+                if indeg[m] == 0:
+                    nxt.add(m)
+        frontier = sorted(nxt)
+    if len(seen) < len(names):  # cycle guard (data graph is acyclic)
+        waves.append(sorted(names - seen))
+    order = [n for wave in waves for n in wave]
+    return order, waves
 
 
 def _matches(sub, live):
@@ -159,7 +167,7 @@ def compute_route(
     runnable = _drop_unsatisfiable(
         stages, {n: kept[n] for n in kept if n not in locked}, available
     )
-    order = _toposort(stages, runnable)
+    order, waves = _toposort(stages, runnable)
     held = {n: [lk["until"] for lk in active[n]] for n in locked}
     # Held stages live in `held`, never `dropped`; a stage re-dropped only because its
     # producer is held still reads as unsatisfiable-input.
@@ -171,6 +179,7 @@ def compute_route(
             dropped[n] = "unsatisfiable-input"
     return {
         "route": order,
+        "waves": waves,
         "size": size_label(len(order)),
         "triggered_by": {n: triggered[n] for n in order},
         "dropped": dropped,
@@ -189,9 +198,10 @@ def merge_sticky(catalog, prev_names, result):
     ]
     if not keep:
         return result
-    order = _toposort(stages, set(result["route"]) | set(keep))
+    order, waves = _toposort(stages, set(result["route"]) | set(keep))
     merged = dict(result)
     merged["route"] = order
+    merged["waves"] = waves
     merged["size"] = size_label(len(order))
     merged["sticky_kept"] = keep
     return merged

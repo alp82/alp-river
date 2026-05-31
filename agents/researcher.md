@@ -4,7 +4,7 @@ description: Quick external research on libraries, APIs, frameworks, algorithms,
 model: haiku
 tools: WebSearch, WebFetch, Glob, Grep, Read
 stage:
-  routes: [build, talk]
+  routes: [code, talk]
   data:
     input: ['@confirmed-intent']
     output: ['@research-findings']

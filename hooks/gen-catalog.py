@@ -29,7 +29,8 @@ except ImportError:
 ROOT = Path(__file__).resolve().parent.parent
 AGENTS_DIR = ROOT / "agents"
 OUT = ROOT / "generated" / "catalog.json"
-PATHS = ("build", "spike", "talk")
+# The four routing paths a stage's `routes` may name.
+PATHS = ("talk", "sketch", "code", "system")
 
 
 def changed_path_from_hook_payload():

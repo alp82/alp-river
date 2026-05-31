@@ -4,7 +4,7 @@ description: Pre-implementation scan that finds reusable code AND identifies qui
 model: sonnet
 tools: Glob, Grep, Read
 stage:
-  routes: [build, talk]
+  routes: [code, talk]
   data:
     input: ['@confirmed-intent']
     output: ['@reuse-map']

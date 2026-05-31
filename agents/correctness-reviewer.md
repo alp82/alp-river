@@ -4,7 +4,7 @@ description: Post-implementation review for correctness, type safety, dead code,
 model: sonnet
 tools: Glob, Grep, Read, Bash
 stage:
-  routes: [build, spike]
+  routes: [code, sketch]
   data:
     input: ['@diff']
     output: ['@findings']

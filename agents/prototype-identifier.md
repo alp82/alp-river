@@ -4,7 +4,7 @@ description: Identifies which parts of a task need prototyping before planning -
 model: haiku
 tools: Glob, Grep, Read
 stage:
-  routes: [build]
+  routes: [code]
   data:
     input: ['@confirmed-intent']
     output: ['@prototype-identification']

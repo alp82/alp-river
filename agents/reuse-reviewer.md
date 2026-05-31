@@ -4,7 +4,7 @@ description: Post-implementation review for missed reuse opportunities - finds d
 model: sonnet
 tools: Glob, Grep, Read, Bash
 stage:
-  routes: [build]
+  routes: [code]
   data:
     input: ['@diff']
     output: ['@findings']

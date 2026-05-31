@@ -4,7 +4,7 @@ description: Derives concrete test cases from the approved plan's acceptance cri
 model: sonnet
 tools: Read, Grep, Glob
 stage:
-  routes: [build]
+  routes: [code]
   data:
     input: ['@approved-plan']
     output: ['@test-cases']

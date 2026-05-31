@@ -4,7 +4,7 @@ description: Reviews module shape - depth, leverage, locality, seams. Catches sh
 model: opus
 tools: Glob, Grep, Read, Bash
 stage:
-  routes: [build]
+  routes: [code]
   data:
     input: ['@diff']
     output: ['@findings']

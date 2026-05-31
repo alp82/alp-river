@@ -10,9 +10,10 @@ New topics are added here first, then used.
 
 | topic | meaning | subscribed by |
 |---|---|---|
-| build | make or change something (bug fixes included) | (path filter) |
-| spike | throwaway exploration in a sandbox | spike-build (relaxed) |
-| talk | discussion, build spine parked | discuss; recon stages on demand |
+| talk | discussion, spine parked; the main agent answers inline | discuss; recon on confirm |
+| sketch | throwaway exploration in a sandbox - code tracer-bullets, diagrams, mockups, idea sketches | sketch-build; recon |
+| code | make or change code (bug fixes included) | (path filter) |
+| system | OS-level work: configs, troubleshooting, CLI tooling | system spine |
 
 ## request / intent
 
@@ -23,8 +24,8 @@ New topics are added here first, then used.
 | reshape | user redirected intent | orchestrator | intent |
 | intent-confirmed | outcome locked | triage, interviewer | planner |
 | novel-domain | unfamiliar problem area | triage | research |
-| bug | a defect to diagnose before fixing - paired with `build`, never its own path | triage | investigator |
-| needs-tests | a build carrying real logic | triage | reuse-scanner, health-checker, prototype-identifier, plan-challenger, test-plan, the review lenses (acceptance, architecture, assumptions, consistency, naming-clarity, performance, plan-adherence, quality, reuse-reviewer, structure, test-gap, test-verifier), capture-agent |
+| bug | a defect to diagnose before fixing - pairs with `code` or `system`, never its own path | triage | code-investigator, system-investigator |
+| needs-tests | a code change carrying real logic (`code` path only) | triage | reuse-scanner, health-checker, prototype-identifier, plan-challenger, test-plan, the review lenses (acceptance, architecture, assumptions, consistency, naming-clarity, performance, plan-adherence, quality, reuse-reviewer, structure, test-gap, test-verifier), capture-agent |
 
 ## shape / structure
 
@@ -47,6 +48,8 @@ New topics are added here first, then used.
 | perms-change | permission model changes | triage | security-review |
 | risk:&lt;area&gt; | generic risk in an area | triage | cost-check, gates |
 | high-risk | plan is risky overall | plan | challenge |
+| destructive-op | a system action that is destructive or hard to reverse (`rm -rf`, package removal, `systemctl mask`, `dd`, partition ops) | triage, system-planner | safety-gate |
+| irreversible | a system action with no clean rollback | triage, system-planner | safety-gate |
 
 ## discovery  (pre-build steering)
 
@@ -70,8 +73,10 @@ New topics are added here first, then used.
 | design-locked | design spec captured | design-loop | plan |
 | plan-ready | approved plan exists | plan | implementer |
 | plan-challenged | plan survived challenge | challenge | after-plan gate |
-| code-written | a diff exists | implement, fixer | correctness-reviewer |
+| code-written | a diff exists | implement, fixer, system-executor | correctness-reviewer |
 | code-changed:&lt;area&gt; | a fix touched &lt;area&gt; | fixer | area lenses (precise re-review) |
+| config-changed | a system change touched a tracked config file | system-executor | system-verifier |
+| verified | the system reached its desired state | system-verifier | convergence |
 
 ## test  (TDD-first chain)
 
@@ -96,6 +101,7 @@ straight off the plan.
 |---|---|---|---|
 | findings:&lt;lens&gt; | a lens found issues | the lens (correctness, quality, security, perf, a11y, structure, architecture, reuse, consistency, naming-clarity, assumptions, ux, adherence, acceptance) | fixer |
 | smell:&lt;area&gt; | a broad lens spotted an area to inspect | broad lens | matching specialist lens |
+| findings:system | system verification found drift from the desired state | system-verifier | fixer, system-executor |
 | clean | a lens found nothing | the lens | convergence |
 
 ## control  (gates + orchestration)
@@ -107,13 +113,14 @@ straight off the plan.
 | approved, scope-down, abandon | user gate verdict | gate stages | orchestrator |
 | cleanup-first | health gate decision | health gate | orchestrator |
 | run-visual | user opted into a visual check | gate | visual-verifier |
+| safety-approved | user cleared a destructive/irreversible system action | safety-gate | system-executor's lock |
 
-## diagnose  (investigator runs inside the `build` path via `bug`, not a separate route)
+## diagnose  (investigator runs inside the `code` or `system` path via `bug`, not a separate route)
 
 | topic | meaning | published by | subscribed by |
 |---|---|---|---|
-| root-cause-found | diagnosis complete | investigator | orchestrator (build continues to the fix) |
-| cannot-diagnose, missing-info | blocked, needs input | investigator | orchestrator |
+| root-cause-found | diagnosis complete | code-investigator, system-investigator | orchestrator (the fix continues) |
+| cannot-diagnose, missing-info | blocked, needs input | code-investigator, system-investigator | orchestrator |
 
 ## Convergence
 

@@ -4,7 +4,7 @@ description: Uses playwright-cli to screenshot UI changes and verify visual corr
 model: sonnet
 tools: Bash, Read, Glob
 stage:
-  routes: [build]
+  routes: [code]
   data:
     input: ['@diff']
     output: ['@findings']

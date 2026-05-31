@@ -6,9 +6,18 @@
 
 Multi-step agent refinement for Claude Code. A deterministic router reads your request and composes the exact stages it needs - and only those - reshaping the set as the work reveals itself. Trivial asks stay out of your way; risky ones earn clarification, planning, adversarial challenge, test-first implementation, review, and self-heal.
 
-The whole thing ships in one folder: a router-driven workflow, 40 composable stages, 6 slash commands, and hooks that compile the stage catalog, gate tests, and inject context.
+The whole thing ships in one folder: a router-driven workflow, 44 composable stages, 6 slash commands, and hooks that compile the stage catalog, gate tests, and inject context.
 
 ## Latest updates
+
+**1.1.0**
+
+The pipeline now recognizes four kinds of work instead of three, each routed to the steps it actually needs.
+
+- Loose discussion stays fast and inline; a web search or a quick visual is offered before it runs, never forced.
+- Throwaway exploration now spans code, diagrams, and mockups in one sandbox, not just code.
+- System and OS-level work - configs, troubleshooting, command-line tooling - is its own track, with a safety check before anything destructive or irreversible runs.
+- Independent checks now run in parallel instead of one after another, so results come back sooner.
 
 **1.0.8**
 
