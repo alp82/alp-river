@@ -1,6 +1,6 @@
 ## Reviewer Contract
 
-Shared rules for every specialized reviewer (correctness, quality, architecture, security, performance, accessibility, design-consistency, ux, consistency, structure, reuse). Each reviewer's own file carries only its Criteria list and any specialization - the rest lives here.
+Shared rules for every specialized reviewer (correctness, quality, architecture, security, performance, accessibility, design-consistency, ux, consistency, structure, reuse, naming-clarity, assumptions). Each reviewer's own file carries only its Criteria list and any specialization - the rest lives here.
 
 ### Confidence tagging (reviewer reporting threshold)
 

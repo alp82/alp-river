@@ -5,6 +5,7 @@ optional (`?`) inputs that order-but-never-drop, the `routes` filter against the
 topo-sort on precedence, size = stage count, grow/shrink by signal, and sticky-guard
 persistence. Runs under pytest and standalone (`python3 hooks/tests/test_route.py`).
 """
+
 import sys
 from pathlib import Path
 
@@ -18,7 +19,10 @@ def S(routes, req=(), opt=(), out=(), sub=(), pub=(), guard=None):
     """Build a normalized catalog stage entry (matches gen-catalog output shape)."""
     s = {
         "routes": list(routes),
-        "data": {"input": {"required": list(req), "optional": list(opt)}, "output": list(out)},
+        "data": {
+            "input": {"required": list(req), "optional": list(opt)},
+            "output": list(out),
+        },
         "signals": {"subscribes": list(sub), "publishes": list(pub)},
     }
     if guard:
@@ -26,23 +30,52 @@ def S(routes, req=(), opt=(), out=(), sub=(), pub=(), guard=None):
     return s
 
 
-CATALOG = {"stages": {
-    "scan":  S(["build", "talk"], req=["intent"], out=["reuse-map"],
-               sub=["build"], pub=["missing-infra", "scope-shift"]),
-    "impl":  S(["build"], req=["plan", "tests"], out=["diff"],
-               sub=["plan-ready"], pub=["code-written", "scope-shift"]),
-    "sec":   S(["build", "spike"], req=["diff"], out=["findings"],
-               sub=["auth-surface"], pub=["findings:security", "scope-shift"], guard="sticky"),
-    "proto": S(["build"], req=["intent"], out=["tracer"],
-               sub=["missing-infra"], pub=["scope-shift"]),
-    # optional `reuse-map`: plan runs without it, but orders after scan when scan is present
-    "plan":  S(["build"], req=["intent"], opt=["reuse-map"], out=["blueprint"],
-               sub=["plan-needed"], pub=["plan-ready", "scope-shift"]),
-    # three single-purpose stages on the same signal to exercise the routes filter
-    "buildonly": S(["build"], sub=["ping"], pub=["scope-shift"]),
-    "spikeonly": S(["spike"], sub=["ping"], pub=["scope-shift"]),
-    "both":      S(["build", "spike"], sub=["ping"], pub=["scope-shift"]),
-}}
+CATALOG = {
+    "stages": {
+        "scan": S(
+            ["build", "talk"],
+            req=["intent"],
+            out=["reuse-map"],
+            sub=["build"],
+            pub=["missing-infra", "scope-shift"],
+        ),
+        "impl": S(
+            ["build"],
+            req=["plan", "tests"],
+            out=["diff"],
+            sub=["plan-ready"],
+            pub=["code-written", "scope-shift"],
+        ),
+        "sec": S(
+            ["build", "spike"],
+            req=["diff"],
+            out=["findings"],
+            sub=["auth-surface"],
+            pub=["findings:security", "scope-shift"],
+            guard="sticky",
+        ),
+        "proto": S(
+            ["build"],
+            req=["intent"],
+            out=["tracer"],
+            sub=["missing-infra"],
+            pub=["scope-shift"],
+        ),
+        # optional `reuse-map`: plan runs without it, but orders after scan when scan is present
+        "plan": S(
+            ["build"],
+            req=["intent"],
+            opt=["reuse-map"],
+            out=["blueprint"],
+            sub=["plan-needed"],
+            pub=["plan-ready", "scope-shift"],
+        ),
+        # three single-purpose stages on the same signal to exercise the routes filter
+        "buildonly": S(["build"], sub=["ping"], pub=["scope-shift"]),
+        "spikeonly": S(["spike"], sub=["ping"], pub=["scope-shift"]),
+        "both": S(["build", "spike"], sub=["ping"], pub=["scope-shift"]),
+    }
+}
 
 
 def r(live, available=(), already_run=()):
@@ -108,18 +141,18 @@ def test_route_grows_and_shrinks_with_signals():
     base = r(["build"], available=["intent"])
     assert base["route"] == ["scan"]
     grown = r(["build", "missing-infra"], available=["intent"])
-    assert set(grown["route"]) == {"scan", "proto"}        # proto joins via missing-infra
+    assert set(grown["route"]) == {"scan", "proto"}  # proto joins via missing-infra
     shrunk = r(["build"], available=["intent"])
-    assert shrunk["route"] == ["scan"]                     # signal gone -> proto drops
+    assert shrunk["route"] == ["scan"]  # signal gone -> proto drops
 
 
 def test_sticky_guard_persists_across_recompose():
     prev = r(["build", "auth-surface"], available=["intent", "diff"])
     assert "sec" in prev["route"]
-    now = r(["build"], available=["intent", "diff"])       # auth-surface gone
-    assert "sec" not in now["route"]                       # would drop...
+    now = r(["build"], available=["intent", "diff"])  # auth-surface gone
+    assert "sec" not in now["route"]  # would drop...
     merged = route.merge_sticky(CATALOG, prev["route"], now)
-    assert "sec" in merged["route"]                        # ...but sticky keeps it
+    assert "sec" in merged["route"]  # ...but sticky keeps it
 
 
 def test_deterministic_same_input_same_route():
@@ -129,34 +162,43 @@ def test_deterministic_same_input_same_route():
 
 
 def _real_catalog():
-    return route.load_catalog(Path(__file__).resolve().parents[2] / "generated" / "catalog.json")
+    return route.load_catalog(
+        Path(__file__).resolve().parents[2] / "generated" / "catalog.json"
+    )
 
 
 def test_real_catalog_build_spine():
     cat = _real_catalog()
     assert set(cat["stages"]) >= {
-        "implementer", "reuse-scanner", "security-reviewer", "discuss", "spike-build"}
+        "implementer",
+        "reuse-scanner",
+        "security-reviewer",
+        "discuss",
+        "spike-build",
+    }
     res = route.compute_route(cat, {"build"}, available={"confirmed-intent"})
     assert "reuse-scanner" in res["route"]
-    assert "discuss" not in res["route"]      # talk-only stage stays off the build path
+    assert "discuss" not in res["route"]  # talk-only stage stays off the build path
 
 
 def test_real_catalog_routes_filter_on_spike():
     cat = _real_catalog()
-    res = route.compute_route(cat, {"spike", "code-written"},
-                              available={"confirmed-intent", "diff"})
+    res = route.compute_route(
+        cat, {"spike", "code-written"}, available={"confirmed-intent", "diff"}
+    )
     assert "spike-build" in res["route"]
-    assert "correctness-reviewer" in res["route"]      # routes include spike
-    assert "quality-reviewer" not in res["route"]      # build-only lens, filtered off spike
+    assert "correctness-reviewer" in res["route"]  # routes include spike
+    assert "quality-reviewer" not in res["route"]  # build-only lens, filtered off spike
     assert res["dropped"].get("quality-reviewer") == "off-path"
 
 
 def test_real_catalog_talk_path():
     cat = _real_catalog()
-    res = route.compute_route(cat, {"talk", "ambiguous"},
-                              available={"request", "triage-read"})
+    res = route.compute_route(
+        cat, {"talk", "ambiguous"}, available={"request", "triage-read"}
+    )
     assert "discuss" in res["route"]
-    assert "interviewer" in res["route"]               # ambiguous + talk
+    assert "interviewer" in res["route"]  # ambiguous + talk
     # discuss optionally consumes interviewer's confirmed-intent -> orders after it
     assert res["route"].index("interviewer") < res["route"].index("discuss")
 
@@ -177,17 +219,83 @@ def test_render_full_and_delta():
 
 
 def test_family_prefix_subscribe_matches_qualified():
-    cat = {"stages": {
-        "fix": S(["build"], req=["findings"], out=["diff"],
-                 sub=["findings"], pub=["code-written", "scope-shift"]),
-    }}
-    assert "fix" in route.compute_route(cat, {"findings:correctness"}, available={"findings"})["route"]
-    assert "fix" in route.compute_route(cat, {"findings"}, available={"findings"})["route"]
+    cat = {
+        "stages": {
+            "fix": S(
+                ["build"],
+                req=["findings"],
+                out=["diff"],
+                sub=["findings"],
+                pub=["code-written", "scope-shift"],
+            ),
+        }
+    }
+    assert (
+        "fix"
+        in route.compute_route(cat, {"findings:correctness"}, available={"findings"})[
+            "route"
+        ]
+    )
+    assert (
+        "fix" in route.compute_route(cat, {"findings"}, available={"findings"})["route"]
+    )
+
+
+def test_real_catalog_new_lenses_contract():
+    stages = _real_catalog()["stages"]
+    for name, family in (
+        ("naming-clarity", "findings:naming-clarity"),
+        ("assumptions", "findings:assumptions"),
+    ):
+        s = stages[name]
+        assert s["routes"] == ["build"]
+        assert s["data"]["input"]["required"] == ["diff"]
+        assert s["data"]["output"] == ["findings"]
+        assert s["signals"]["subscribes"] == ["code-written"]
+        assert family in s["signals"]["publishes"]
+        assert "clean" in s["signals"]["publishes"]
+        assert "scope-shift" in s["signals"]["publishes"]
+
+
+def test_real_catalog_new_lenses_compose_on_code_written():
+    cat = _real_catalog()
+    res = route.compute_route(
+        cat, {"build", "code-written"}, available={"confirmed-intent", "diff"}
+    )
+    assert "naming-clarity" in res["route"]
+    assert "assumptions" in res["route"]
+    assert res["triggered_by"]["naming-clarity"] == "code-written"
+    assert res["triggered_by"]["assumptions"] == "code-written"
+
+
+def test_real_catalog_new_lenses_need_diff():
+    cat = _real_catalog()
+    res = route.compute_route(
+        cat, {"build", "code-written"}, available={"confirmed-intent"}
+    )  # no diff
+    assert "naming-clarity" not in res["route"]
+    assert "assumptions" not in res["route"]
+    assert (
+        "health-checker" in res["route"]
+    )  # positive control: build route still composes
+
+
+def test_real_catalog_new_lenses_off_spike():
+    cat = _real_catalog()
+    res = route.compute_route(
+        cat, {"spike", "code-written"}, available={"confirmed-intent", "diff"}
+    )
+    assert res["dropped"].get("naming-clarity") == "off-path"
+    assert res["dropped"].get("assumptions") == "off-path"
+    assert "spike-build" in res["route"]  # positive control: spike route still composes
 
 
 if __name__ == "__main__":
     import traceback
-    tests = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
+
+    tests = [
+        v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)
+    ]
     failed = 0
     for fn in tests:
         try:

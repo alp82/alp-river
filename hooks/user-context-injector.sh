@@ -76,7 +76,7 @@ case "$subagent_type" in
     ;;
   correctness-reviewer|quality-reviewer|acceptance-reviewer|plan-adherence-reviewer)
     ;;
-  structure-reviewer|architecture-reviewer|consistency-reviewer|reuse-reviewer)
+  structure-reviewer|architecture-reviewer|consistency-reviewer|reuse-reviewer|naming-clarity|assumptions)
     ;;
   security-reviewer|performance-reviewer)
     ;;
@@ -129,6 +129,8 @@ declare -A READ_MAP=(
   [structure-reviewer]="glossary adrs"
   [architecture-reviewer]="stack glossary adrs"
   [consistency-reviewer]="glossary"
+  [naming-clarity]="glossary"
+  [assumptions]="stack glossary"
   [reuse-reviewer]="glossary"
   [security-reviewer]="stack adrs"
   [performance-reviewer]="stack"
@@ -154,6 +156,8 @@ declare -A DOCTRINE_MAP=(
   [performance-reviewer]="reviewer-contract confidence-tagging discoveries"
   [consistency-reviewer]="reviewer-contract confidence-tagging discoveries"
   [structure-reviewer]="reviewer-contract confidence-tagging discoveries"
+  [naming-clarity]="reviewer-contract confidence-tagging discoveries"
+  [assumptions]="reviewer-contract confidence-tagging discoveries"
   [reuse-reviewer]="reviewer-contract confidence-tagging"
   [acceptance-reviewer]="reviewer-contract confidence-tagging"
   [test-verifier]="reviewer-contract confidence-tagging"

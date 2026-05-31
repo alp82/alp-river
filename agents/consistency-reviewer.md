@@ -19,7 +19,7 @@ Always compare new code against 2-3 existing examples of the same kind before fl
 
 ## Criteria
 
-- Naming conventions (variables, functions, files, components)
+- Naming conventions - whether names match the casing, terms, and patterns the surrounding code already uses (intrinsic name clarity, like vague or misleading names, is naming-clarity's)
 - Error handling patterns
 - Return type patterns
 - Validation approaches
@@ -31,6 +31,7 @@ Always compare new code against 2-3 existing examples of the same kind before fl
 - Treating a one-off divergence as a pattern.
 - Rebuking new code for matching a *minority* of existing code - check what the majority does first.
 - Flagging improvements that diverge *because* they improve (intentional new pattern).
+- Flagging a name as vague, misleading, or wrongly scoped on its own terms - that is naming-clarity. You only flag names that diverge from the repo's established convention.
 
 ## Input
 

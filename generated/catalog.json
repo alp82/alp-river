@@ -107,6 +107,33 @@
         ]
       }
     },
+    "assumptions": {
+      "data": {
+        "input": {
+          "optional": [],
+          "required": [
+            "diff"
+          ]
+        },
+        "output": [
+          "findings"
+        ]
+      },
+      "name": "assumptions",
+      "routes": [
+        "build"
+      ],
+      "signals": {
+        "publishes": [
+          "findings:assumptions",
+          "clean",
+          "scope-shift"
+        ],
+        "subscribes": [
+          "code-written"
+        ]
+      }
+    },
     "capture-agent": {
       "data": {
         "input": {
@@ -401,6 +428,33 @@
         ],
         "subscribes": [
           "bug"
+        ]
+      }
+    },
+    "naming-clarity": {
+      "data": {
+        "input": {
+          "optional": [],
+          "required": [
+            "diff"
+          ]
+        },
+        "output": [
+          "findings"
+        ]
+      },
+      "name": "naming-clarity",
+      "routes": [
+        "build"
+      ],
+      "signals": {
+        "publishes": [
+          "findings:naming-clarity",
+          "clean",
+          "scope-shift"
+        ],
+        "subscribes": [
+          "code-written"
         ]
       }
     },

@@ -88,7 +88,7 @@ Validated red tests are the artifact `validated-tests` (published by `test-revie
 
 | topic | meaning | published by | subscribed by |
 |---|---|---|---|
-| findings:&lt;lens&gt; | a lens found issues | the lens (correctness, quality, security, perf, a11y, structure, architecture, reuse, consistency, ux, adherence, acceptance) | fixer |
+| findings:&lt;lens&gt; | a lens found issues | the lens (correctness, quality, security, perf, a11y, structure, architecture, reuse, consistency, naming-clarity, assumptions, ux, adherence, acceptance) | fixer |
 | smell:&lt;area&gt; | a broad lens spotted an area to inspect | broad lens | matching specialist lens |
 | clean | a lens found nothing | the lens | convergence |
 

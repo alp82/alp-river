@@ -2,6 +2,11 @@
 
 All notable changes to alp-river. Versions match `.claude-plugin/plugin.json`.
 
+## 1.0.3 - 2026-05-31
+
+- Every code review now also flags unclear names - vague, misleading, or wrongly scoped - judged on their own terms.
+- Code reviews now call out unstated assumptions: the inputs, ordering, and environment premises code relies on but never guards.
+
 ## 1.0.2 - 2026-05-31
 
 - Reporting a bug now drops you straight into a fix instead of a separate diagnosis track.

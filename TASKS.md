@@ -1,6 +1,4 @@
 
-we currently have 
-
 simple path without intent etc. -> XS / trivial
 prototyper path
 non-code path
@@ -26,17 +24,10 @@ dynamically decide review needs
 
 ---
 
-new reviewers
-    clear naming
-    assumptions
-
----
-
 XXL as sequence of tasks
 remove backwards edges
 goal based looping
 forced formal verification (e.g. TDD)
-https://github.com/multica-ai/andrej-karpathy-skills
 
 ---
 

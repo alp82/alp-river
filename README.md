@@ -6,9 +6,14 @@
 
 Multi-step agent refinement for Claude Code. A deterministic router reads your request and composes the exact stages it needs - and only those - reshaping the set as the work reveals itself. Trivial asks stay out of your way; risky ones earn clarification, planning, adversarial challenge, test-first implementation, review, and self-heal.
 
-The whole thing ships in one folder: a router-driven workflow, 35 composable stages, 6 slash commands, and hooks that compile the stage catalog, gate tests, and inject context.
+The whole thing ships in one folder: a router-driven workflow, 39 composable stages, 6 slash commands, and hooks that compile the stage catalog, gate tests, and inject context.
 
 ## Latest updates
+
+**1.0.3**
+
+- Every code review now also flags unclear names - vague, misleading, or wrongly scoped - judged on their own terms.
+- Code reviews now call out unstated assumptions: the inputs, ordering, and environment premises code relies on but never guards.
 
 **1.0.2**
 
@@ -85,7 +90,7 @@ Two rules never bend: **precedence** (a stage can't run before the artifacts it 
 
 ## Agents
 
-37 composable stages plus a setup command, grouped by role. Each declares its routes and data/signal contract in frontmatter (see `doctrine/CATALOG.md`, `doctrine/SIGNALS.md`).
+39 composable stages plus a setup command, grouped by role. Each declares its routes and data/signal contract in frontmatter (see `doctrine/CATALOG.md`, `doctrine/SIGNALS.md`).
 
 ### Seed and intent
 | Agent | Model | Role |
@@ -125,7 +130,7 @@ Two rules never bend: **precedence** (a stage can't run before the artifacts it 
 | Agent | Model | Role |
 |-------|-------|------|
 | implementer | opus | Executes the approved plan. Can kick back to the planner; the oscillation guard stops it from looping. |
-| correctness / quality / acceptance / plan-adherence | sonnet/opus | Broad review lenses on every diff (`@diff -> @findings`). |
+| correctness / quality / acceptance / plan-adherence / naming-clarity / assumptions | sonnet/opus | Broad review lenses on every diff (`@diff -> @findings`). |
 | structure / architecture / consistency / reuse / security / performance / accessibility / design-consistency / ux / visual-verifier | sonnet/opus | Specialist lenses, triggered by domain signals (security is `sticky`). |
 | fixer | opus | Applies targeted fixes and reruns the lenses it touched until they're clean. |
 | capture-agent | opus | Proposes glossary / stack / intent updates surfaced during the run, writes after approval. |
@@ -165,7 +170,7 @@ alp-river/
 │   ├── render_route.py    <- route legibility
 │   ├── gen-catalog.py     <- compiles agent frontmatter into the catalog
 │   └── *.sh               <- inject-workflow, auto-format, context injection, ...
-├── agents/                <- 35 stage definitions + setup-agent
+├── agents/                <- 39 stage definitions + setup-agent
 ├── commands/              <- 6 slash commands
 └── templates/             <- copy into your project's docs/ for project-context injection
 ```
