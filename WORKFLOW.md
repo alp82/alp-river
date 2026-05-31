@@ -10,6 +10,7 @@
 - No backwards compatibility. Obsolete code gets deleted, not preserved.
 - No unnecessary comments, docstrings, or type annotations on unchanged code.
 - Always use the editor's dedicated file operation tools. When an edit fails, fix the edit - never fall back to shell commands (sed, awk, python scripts) for file manipulation.
+- Searching, portably: use whatever the environment offers - the Grep/Glob tools, or `rg`/`grep`/`find` via Bash - and let the search tool expand patterns, not the shell. Always quote globs (`rg -g "*.md"`, `find . -name "*.md"`) so the same command works in bash, zsh, or fish.
 
 ## Tone
 - No corporate phrasing or fake contrast framing ("While X is important, Y...").
@@ -91,6 +92,7 @@ Each turn:
    ```
    echo '{"live":[...],"available":[...],"already_run":[...]}' | python3 hooks/route.py
    ```
+   The router rejects an unrecognized top-level key (a typo like `liv` for `live`): it writes the offending key to stderr and exits nonzero rather than silently dropping it and returning an empty route, so a malformed call is never mistaken for convergence.
 2. **Render.** Show the route as inline markdown - emit it directly from state, no script, no Bash. Render **every turn** so progress is never invisible: the full route on the first turn and at any gate (legibility A), the delta on a plain recompose (legibility B). This is a status surface, not a question - it never interrupts; asking the user is what a gate stage does when it runs (step 3, see `## Gates`). Formats:
    - **Full (A)** - a header `path · size · N stages`, then one line per stage `• name ← #signal-that-pulled-it-in`, marking the running stage (`▶`), done stages (`✓`), held stages (`🔒 name (held until #until-signal)`), and `[sticky]` guards. The render composes `route` + `held` so a gated stage stays visible. Example:
      ```
@@ -210,6 +212,8 @@ There is no edge budget. A route runs until it converges: the router returns no 
 unrun stage and every lens that ran is `clean`. The only loop guard is oscillation - a
 `scope-shift` that re-fires without resolving is surfaced to the user, not retried
 silently. See `## Pipeline` > The loop.
+
+A *missing* output block is not convergence: when a spawned stage returns no wrapped output, the orchestrator treats it as a failure - re-dispatch the stage or surface the gap to the user, never wait silently for an artifact that is not coming.
 
 A `#needs-tests` published late - e.g. by `correctness-reviewer` on a cheap-path build -
 does NOT re-hold the already-run implementer (the loop skips `already_run`). It escalates

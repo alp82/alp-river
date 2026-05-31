@@ -26,6 +26,7 @@ from pathlib import Path
 
 _SIZES = [(1, "XS"), (3, "S"), (6, "M"), (10, "L"), (15, "XL")]
 PATHS = ("build", "spike", "talk")
+_REQUEST_KEYS = frozenset({"catalog", "live", "available", "already_run"})
 
 
 def load_catalog(path):
@@ -200,6 +201,14 @@ def _main():
     import sys
 
     req = json.loads(sys.stdin.read() or "{}")
+    unknown = set(req) - _REQUEST_KEYS if isinstance(req, dict) else set()
+    if unknown:
+        sys.stderr.write(
+            "route: unknown request key(s): "
+            + ", ".join(sorted(unknown))
+            + f" (expected a subset of {sorted(_REQUEST_KEYS)})\n"
+        )
+        sys.exit(2)
     catalog_path = req.get("catalog") or (
         Path(__file__).resolve().parent.parent / "generated" / "catalog.json"
     )

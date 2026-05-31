@@ -2,6 +2,10 @@
 
 All notable changes to alp-river. Versions match `.claude-plugin/plugin.json`.
 
+## 1.0.7 - 2026-05-31
+
+- A malformed router call with a mistyped request key now fails loudly (names the bad key, exits nonzero) instead of silently dropping it and looking like a finished task.
+
 ## 1.0.6 - 2026-05-31
 
 - Documentation, config, and version-only changes now go straight to implementation, with no test-writing step when there is nothing to test.

@@ -6,6 +6,8 @@ topo-sort on precedence, size = stage count, grow/shrink by signal, and sticky-g
 persistence. Runs under pytest and standalone (`python3 hooks/tests/test_route.py`).
 """
 
+import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -1105,6 +1107,54 @@ def test_real_catalog_needs_tests_stale_tests_ready_artifact_does_not_release_lo
     assert (
         "implementer" in res["held"]
     ), "implementer must be in held: lock checks live, not available"
+
+
+# --- CLI boundary: malformed request fails loud, legitimate empty stays empty ---
+_ROUTE_PY = Path(__file__).resolve().parents[1] / "route.py"
+
+
+def _run_cli(stdin_text):
+    """Drive route.py's _main() the way the orchestrator does: JSON on stdin."""
+    return subprocess.run(
+        [sys.executable, str(_ROUTE_PY)],
+        input=stdin_text,
+        capture_output=True,
+        text=True,
+    )
+
+
+def test_main_rejects_unknown_key():
+    """A typo'd top-level key (`liv` for `live`) fails loudly, not silently as empty."""
+    proc = _run_cli('{"liv":["build"]}')
+    assert proc.returncode != 0, "unknown request key must fail nonzero"
+    assert (
+        "liv" in proc.stderr
+    ), f"stderr must name the offending key, got {proc.stderr!r}"
+    assert (
+        "empty" not in proc.stdout
+    ), "guard must fire before compute_route - no empty-route output"
+
+
+def test_main_allows_bare_empty_object():
+    """A bare {} (empty-stdin pre-seed) has no keys to reject and returns the empty route."""
+    proc = _run_cli("{}")
+    assert proc.returncode == 0, f"bare {{}} must succeed, stderr={proc.stderr!r}"
+    res = json.loads(proc.stdout)
+    assert res["route"] == [], f"bare {{}} must yield empty route, got {res['route']}"
+    assert res["size"] == "empty", f"bare {{}} size must be 'empty', got {res['size']}"
+
+
+def test_main_allows_explicit_empty_trigger_convergence():
+    """An explicit {"live":[]} (known key, no triggers) still converges to the empty route."""
+    proc = _run_cli('{"live":[]}')
+    assert proc.returncode == 0, f'{{"live":[]}} must succeed, stderr={proc.stderr!r}'
+    res = json.loads(proc.stdout)
+    assert (
+        res["route"] == []
+    ), f"empty-trigger call must yield empty route, got {res['route']}"
+    assert (
+        res["size"] == "empty"
+    ), f"empty-trigger size must be 'empty', got {res['size']}"
 
 
 if __name__ == "__main__":
