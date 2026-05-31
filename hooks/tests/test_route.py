@@ -11,7 +11,6 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # hooks/
 import route
-import render_route
 import check_catalog
 
 
@@ -207,15 +206,6 @@ def test_real_catalog_coherence():
     # the coherence gate, run against the real catalog: no orphan subscribes, every required
     # input has a producer or seed, scope-shift + routes on every stage
     assert check_catalog.check(_real_catalog()) == []
-
-
-def test_render_full_and_delta():
-    res = r(["build", "missing-infra"], available=["intent"])
-    full = render_route.render_full(res, CATALOG, route_type="build")
-    assert "build" in full and "proto" in full and "#missing-infra" in full
-    prev = r(["build"], available=["intent"])
-    delta = render_route.render_delta(prev["route"], res)
-    assert "+proto" in delta
 
 
 def test_family_prefix_subscribe_matches_qualified():

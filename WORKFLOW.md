@@ -26,7 +26,7 @@
 
 ## Context Discipline
 - Always prefer subagents. The main agent orchestrates and talks to the user - it does NOT read entire codebases, do deep analysis, or implement large changes itself.
-- Subagents return structured verdicts (VERDICT/FINDINGS/ACTION_NEEDED), not raw dumps.
+- Subagents return structured verdicts (VERDICT/FINDINGS/ACTION_NEEDED), not raw dumps. A return is the agent's *conclusion*, not its transcript: the wrapped output block its definition specifies, nothing more. No narration of what it read, no step-by-step of how it searched, no restating the inputs back. The orchestrator relays only what the next stage or the user needs; everything else stays in the subagent and is recovered by re-reading its output only if a later stage calls for it. A verbose return is a defect - it burns the main context the orchestrator exists to protect.
 - Spawn dynamic subagents when the situation calls for it. Pick the cheapest model that can handle the job (fast/small for classification, mid-tier for analysis/implementation, top-tier only when truly needed).
 
 ## Subagent Context Inheritance
@@ -87,14 +87,23 @@ The main agent is a thin orchestrator. It holds four pieces of run state and tur
 
 Each turn:
 
-1. **Route.** Call the router with the state; it returns the ordered route + size + `triggered_by` (which signal pulled each stage in). JSON in, JSON out:
+1. **Route.** Call the router **once** on the current state; it returns the ordered route + size + `triggered_by` (which signal pulled each stage in). This single call is also the recompose - step 4 updated the state at the end of the previous turn, so a freshly published signal grows the route here, a `scope-shift` reshapes it, and sticky stages persist (never auto-dropped). One router call per turn, not two. JSON in, JSON out:
    ```
    echo '{"live":[...],"available":[...],"already_run":[...]}' | python3 hooks/route.py
    ```
-2. **Render.** At a gate or on a route change, show the full route (legibility A) or the delta (legibility B) via `hooks/render_route.py`. Interrupt only when the answer could change the outcome.
-3. **Run** the first not-yet-run stage. Spawn its agent (the `model` lives in the agent's frontmatter); hand it the artifacts its `input` names, plus the `premises`.
-4. **Update.** Add the stage's `output` to `available`, its published signals to `live` (each carries a one-line message = the why), and record it in `ran`. A published `scope-shift` logs a broken premise.
-5. **Recompose.** Re-call the router. A new signal may grow the route; a `scope-shift` may reshape it. Sticky stages never auto-drop.
+2. **Render.** Show the route as inline markdown - emit it directly from state, no script, no Bash. Render **every turn** so progress is never invisible: the full route on the first turn and at any gate (legibility A), the delta on a plain recompose (legibility B). This is a status surface, not a question - it never interrupts; asking the user is what a gate stage does when it runs (step 3, see `## Gates`). Formats:
+   - **Full (A)** - a header `path · size · N stages`, then one line per stage `• name ← #signal-that-pulled-it-in`, marking the running stage (`▶`), done stages (`✓`), and `[sticky]` guards. Example:
+     ```
+     build · M · 5 stages
+       ✓ triage
+       ▶ reuse-scanner ← #build
+       • planner ← #clarified
+       • implementer ← #plan-ready
+       • correctness-reviewer ← #code-written
+     ```
+   - **Delta (B)** - lead with the why (the new signal's message), then `+added / -removed (now size/N)`. Example: `+security-reviewer ← #auth-surface (now L/6)`.
+3. **Run** the next not-yet-run stage in route order. Spawn its agent (the `model` lives in the agent's frontmatter); hand it the artifacts its `input` names, plus the `premises`. Pass each input as the **verbatim output** of the stage that produced it, never paraphrased, stubbed, or hand-written (Input Template Contract); if an `input` does not exist yet its producer has not run, so run the producer - **never fabricate a predecessor's artifact** to start a dependent stage early, which only forces the downstream stage to redo the missing work and degrades its output. Stages that share inputs but feed none of each other - the review fan-out over `@diff` is the canonical case - may run in one parallel batch; a stage whose `input` is another stage's `output` waits for that producer to return. Parallelism is for independent stages only; the `input`/`output` precedence graph is the one rule never bent (`doctrine/CATALOG.md`). Spawn each stage at the cheapest model its frontmatter allows, and expect a **structured return, not a transcript** (Context Discipline) - the agent's wrapped output block is the artifact; its reasoning and reads stay behind it. Do not paste a subagent's full output into the conversation; surface only the line(s) the render, the next stage, or a gate actually needs.
+4. **Update.** Add the stage's `output` to `available`, its published signals to `live` (each carries a one-line message = the why), and record it in `ran`. A published `scope-shift` logs a broken premise. These updates are the state the next turn's step 1 recomposes from.
 
 Repeat until **convergence**: the router returns an empty route (no live signal triggers an unrun stage) and every review lens that ran came back `clean`.
 

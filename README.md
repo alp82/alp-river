@@ -10,6 +10,13 @@ The whole thing ships in one folder: a router-driven workflow, 39 composable sta
 
 ## Latest updates
 
+**1.0.4**
+
+- Multi-step tasks now run their steps in dependency order and reuse each step's real output instead of guessing ahead and redoing work.
+- You now see which steps are planned, running, and done at every turn, instead of the work happening silently.
+- The workflow recomputes the plan once per step instead of twice, cutting wasted work on every task.
+- Background steps now hand back just their conclusion instead of a full transcript, leaving far more room before a long task fills up.
+
 **1.0.3**
 
 - Every code review now also flags unclear names - vague, misleading, or wrongly scoped - judged on their own terms.
@@ -167,7 +174,6 @@ alp-river/
 ├── generated/catalog.json <- compiled stage catalog (tracked; the router reads it)
 ├── hooks/
 │   ├── route.py           <- deterministic router
-│   ├── render_route.py    <- route legibility
 │   ├── gen-catalog.py     <- compiles agent frontmatter into the catalog
 │   └── *.sh               <- inject-workflow, auto-format, context injection, ...
 ├── agents/                <- 39 stage definitions + setup-agent

@@ -2,6 +2,13 @@
 
 All notable changes to alp-river. Versions match `.claude-plugin/plugin.json`.
 
+## 1.0.4 - 2026-05-31
+
+- Multi-step tasks now run their steps in dependency order and reuse each step's real output instead of guessing ahead and redoing work.
+- You now see which steps are planned, running, and done at every turn, instead of the work happening silently.
+- The workflow recomputes the plan once per step instead of twice, cutting wasted work on every task.
+- Background steps now hand back just their conclusion instead of a full transcript, leaving far more room before a long task fills up.
+
 ## 1.0.3 - 2026-05-31
 
 - Every code review now also flags unclear names - vague, misleading, or wrongly scoped - judged on their own terms.
