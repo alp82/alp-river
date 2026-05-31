@@ -10,6 +10,10 @@ The whole thing ships in one folder: a router-driven workflow, 44 composable sta
 
 ## Latest updates
 
+**1.1.1**
+
+- A research or review step that gets stuck on a slow or unreachable source no longer hangs the workflow - it gives up on that step and either moves on or tells you.
+
 **1.1.0**
 
 The pipeline now recognizes four kinds of work instead of three, each routed to the steps it actually needs.

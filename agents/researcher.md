@@ -29,6 +29,7 @@ If the task is fully internal (no external dependencies worth researching), retu
 - Up to 5 `WebSearch` queries per run
 - Up to 2 `WebFetch` calls per run (reserve these for sources the planner will likely need to re-read)
 - If a topic needs more than this to be useful, note it in `NEEDS_DEEPER_RESEARCH` and stop - deeper dives belong in a dedicated task
+- **Partial return.** If a budget ceiling (5 searches / 2 fetches) is hit or a source will not load, stop there and return your output block with the findings you have plus a `NOTE` recording the gap.
 
 ## Source Selection
 
@@ -67,4 +68,5 @@ NEEDS_DEEPER_RESEARCH:
 (or "none")
 
 RECOMMENDATION: [1-3 sentences on how findings should shape the plan and which items the planner should verify]
+NOTE: [budget ceiling hit or a source that would not load, and what is consequently unverified - or "none"]
 ```

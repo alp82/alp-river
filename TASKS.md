@@ -1,22 +1,3 @@
-
-paths:
-    talk
-    spike: brainstorming, prototyping, diagramming, visualizing
-    build: code, os-level CLI work, tooling
-
-dynamic stages:
-    detect uncertainty or misalignment
-    detect change of intent
-    detect test suite gaps
-    detect review needs
-
-orchestration DAG:
-    better parallelization
-    less waiting
-    only meaningful interruptions
-
----
-
 XXL as sequence of tasks
 goal based looping
 

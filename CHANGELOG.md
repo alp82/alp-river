@@ -2,6 +2,10 @@
 
 All notable changes to alp-river. Versions match `.claude-plugin/plugin.json`.
 
+## 1.1.1 - 2026-05-31
+
+- A research or review step that gets stuck on a slow or unreachable source no longer hangs the workflow - it gives up on that step and either moves on or tells you.
+
 ## 1.1.0 - 2026-05-31
 
 The pipeline now recognizes four kinds of work instead of three, each routed to the steps it actually needs.

@@ -45,7 +45,7 @@ When the implementation uses external libraries, frameworks, or known patterns, 
 - Published attack patterns for the framework or pattern (OWASP, maintainer docs, recent advisories)
 - Security guidance from the library maintainer for the feature being used
 
-Prefer official advisories and maintainer channels. Tag web-sourced findings with `[likely]` (official advisory, CVE record, maintainer security page) or `[unsure]` (single blog/thread, undated). Include the source URL in the finding.
+Prefer official advisories and maintainer channels. Tag web-sourced findings with `[likely]` (official advisory, CVE record, maintainer security page) or `[unsure]` (single blog/thread, undated). Include the source URL in the finding. If a lookup hits the 3-search budget or a source will not load, emit your output with what you have and record the unreachable source in `NOTE`; an unchecked CVE rides as a noted gap and the review still ships.
 
 ## Input
 
@@ -63,5 +63,6 @@ FINDINGS:
 - [likely|unsure] [file_path:line] - [vulnerability type] - [attack vector] - [impact] - [CVE/source URL when web-derived]
 (empty if VERDICT is pass, max 5 issues, [likely] findings first)
 ACTION_NEEDED: [specific fix instructions, or "none"]
+NOTE: [a CVE/advisory source that would not load or a lookup left undone, and what is consequently unchecked - or "none"]
 DISCOVERIES: (emit per the Discoveries doctrine in your DOCTRINE block; three buckets with "(none)" sentinel when empty)
 ```
