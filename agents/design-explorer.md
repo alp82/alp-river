@@ -27,7 +27,7 @@ You own the full design exploration step:
    - One sentence under the button telling the user to paste the spec back into chat.
 4. **Hand off.** Tell the main agent the file path or URL, the controls exposed, and the exact paste-back format. The main agent surfaces this to the user.
 
-You run once per phase (`confirm-params`, then `built`). You do not loop yourself. If the user pastes back a spec that asks for more options on parameter X, the main agent re-invokes you with the updated `<USER_PARAM_PICKS>`.
+You run once per phase (`confirm-params`, then `built`). You do not loop yourself. If the user pastes back a spec that asks for more options on parameter X, the main agent re-invokes you with the updated `<USER_PARAM_PICKS>`. Re-invocation with `<USER_PARAM_PICKS>` is the next sequential phase, not a revision - the Revision Contract's verbatim guard does not apply (WORKFLOW.md ## Revision Contract).
 
 ## Rules
 

@@ -15,7 +15,7 @@ stage:
 
 ## Process
 
-On a build with no clarifier output (no `#clarified`), the planner runs off triage's `@confirmed-intent` alone - the `<CLARIFY_OUTPUT>` slot may be empty. Plan from the confirmed intent alone in that case.
+On a build with no clarifier output (no `#clarified`), the planner runs off triage's `@confirmed-intent` alone - the `<CLARIFY_OUTPUT>` slot may be empty. Plan from the confirmed intent alone in that case. When `<PRIOR_PLAN>` and `<REPLAN_REASON>` are present this is a correction revision, not a first pass - reproduce the prior plan verbatim except where the reason applies and emit a minimal diff (see `## Revision modes`).
 
 1. Study reuse findings, prototypes (if any), and researcher findings. Design around proven behavior. Pre-flight inputs carry confidence tags - verify `[unsure]` items (by re-reading the cited file, fetching the cited URL, or asking via the main agent) before letting them shape load-bearing parts of the plan.
 2. Review health-checker `CLEANUP_TARGETS` and reuse-scanner `QUICK_WINS`. Pull the ones that fit the task into the plan as explicit steps. Surface the rest in "Out of Scope" as dedicated follow-up tasks.
@@ -53,13 +53,15 @@ Pull every acceptance criterion from `<CLARIFY_OUTPUT>` (`ACCEPTANCE_CRITERIA_PR
 
 Default to `test` when in doubt - `manual` is the costly choice (loops back to the user) and should be deliberate. If clarifier surfaced no acceptance criteria for this task, emit `## Acceptance` with the literal line `n/a - no acceptance criteria from clarifier`.
 
-## Replan modes
+## Revision modes (per WORKFLOW.md ## Revision Contract)
 
-Main agent may invoke the planner with a kickback reason - the input contains a `<REPLAN_REASON>` slot. Three modes:
+Main agent may invoke the planner with a kickback reason - the input contains a `<PRIOR_PLAN>` slot and a `<REPLAN_REASON>` slot. This is a correction revision: when both are present, reproduce `<PRIOR_PLAN>` verbatim and change only what `<REPLAN_REASON>` names. Never silently re-derive the untouched parts - that loses prior decisions and risks churn. Emit a minimal diff and bump the version. Two sub-modes:
 
 - `plan-patch` - amend a single step or file. Return only the changed section with `<APPROVED_PLAN version="N+1">` noting "(patch of v<N> step X)".
-- `replan` - full redesign with a new constraint. Return a fresh plan bumped to version N+1.
+- `replan` - redesign under a new constraint. Return the full plan bumped to version N+1, with every section the constraint does not touch reproduced as-is from `<PRIOR_PLAN>`, not rewritten from scratch.
 - Without `<REPLAN_REASON>` - first design pass; emit `<APPROVED_PLAN version="1">`.
+
+Both producers of a revision - the challenger's `revise` and the implementer's kickback - bump the version.
 
 ## Input
 
@@ -75,8 +77,8 @@ Main agent may invoke the planner with a kickback reason - the input contains a 
 <LOCKED_DESIGN_SPEC>{labeled key-value spec the user pasted back from the design-explorer's picker page, OR "none" when the design loop didn't run}</LOCKED_DESIGN_SPEC>
 <DESIGN_CLEANUP>{design-explorer's CLEANUP_NEEDED list - only when HOST_DECISION was "real-page" so the planner removes picker artifacts before shipping; "none" otherwise}</DESIGN_CLEANUP>
 <DIAGNOSIS>{investigator root-cause report OR "none"}</DIAGNOSIS>
-<PRIOR_PLAN>{previous APPROVED_PLAN block - only on replan/plan-patch, otherwise absent}</PRIOR_PLAN>
-<REPLAN_REASON>{challenger BLOCKERS or implementer kickback reason - only on replan/plan-patch}</REPLAN_REASON>
+<PRIOR_PLAN>{previous APPROVED_PLAN block - only on replan/plan-patch, otherwise absent; reproduce it verbatim except where REPLAN_REASON applies (## Revision modes)}</PRIOR_PLAN>
+<REPLAN_REASON>{challenger BLOCKERS or implementer kickback reason - only on replan/plan-patch; the exact corrections to apply, nothing else changes}</REPLAN_REASON>
 ```
 
 ## Output (strict)
@@ -140,4 +142,4 @@ Then, for the recommended (or only) approach, wrap the plan in an APPROVED_PLAN 
 </APPROVED_PLAN>
 ```
 
-Version numbering: first plan `version="1"`. Each replan/plan-patch increments. Challenger's `revise` and implementer's kickback both cause increment.
+Version numbering: first plan `version="1"`. Each replan/plan-patch increments and carries the verbatim-reproduce + minimal-diff guard (## Revision modes). Challenger's `revise` and implementer's kickback both cause increment.

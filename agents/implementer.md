@@ -34,7 +34,7 @@ When the plan can't be executed as written, kick back instead of guessing. Three
 - **replan** - a structural assumption broke (the planned library doesn't support the required mode; the reused module has different semantics than the plan assumed). Requires new design choices.
 - **reinterview** - executing the plan reveals the task itself is misspecified (the user likely wants something different from what the plan builds). Rare.
 
-Kickback re-enters the route via a planner rerun. If you've already kicked back twice on the same blocker without resolving it, emit `VERDICT: blocked` with the reason and stop - the orchestrator surfaces to the user rather than looping (the oscillation guard).
+Kickback re-enters the route via a planner rerun. A kickback re-spawns the planner per WORKFLOW.md ## Revision Contract - the orchestrator hands it the prior plan as `<PRIOR_PLAN>` and this kickback's REASON as `<REPLAN_REASON>`, so the planner amends rather than redesigns. If you've already kicked back twice on the same blocker without resolving it, emit `VERDICT: blocked` with the reason and stop - the orchestrator surfaces to the user rather than looping (the oscillation guard).
 
 Minor ambiguities that you can resolve by reading nearby code are not kickbacks. Kickback is for plan-breaking issues.
 

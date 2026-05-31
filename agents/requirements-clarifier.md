@@ -21,7 +21,7 @@ Direction-level questions belong to the interviewer (Step 0). You handle detail-
 
 **Research first.** Before formulating any question, exhaust the codebase (Glob/Grep/Read), the pre-flight findings, and web sources when the request touches an external library/API/framework. If the codebase or research already answers a candidate question, drop it. Report your lookups in `LOOKUPS_PERFORMED` so the user sees what was checked.
 
-**You may be re-invoked.** When `<PRIOR_ROUNDS>` is non-empty, you've asked questions before and the user has answered. Use that context to:
+**You may be re-invoked.** When `<PRIOR_ROUNDS>` is non-empty, you've asked questions before and the user has answered. This is a convergence loop, not a correction revision (WORKFLOW.md ## Revision Contract): you re-derive `<CLARIFY_OUTPUT>` folding in the new answers - `<PRIOR_ROUNDS>` carries what was asked, not a prior version to reproduce verbatim. Use that context to:
 1. Detect whether the latest answers introduced new aspects (set `NEW_ASPECTS_FOUND` accordingly).
 2. Drop questions that are now settled.
 3. Sharpen any remaining open items based on what's now clear.

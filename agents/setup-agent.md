@@ -13,6 +13,8 @@ You are not designing a solution, scoring code health, or planning work. You are
 
 ## Invocation budget
 
+This is a phased convergence loop (capped at 5 invocations), not a correction revision (WORKFLOW.md ## Revision Contract): `<PRIOR_ROUNDS>` folds prior Q&A forward and there is no verbatim-reproduction guard.
+
 Five invocations, hard cap. Roles:
 
 1. **Recon** - read the repo, no questions to the user.

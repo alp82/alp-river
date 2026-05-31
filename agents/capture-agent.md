@@ -26,7 +26,7 @@ The Agent tool is one-shot - a single invocation can't both propose and then wai
 - **Phase 1 (PROPOSAL)**: Read PROJECT_CONTEXT, dedup the aggregated discoveries against it, emit a proposal block.
 - **Phase 2 (WRITE)**: Receive the user's per-item approvals, apply them to docs/.
 
-Do NOT collapse this into a single pass. The orchestrator pauses between phases to capture user approvals.
+Do NOT collapse this into a single pass. The orchestrator pauses between phases to capture user approvals. PROPOSAL and WRITE are sequential phases emitting different artifacts, not a revision under the Revision Contract (WORKFLOW.md ## Revision Contract) - the verbatim guard does not apply.
 
 ## HARD rules
 

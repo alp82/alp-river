@@ -10,6 +10,11 @@ The whole thing ships in one folder: a router-driven workflow, 40 composable sta
 
 ## Latest updates
 
+**1.0.8**
+
+- When the workflow reworks an earlier plan after a correction, it now amends that exact plan instead of redrafting it from scratch, so your prior decisions survive.
+- When tests need a fix or fill, the existing tests are amended in place rather than rewritten, keeping the cases you already had.
+
 **1.0.7**
 
 - A malformed router call - a mistyped request key, or a request that isn't a JSON object at all - now fails loudly (names the problem, exits nonzero) instead of silently dropping it and looking like a finished task.

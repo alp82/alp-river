@@ -107,7 +107,7 @@ CHALLENGE_QUESTIONS:
         description: Ship plan to implementer. Outstanding CONCERNS become known risks.
         preview: [STRENGTHS one-liner + top CONCERNS as one line each, best-effort]
       - label: Revise
-        description: Planner reruns addressing BLOCKERS. Counts as one backward edge.
+        description: Planner re-spawns with the prior plan reproduced verbatim, BLOCKERS applied as corrections, version bumped. Counts as one backward edge.
         preview: [BLOCKERS list - one per line - so user sees what gets fixed]
       - label: Reshape
         description: Reinterview from Step 0. Plan is fundamentally wrong or SIMPLER_ALTERNATIVE applies. Counts as one backward edge (equivalent to challenger reject).
@@ -146,11 +146,11 @@ CHALLENGE_QUESTIONS:
         description: Ship plan to implementer. Outstanding CONCERNS become known risks.
         preview: [STRENGTHS one-liner + top CONCERNS as one line each, best-effort]
       - label: Revise
-        description: Planner reruns addressing BLOCKERS. Counts as one backward edge.
+        description: Planner re-spawns with the prior plan reproduced verbatim, BLOCKERS applied as corrections, version bumped. Counts as one backward edge.
         preview: [BLOCKERS list - one per line - so user sees what gets fixed]
       - label: Reshape
         description: Reinterview from Step 0. Plan is fundamentally wrong or SIMPLER_ALTERNATIVE applies. Counts as one backward edge (equivalent to challenger reject).
         preview: [SIMPLER_ALTERNATIVE sentence + SCOPE_MISMATCH one-liner when not "none"]
 ```
 
-`approve` = ship to implementer. `revise` = planner addresses BLOCKERS and reruns (counts as a backward edge). `reject` = plan is fundamentally wrong; reinterview or restart from Step 2 (counts as a backward edge).
+`approve` = ship to implementer. `revise` = planner re-spawns with the prior plan reproduced verbatim and BLOCKERS applied as corrections, version bumped (counts as a backward edge; see WORKFLOW.md ## Revision Contract). `reject` = plan is fundamentally wrong; reinterview or restart from Step 2 (counts as a backward edge).

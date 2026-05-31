@@ -1,10 +1,4 @@
 
-issue with follow-ups on subagents:naming
- 
- SendMessage isn't available in this harness, so I'll spawn a fresh planner with v1 plus the precise correction package and have it emit v2. The corrections are surgical and I'll specify the corrected formulas exactly so v2 is unambiguous.
-
----
-
 paths:
     talk
     spike: brainstorming, prototyping, diagramming, visualizing

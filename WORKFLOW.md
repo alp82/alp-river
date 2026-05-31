@@ -4,7 +4,7 @@
 - Never guess, never assume, never improvise unagreed solutions.
 - Extracting actual intent is more important than moving fast.
 - Research before asking. Subagents exhaust filesystem, tools, and web first; questions only surface what those sources don't already answer.
-- Clarify in loops, not single passes. Intent and clarification steps re-run with prior rounds folded in until the latest exchange surfaces no new aspects. Loops within one step are free and do not count as backward edges.
+- Clarify in loops, not single passes. Intent and clarification steps re-run with prior rounds folded in until the latest exchange surfaces no new aspects. Loops within one step are free and do not count as backward edges. This is a convergence loop, distinct from a correction revision - see `## Revision Contract` for the mechanism behind both.
 - Leave touched code better than you found it. Unrelated changes get their own task.
 - No TODOs, placeholders, or incomplete implementations.
 - No backwards compatibility. Obsolete code gets deleted, not preserved.
@@ -211,7 +211,9 @@ inline alongside `BLOCKERS` and in the Reshape option's `preview`.
 There is no edge budget. A route runs until it converges: the router returns no triggered
 unrun stage and every lens that ran is `clean`. The only loop guard is oscillation - a
 `scope-shift` that re-fires without resolving is surfaced to the user, not retried
-silently. See `## Pipeline` > The loop.
+silently. A correction revision (a challenger `revise`, an implementer kickback) re-spawns
+its producer per `## Revision Contract`, so the oscillation guard stays the only loop limit.
+See `## Pipeline` > The loop.
 
 A *missing* output block is not convergence: when a spawned stage returns no wrapped output, the orchestrator treats it as a failure - re-dispatch the stage or surface the gap to the user, never wait silently for an artifact that is not coming.
 
@@ -261,6 +263,28 @@ Every template:
 - the agent's first step parses required slots; on a missing required slot it emits `INPUT_ERROR: missing <slot>` and stops
 
 Output wrapping: agents emit structured blocks named with XML-style tags that successors reference (e.g. `<APPROVED_PLAN version="N">`, `<CLARIFY_OUTPUT>`). This makes relay mechanical and enables re-injection after compaction.
+
+## Revision Contract
+
+This harness has no live follow-up to a running subagent. Every re-production of a prior output is a fresh spawn, and its input must be self-contained: the orchestrator assembles the package, not the agent (Context Discipline). A revision package fills three roles.
+
+1. **Prior version** - the complete prior artifact. Folded into the prompt verbatim when the artifact lives only in the conversation (the plan), or re-read from disk when the artifact is a file the agent wrote (the tests).
+2. **Corrections** - the exact directive driving the change (challenger `BLOCKERS`, implementer kickback `REASON`, test-review misalignment report).
+3. **Guard** - the literal instruction to reproduce the prior version exactly except where a correction applies, emit a minimal diff rather than a from-scratch re-derivation, and bump the version where the artifact is versioned.
+
+Each agent fills these three roles with its own speaking-named slots; there is no shared generic tag.
+
+**Correction revision.** Re-emits the agent's OWN artifact with targeted fixes, keeping a stable tag and bumping the version. The guard applies. Instances:
+- `planner` - prior version `<PRIOR_PLAN>`, corrections `<REPLAN_REASON>`; emits `<APPROVED_PLAN version="N+1">`.
+- `test-author` - prior version is the on-disk tests it wrote (re-read, not folded in), corrections `<TEST_CORRECTIONS>`; amends the suite in place.
+
+**Non-revision boundary.** An agent that makes forward edits to a shared mutable artifact from OTHERS' findings is not revising. `fixer` is the canonical case: it edits the live working tree from reviewers' findings each round, and its `<ROUND>` is an oscillation counter, not a prior-version fold. The guard does not apply to it.
+
+**Convergence loop.** Re-derives an evolving artifact as new user input arrives; carries `<PRIOR_ROUNDS>` and folds in the new answers. Does NOT take the verbatim guard - the artifact is meant to change round over round. Instances: `interviewer` and `requirements-clarifier` (convergence-governed), `setup-agent` (invocation-capped). See `## Clarification Loops` for the loop exit criteria.
+
+**Not a revision (phases).** Sequential phases - `design-explorer` (`confirm-params` then `built`), `capture-agent` (`PROPOSAL` then `WRITE`) - each emit a different artifact and carry forward the user's picks or approvals. The guard does not apply.
+
+After compaction, a revision in flight is reconstructed from the canonical run state plus the prior artifact (`## Compaction`).
 
 ## Compaction
 
