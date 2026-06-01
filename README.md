@@ -1,12 +1,19 @@
-# Alp River
+<div align="center">
 
-> *A river of agents, composed to the task.*
+# 🌊 Alp River
 
-![The workflow in action](docs/assets/intro-example.png)
+### A river of agents, composed to the task
 
-Multi-step agent refinement for Claude Code. You describe what you want; the plugin reads the request, picks how to handle it, and runs only the steps that request needs. A throwaway question stays out of your way. A real change earns clarification, planning, adversarial challenge, test-first implementation, review, and self-heal - and leaves a tested, reviewed result behind.
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+![Claude Code plugin](https://img.shields.io/badge/Claude%20Code-plugin-8A2BE2.svg)
+[![GitHub stars](https://img.shields.io/github/stars/alp82/alp-river?style=flat)](https://github.com/alp82/alp-river/stargazers)
+[![Featured in AI Stack](https://img.shields.io/badge/Featured-AI%20Stack-ff69b4.svg)](https://aistack.to/stacks/alper-ortac-unw0sl)
 
-**Featured in:** [Alper Ortac's AI Stack](https://aistack.to/stacks/alper-ortac-unw0sl)
+**Routes itself** · **Plans** · **Tests first** · **Reviews in parallel** · **Self-heals**
+
+<img src="docs/assets/intro-example.png" alt="alp-river composing a route for a task" width="577">
+
+</div>
 
 ## Latest updates
 
