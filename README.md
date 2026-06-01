@@ -4,15 +4,11 @@
 
 ## A river of agents, composed to the task
 
-![Claude Code Workflow](https://img.shields.io/badge/Claude%20Code-plugin-8A2BE2.svg)
-[![Stars](https://img.shields.io/github/stars/alp82/alp-river?style=flat)](https://github.com/alp82/alp-river/stargazers)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
+![Stars, Forks, Open Issues and License](https://shieldcn.dev/group/github/stars/alp82/alp-river+github/forks/alp82/alp-river+github/open-issues/alp82/alp-river+github/license/alp82/alp-river.svg?variant=secondary)
 
 ![Claude Code](https://shieldcn.dev/badge/Claude-Code-D97757.svg?logo=anthropic&variant=branded&size=lg)
 ![Agentic](https://shieldcn.dev/badge/Agentic-workflows-D97757.svg?logo=anthropic&variant=outline&size=lg&animate=shimmer)
-
-![Stars, Forks, Open Issues and License](https://shieldcn.dev/group/github/stars/alp82/alp-river+github/forks/alp82/alp-river+github/open-issues/alp82/alp-river+github/license/alp82/alp-river.svg?variant=secondary)
 
 <br>
 
