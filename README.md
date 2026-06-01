@@ -27,6 +27,12 @@
 
 The last three updates:
 
+**1.1.5**
+
+- A step whose result is lost to an internal error now recovers on its own from the work already on disk, instead of stalling the run.
+- A step that hangs is now noticed and unstuck automatically, so a single stuck step no longer freezes everything behind it.
+- You are pulled in only when the recovered work genuinely does not add up, not on every hiccup.
+
 **1.1.4**
 
 - Every code or system change now waits for plan approval before any edit is made, so nothing runs on a plan you have not okayed.
@@ -38,11 +44,6 @@ The last three updates:
 - The worked examples in the workflow guide now match what a run actually does.
 - A run shows a compact status card instead of narrating each step as it happens.
 - Runs are quieter and cost less context per task.
-
-**1.1.2**
-
-- An unclear system or OS request now asks a clarifying question instead of stalling.
-- Cancelling a destructive system step now ends the run cleanly, with nothing applied.
 
 Full history in [CHANGELOG.md](CHANGELOG.md).
 

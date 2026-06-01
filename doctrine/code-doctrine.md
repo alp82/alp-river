@@ -6,6 +6,7 @@ Bias every plan, implementation, and review toward simple, local, pure-where-pos
 - Simplicity over cleverness. The shortest readable solution wins.
 - Locality - code that changes together lives together; logic stays close to the data and call site it serves.
 - Pure functions and explicit data flow. Push side effects to the edges; keep the core a transformation from inputs to outputs.
+- Idempotent read-modify-write at the side-effecting edge. Check the current state before writing, so a step that re-runs over work already on disk no-ops what is done and only finishes the remainder.
 - Modularization with semantic cohesion - one module names one thing; what it owns is what its name promises.
 - Explicit dependencies and strong types - what a function needs arrives as a parameter or import, not as ambient state; types document intent and catch drift.
 

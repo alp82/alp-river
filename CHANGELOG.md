@@ -2,6 +2,12 @@
 
 All notable changes to alp-river. Versions match `.claude-plugin/plugin.json`.
 
+## 1.1.5 - 2026-06-02
+
+- A step whose result is lost to an internal error now recovers on its own from the work already on disk, instead of stalling the run.
+- A step that hangs is now noticed and unstuck automatically, so a single stuck step no longer freezes everything behind it.
+- You are pulled in only when the recovered work genuinely does not add up, not on every hiccup.
+
 ## 1.1.4 - 2026-06-01
 
 - Every code or system change now waits for plan approval before any edit is made, so nothing runs on a plan you have not okayed.
