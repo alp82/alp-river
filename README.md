@@ -12,7 +12,9 @@
 ![Claude Code](https://shieldcn.dev/badge/Claude-Code-D97757.svg?logo=anthropic&variant=branded&size=lg)
 ![Agentic](https://shieldcn.dev/badge/Agentic-workflows-D97757.svg?logo=anthropic&variant=outline&size=lg&animate=shimmer)
 
-![Stars, Forks, Open Issues and License](https://shieldcn.dev/group/github/stars/alp82/alp-river+github/forks/alp82/alp-river+github/open-issues/alp82/alp-river+github/license/alp82/alp-river.svg?variant=branded)
+![Stars, Forks, Open Issues and License](https://shieldcn.dev/group/github/stars/alp82/alp-river+github/forks/alp82/alp-river+github/open-issues/alp82/alp-river+github/license/alp82/alp-river.svg?variant=secondary)
+
+![GitHub Health](https://shieldcn.dev/group/github/stars/vercel/next.js+github/forks/vercel/next.js+github/open-issues/vercel/next.js.svg?variant=secondary)
 
 
 **Routes itself** · **Plans** · **Tests first** · **Reviews in parallel** · **Self-heals**
