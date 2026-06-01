@@ -1,3 +1,43 @@
+fore composing the planner, let me get the exact catalog vocabulary so my router calls are precise.
+
+● Bash(python3 -c "
+      import json…)
+  ⎿  == requirements-clarifier
+        routes = ['code']
+     == code-planner
+     … +12 lines (ctrl+o to expand)
+
+● Bash(python3 -c "
+      import json…)
+  ⎿  ===== code-planner
+     {
+      "data": {
+     … +65 lines (ctrl+o to expand)
+
+● Now I have the real vocabulary. requirements-clarifier subscribes to intent-confirmed + reuse-done + health-checked - so it
+  joins the route now that pre-flight is done. Let me confirm prototype-identifier's signal names, then recompose.
+
+● Bash(python3 -c "
+      import json…)
+  ⎿  triage -> outputs: ['triage-read', 'confirmed-intent'] | publishes: ['talk', 'sketch', 'code', 'system', 'bug', 'am
+     biguous', 'novel-domain', 'multi-file', 'auth-surface', 'secrets', 'perms-change', 'destructive-op', 'irreversible'
+     , 'intent-confirmed', 'needs-tests', 'est-size', 'scope-shift']
+     … +6 lines (ctrl+o to expand)
+
+● Bash(echo '{"live":["code","needs-tests","intent-confirmed","health-checked","reuse-done"],"available":["request","triage-r
+      ead","confirmed-intent","health-findings",…)
+  ⎿  {
+       "dropped": {
+         "acceptance-reviewer": "unsatisfiable-input",
+     … +41 lines (ctrl+o to expand)
+
+---
+
+visual verifier
+    https://github.com/browser-use/browser-use
+
+---
+
 XXL as sequence of tasks
 goal based looping
 
@@ -15,10 +55,6 @@ https://github.com/multica-ai/andrej-karpathy-skills
 ---
 
 https://loadout.hellomilo.app/
-
----
-
-https://github.com/browser-use/browser-use
 
 ---
 

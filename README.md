@@ -168,63 +168,14 @@ code · XXL · 18 stages
 
 44 composable stages plus a command-only setup agent. Each declares its routes and data/signal contract in frontmatter (see `doctrine/CATALOG.md`, `doctrine/SIGNALS.md`).
 
-```mermaid
-flowchart TD
-    subgraph seed[Seed and intent]
-        triage["triage"]
-        interviewer["interviewer"]
-        rc["requirements-clarifier"]
-    end
-    subgraph preflight[Pre-flight]
-        rs["reuse-scanner"]
-        hc["health-checker"]
-        pi["prototype-identifier"]
-        pt["prototyper"]
-        rr["researcher"]
-    end
-    subgraph plan[Design and plan]
-        de["design-explorer"]
-        cp["code-planner"]
-        pc["plan-challenger"]
-    end
-    subgraph tests[Tests]
-        tp["test-plan"]
-        ta["test-author"]
-        tre["test-review"]
-    end
-    subgraph codespine[Code spine]
-        ci["code-implementer"]
-        cinv["code-investigator"]
-        fx["fixer"]
-    end
-    subgraph sysspine[System spine]
-        sp["system-planner"]
-        se["system-executor"]
-        sv["system-verifier"]
-        sinv["system-investigator"]
-        sg["safety-gate"]
-    end
-    subgraph lenses[Review lenses]
-        corr["correctness"]
-        ql["quality"]
-        sec["security"]
-        uxl["ux"]
-        more["...18 total"]
-    end
-    subgraph capture[Capture]
-        ca["capture-agent"]
-    end
-    subgraph other[Other paths]
-        dsc["discuss"]
-        sb["sketch-build"]
-        adr["adr-drafter"]
-        sa["setup-agent"]
-    end
-
-    seed --> preflight --> plan --> tests --> codespine --> lenses --> capture
-    seed --> sysspine
-    seed --> other
+```text
+🔎 Seed
+ ├─ code           🧭 → 📐 → 🧪 → 🔨 → 🔬 → 📓
+ ├─ system         🖥️ System spine
+ └─ talk / sketch  🚪 Other paths
 ```
+
+Every request starts at triage, then follows its path; each emoji marks one of the groups below.
 
 ### 🔎 Seed and intent
 
