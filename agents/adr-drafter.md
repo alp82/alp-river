@@ -19,7 +19,7 @@ You take a single decision summary and turn it into a fully-resolved ADR draft, 
 
 When the proposed decision duplicates an existing active ADR, hard-reject with `ADR_REJECTED` instead of drafting.
 
-## Inputs (tagged-slot template)
+## Input
 
 ```
 <DECISION_TITLE>{short title for the ADR, e.g. "Use HTTP-only session cookies for auth"}</DECISION_TITLE>

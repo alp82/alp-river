@@ -4,7 +4,6 @@
 
 ## A river of agents, composed to the task
 
-
 ![Stars, Forks, Open Issues and License](https://shieldcn.dev/group/github/stars/alp82/alp-river+github/forks/alp82/alp-river+github/open-issues/alp82/alp-river+github/license/alp82/alp-river.svg?variant=secondary)
 
 ![Claude Code](https://shieldcn.dev/badge/Claude-Code-D97757.svg?logo=anthropic&variant=branded&size=lg)
@@ -28,23 +27,22 @@
 
 The last three updates:
 
+**1.1.4**
+
+- Every code or system change now waits for plan approval before any edit is made, so nothing runs on a plan you have not okayed.
+- A small system or trivial change clears that approval with a single tap, and a one-file change clears it automatically.
+- How deeply a change is reviewed no longer rides on whether it needs tests, so a large change gets a full review even when there is nothing new to test.
+
+**1.1.3**
+
+- The worked examples in the workflow guide now match what a run actually does.
+- A run shows a compact status card instead of narrating each step as it happens.
+- Runs are quieter and cost less context per task.
+
 **1.1.2**
 
 - An unclear system or OS request now asks a clarifying question instead of stalling.
 - Cancelling a destructive system step now ends the run cleanly, with nothing applied.
-
-**1.1.1**
-
-- A research or review step that gets stuck on a slow or unreachable source no longer hangs the workflow - it gives up on that step and either moves on or tells you.
-
-**1.1.0**
-
-The pipeline now recognizes four kinds of work instead of three, each routed to the steps it actually needs.
-
-- Loose discussion stays fast and inline; a web search or a quick visual is offered before it runs, never forced.
-- Throwaway exploration now spans code, diagrams, and mockups in one sandbox, not just code.
-- System and OS-level work - configs, troubleshooting, command-line tooling - is its own track, with a safety check before anything destructive or irreversible runs.
-- Independent checks now run in parallel instead of one after another, so results come back sooner.
 
 Full history in [CHANGELOG.md](CHANGELOG.md).
 

@@ -16,3 +16,11 @@ stage:
 Compare the diff and its acceptance criteria against the tests that exist. For each behavior that is added or changed but not covered, publish `tests-missing:<criterion>` (pulling test-author back) and record a `findings:test-gap`.
 
 If every changed behavior is covered, publish `clean` and nothing else. This lens is always on for code routes - missing tests are added along the way, not deferred.
+
+## Input
+
+```
+<DIFF>{code-implementer output - the diff to measure coverage against}</DIFF>
+```
+
+First step: parse required slots. On a missing required slot, emit `INPUT_ERROR: missing <slot>` and stop.

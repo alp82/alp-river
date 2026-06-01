@@ -12,6 +12,7 @@
           "findings"
         ]
       },
+      "input_template": "<CONFIRMED_INTENT>{interviewer or Level 1 restate}</CONFIRMED_INTENT>\n<CLARIFY_OUTPUT>{requirements-clarifier output - holds acceptance criteria}</CLARIFY_OUTPUT>\n<APPROVED_PLAN>{current APPROVED_PLAN block - includes Out of Scope}</APPROVED_PLAN>\n<TOUCHED_FILES>{file paths the implementer or main agent modified or created}</TOUCHED_FILES>\n",
       "name": "acceptance-reviewer",
       "routes": [
         "code"
@@ -22,7 +23,7 @@
           "scope-shift"
         ],
         "subscribes": [
-          "needs-tests"
+          "significant-build"
         ]
       }
     },
@@ -38,6 +39,7 @@
           "findings"
         ]
       },
+      "input_template": "<TOUCHED_FILES>{file paths the implementer or main agent modified or created}</TOUCHED_FILES>\n",
       "name": "accessibility-reviewer",
       "routes": [
         "code"
@@ -65,6 +67,7 @@
           "adr-draft"
         ]
       },
+      "input_template": "<DECISION_TITLE>{short title for the ADR, e.g. \"Use HTTP-only session cookies for auth\"}</DECISION_TITLE>\n<DECISION_SUMMARY>{1-3 sentences capturing the choice and the constraint it locks in}</DECISION_SUMMARY>\n<SOURCE>{free-text origin - e.g. \"manual /alp-river:adr entry by user on 2026-05-16\"}</SOURCE>\n<EXTRA_CONTEXT>{optional - additional context the user wants reflected in the Context section, or \"none\"}</EXTRA_CONTEXT>\n",
       "name": "adr-drafter",
       "routes": [
         "code",
@@ -92,6 +95,7 @@
           "findings"
         ]
       },
+      "input_template": "<TOUCHED_FILES>{file paths the implementer or main agent modified or created}</TOUCHED_FILES>\n<APPROVED_PLAN>{current APPROVED_PLAN block, or \"none\" on S/M without plan}</APPROVED_PLAN>\n",
       "name": "architecture-reviewer",
       "routes": [
         "code"
@@ -103,7 +107,7 @@
           "scope-shift"
         ],
         "subscribes": [
-          "needs-tests"
+          "significant-build"
         ]
       }
     },
@@ -119,6 +123,7 @@
           "findings"
         ]
       },
+      "input_template": "<TOUCHED_FILES>{file paths the implementer or main agent modified or created}</TOUCHED_FILES>\n<APPROVED_PLAN>{current APPROVED_PLAN block, or \"none\" on S/M without plan}</APPROVED_PLAN>\n",
       "name": "assumptions",
       "routes": [
         "code"
@@ -130,7 +135,7 @@
           "scope-shift"
         ],
         "subscribes": [
-          "needs-tests"
+          "significant-build"
         ]
       }
     },
@@ -146,6 +151,7 @@
           "discoveries-captured"
         ]
       },
+      "input_template": "<PHASE>{1 | 2}</PHASE>\n<AGGREGATED_DISCOVERIES>\n{concatenation of every non-empty DISCOVERIES block emitted by upstream agents this run, with source agent name on each block; \"none\" if every block was empty}\n</AGGREGATED_DISCOVERIES>\n<APPROVALS>\n{Phase 2 only - the user's per-item decisions; \"n/a\" on Phase 1}\n\nPer-bucket verb sets:\n- glossary: \"BUCKET.INDEX: accept | edit: <new text> | reject\"\n- stack_drift, intent_drift: \"BUCKET.INDEX: accept-as-drift | edit: <new text> | reject\"\n</APPROVALS>\n",
       "name": "capture-agent",
       "routes": [
         "code"
@@ -155,7 +161,7 @@
           "scope-shift"
         ],
         "subscribes": [
-          "needs-tests"
+          "significant-build"
         ]
       }
     },
@@ -171,10 +177,15 @@
           "diff"
         ]
       },
+      "input_template": "<CONFIRMED_INTENT>{interviewer or Level 1 restate}</CONFIRMED_INTENT>\n<APPROVED_PLAN>{planner output, the current-version APPROVED_PLAN block}</APPROVED_PLAN>\n<SCOUT>\n  <reuse>{reuse-scanner output}</reuse>\n  <health>{health-checker output}</health>\n  <prototypes>{prototyper output OR \"none\"}</prototypes>\n  <research>{researcher output OR \"none\"}</research>\n</SCOUT>\n<BACKWARD_EDGES_USED>{integer - main agent's running count}</BACKWARD_EDGES_USED>\n",
       "lock": [
         {
           "until": "tests-ready",
           "while": "needs-tests"
+        },
+        {
+          "until": "plan-approved",
+          "while": "plan-ready"
         }
       ],
       "name": "code-implementer",
@@ -204,6 +215,7 @@
           "diagnosis"
         ]
       },
+      "input_template": "<BUG_REPORT>{user's description of the bug, symptoms, environment}</BUG_REPORT>\n<FRAMING>{main agent's one-sentence restate + any missing info the user supplied}</FRAMING>\n",
       "name": "code-investigator",
       "routes": [
         "code",
@@ -241,6 +253,7 @@
           "approved-plan"
         ]
       },
+      "input_template": "<CONFIRMED_INTENT>{interviewer or Level 1 restate}</CONFIRMED_INTENT>\n<CLARIFY_OUTPUT>{requirements-clarifier output}</CLARIFY_OUTPUT>\n<SCOUT>\n  <reuse>{reuse-scanner output}</reuse>\n  <health>{health-checker output}</health>\n  <prototypes>{prototyper output OR \"none\"}</prototypes>\n  <research>{researcher output OR \"none\"}</research>\n</SCOUT>\n<LOCKED_DESIGN_SPEC>{labeled key-value spec the user pasted back from the design-explorer's picker page, OR \"none\" when the design loop didn't run}</LOCKED_DESIGN_SPEC>\n<DESIGN_CLEANUP>{design-explorer's CLEANUP_NEEDED list - only when HOST_DECISION was \"real-page\" so the planner removes picker artifacts before shipping; \"none\" otherwise}</DESIGN_CLEANUP>\n<DIAGNOSIS>{investigator root-cause report OR \"none\"}</DIAGNOSIS>\n<PRIOR_PLAN>{previous APPROVED_PLAN block - only on replan/plan-patch, otherwise absent; reproduce it verbatim except where REPLAN_REASON applies (## Revision modes)}</PRIOR_PLAN>\n<REPLAN_REASON>{challenger BLOCKERS or implementer kickback reason - only on replan/plan-patch; the exact corrections to apply, nothing else changes}</REPLAN_REASON>\n",
       "name": "code-planner",
       "routes": [
         "code"
@@ -268,6 +281,7 @@
           "findings"
         ]
       },
+      "input_template": "<TOUCHED_FILES>{file paths the implementer or main agent modified or created}</TOUCHED_FILES>\n<APPROVED_PLAN>{current APPROVED_PLAN block, or \"none\" on S/M without plan}</APPROVED_PLAN>\n",
       "name": "consistency-reviewer",
       "routes": [
         "code"
@@ -279,7 +293,7 @@
           "scope-shift"
         ],
         "subscribes": [
-          "needs-tests"
+          "significant-build"
         ]
       }
     },
@@ -295,6 +309,7 @@
           "findings"
         ]
       },
+      "input_template": "<TOUCHED_FILES>{file paths the implementer or main agent modified or created}</TOUCHED_FILES>\n<APPROVED_PLAN>{current APPROVED_PLAN block, or \"none\" on S/M without plan}</APPROVED_PLAN>\n",
       "name": "correctness-reviewer",
       "routes": [
         "code",
@@ -305,6 +320,7 @@
           "findings:correctness",
           "clean",
           "needs-tests",
+          "significant-build",
           "scope-shift"
         ],
         "subscribes": [
@@ -324,6 +340,7 @@
           "findings"
         ]
       },
+      "input_template": "<TOUCHED_FILES>{file paths the implementer or main agent modified or created}</TOUCHED_FILES>\n",
       "name": "design-consistency-reviewer",
       "routes": [
         "code"
@@ -351,6 +368,7 @@
           "design-spec"
         ]
       },
+      "input_template": "<CONFIRMED_INTENT>{interviewer or Level 1 restate}</CONFIRMED_INTENT>\n<CLARIFY_OUTPUT>{requirements-clarifier output - includes DESIGN_PARAMS_PROPOSED}</CLARIFY_OUTPUT>\n<SCOUT>\n  <reuse>{reuse-scanner output}</reuse>\n  <health>{health-checker output}</health>\n  <prototypes>{prototyper output OR \"none\"}</prototypes>\n  <research>{researcher output OR \"none\"}</research>\n</SCOUT>\n<USER_PARAM_PICKS>{user's selections from PARAMS_TO_CONFIRM, OR \"none\" on the first invocation}</USER_PARAM_PICKS>\n",
       "name": "design-explorer",
       "routes": [
         "code",
@@ -379,6 +397,7 @@
         },
         "output": []
       },
+      "input_template": "<TRIAGE_READ>{triage's framing of the request}</TRIAGE_READ>\n<CONFIRMED_INTENT>{interviewer or Level 1 restate, or \"none\" when intent was not clarified}</CONFIRMED_INTENT>\n",
       "name": "discuss",
       "routes": [
         "talk"
@@ -404,6 +423,7 @@
           "diff"
         ]
       },
+      "input_template": "<FINDINGS>\n  {aggregated reviewer outputs - each with source agent name, VERDICT, FINDINGS, ACTION_NEEDED}\n</FINDINGS>\n<TOUCHED_FILES>{file paths the implementer or main agent modified or created - sourced from implementer's FILES_MODIFIED + FILES_CREATED, or main-agent session edits on S/M tasks}</TOUCHED_FILES>\n<APPROVED_PLAN>{current APPROVED_PLAN block, or \"none\" on S/M flows that skip planning}</APPROVED_PLAN>\n<ROUND>{1 | 2 | 3+}</ROUND>\n",
       "name": "fixer",
       "routes": [
         "code",
@@ -430,6 +450,7 @@
           "health-findings"
         ]
       },
+      "input_template": "<CONFIRMED_INTENT>{interviewer or Level 1 restate}</CONFIRMED_INTENT>\n<TARGET_AREA>{file paths / module names to score - main agent's best guess from intent}</TARGET_AREA>\n",
       "name": "health-checker",
       "routes": [
         "code",
@@ -443,7 +464,7 @@
           "scope-shift"
         ],
         "subscribes": [
-          "needs-tests"
+          "significant-build"
         ]
       }
     },
@@ -459,6 +480,7 @@
           "confirmed-intent"
         ]
       },
+      "input_template": "<RAW_REQUEST>{user's original message or /alp-river:go argument}</RAW_REQUEST>\n<L1_CONFIRMATION>{user's answer to the main agent's one-sentence restate}</L1_CONFIRMATION>\n<PRIOR_ROUNDS>{compressed log of prior rounds, one line per Q&A: \"R1.Q1: ... | A: ...\"; \"none\" on first run}</PRIOR_ROUNDS>\n",
       "name": "interviewer",
       "routes": [
         "code",
@@ -488,6 +510,7 @@
           "findings"
         ]
       },
+      "input_template": "<TOUCHED_FILES>{file paths the implementer or main agent modified or created}</TOUCHED_FILES>\n<APPROVED_PLAN>{current APPROVED_PLAN block, or \"none\" on S/M without plan}</APPROVED_PLAN>\n",
       "name": "naming-clarity",
       "routes": [
         "code"
@@ -499,7 +522,7 @@
           "scope-shift"
         ],
         "subscribes": [
-          "needs-tests"
+          "significant-build"
         ]
       }
     },
@@ -515,6 +538,7 @@
           "findings"
         ]
       },
+      "input_template": "<TOUCHED_FILES>{file paths the implementer or main agent modified or created}</TOUCHED_FILES>\n",
       "name": "performance-reviewer",
       "routes": [
         "code"
@@ -526,7 +550,7 @@
           "scope-shift"
         ],
         "subscribes": [
-          "needs-tests"
+          "significant-build"
         ]
       }
     },
@@ -542,6 +566,7 @@
           "findings"
         ]
       },
+      "input_template": "<APPROVED_PLAN>{planner output, the version referenced in implementer's spawn}</APPROVED_PLAN>\n<TOUCHED_FILES>{file paths the implementer modified or created - sourced from implementer's FILES_MODIFIED + FILES_CREATED}</TOUCHED_FILES>\n<IMPLEMENTER_NOTES>{implementer output NOTES section - deviations the implementer declared}</IMPLEMENTER_NOTES>\n",
       "name": "plan-adherence-reviewer",
       "routes": [
         "code"
@@ -552,7 +577,7 @@
           "scope-shift"
         ],
         "subscribes": [
-          "needs-tests"
+          "significant-build"
         ]
       }
     },
@@ -568,6 +593,7 @@
           "plan-challenge"
         ]
       },
+      "input_template": "<CONFIRMED_INTENT>{interviewer or Level 1 restate}</CONFIRMED_INTENT>\n<CLARIFY_OUTPUT>{requirements-clarifier output}</CLARIFY_OUTPUT>\n<APPROACHES>{planner's APPROACHES block - only present on XL with multi-approach}</APPROACHES>\n<APPROVED_PLAN>{planner's APPROVED_PLAN block for the recommended/single approach}</APPROVED_PLAN>\n",
       "name": "plan-challenger",
       "routes": [
         "code"
@@ -575,11 +601,12 @@
       "signals": {
         "publishes": [
           "plan-challenged",
+          "plan-approved",
           "findings:challenge",
           "scope-shift"
         ],
         "subscribes": [
-          "needs-tests"
+          "significant-build"
         ]
       }
     },
@@ -595,6 +622,7 @@
           "prototype-identification"
         ]
       },
+      "input_template": "<CONFIRMED_INTENT>{interviewer or Level 1 restate}</CONFIRMED_INTENT>\n<TARGET_AREA>{file paths / module names - main agent's best guess from intent}</TARGET_AREA>\n",
       "name": "prototype-identifier",
       "routes": [
         "code"
@@ -606,7 +634,7 @@
           "scope-shift"
         ],
         "subscribes": [
-          "needs-tests"
+          "significant-build"
         ]
       }
     },
@@ -622,6 +650,7 @@
           "prototypes"
         ]
       },
+      "input_template": "<CONFIRMED_INTENT>{interviewer or Level 1 restate}</CONFIRMED_INTENT>\n<PROTOTYPE_TARGETS>{prototype-identifier's TARGETS + ALTERNATIVE_SHAPES blocks - what needs validation and which targets need two shapes}</PROTOTYPE_TARGETS>\n",
       "name": "prototyper",
       "routes": [
         "code"
@@ -648,6 +677,7 @@
           "findings"
         ]
       },
+      "input_template": "<TOUCHED_FILES>{file paths the implementer or main agent modified or created}</TOUCHED_FILES>\n<APPROVED_PLAN>{current APPROVED_PLAN block, or \"none\" on S/M without plan}</APPROVED_PLAN>\n",
       "name": "quality-reviewer",
       "routes": [
         "code"
@@ -659,7 +689,7 @@
           "scope-shift"
         ],
         "subscribes": [
-          "needs-tests"
+          "significant-build"
         ]
       }
     },
@@ -677,6 +707,7 @@
           "clarified-intent"
         ]
       },
+      "input_template": "<CONFIRMED_INTENT>{interviewer output OR main agent's Level 1 restate}</CONFIRMED_INTENT>\n<SCOUT>\n  <reuse>{reuse-scanner output}</reuse>\n  <health>{health-checker output}</health>\n  <prototypes>{prototyper output OR \"none\"}</prototypes>\n  <research>{researcher output OR \"none\"}</research>\n</SCOUT>\n<PRIOR_ROUNDS>{compressed log of prior rounds, one line per Q&A: \"R1.Q1: ... | A: ...\"; \"none\" on first run}</PRIOR_ROUNDS>\n",
       "name": "requirements-clarifier",
       "routes": [
         "code"
@@ -706,6 +737,7 @@
           "research-findings"
         ]
       },
+      "input_template": "<CONFIRMED_INTENT>{interviewer or Level 1 restate}</CONFIRMED_INTENT>\n<TARGET_AREA>{file paths / module names - main agent's best guess from intent}</TARGET_AREA>\n<EXTERNAL_DEPS_FLAG>{yes | no - from interviewer; if no, return TOPICS_RESEARCHED: none and stop}</EXTERNAL_DEPS_FLAG>\n",
       "name": "researcher",
       "routes": [
         "code",
@@ -734,6 +766,7 @@
           "findings"
         ]
       },
+      "input_template": "<TOUCHED_FILES>{file paths the implementer or main agent modified or created}</TOUCHED_FILES>\n<APPROVED_PLAN>{current APPROVED_PLAN block, or \"none\" on S/M without plan}</APPROVED_PLAN>\n",
       "name": "reuse-reviewer",
       "routes": [
         "code"
@@ -744,7 +777,7 @@
           "scope-shift"
         ],
         "subscribes": [
-          "needs-tests"
+          "significant-build"
         ]
       }
     },
@@ -760,6 +793,7 @@
           "reuse-map"
         ]
       },
+      "input_template": "<CONFIRMED_INTENT>{interviewer or Level 1 restate}</CONFIRMED_INTENT>\n<TARGET_AREA>{file paths / module names the scan should focus on - main agent's best guess from intent}</TARGET_AREA>\n",
       "name": "reuse-scanner",
       "routes": [
         "code",
@@ -774,7 +808,7 @@
           "scope-shift"
         ],
         "subscribes": [
-          "needs-tests"
+          "significant-build"
         ]
       }
     },
@@ -792,6 +826,7 @@
         ]
       },
       "guard": "sticky",
+      "input_template": "<SYSTEM_PLAN>{system-planner output, or \"none\"}</SYSTEM_PLAN>\n<APPROVED_PLAN>{code-planner output when a code build armed the gate, or \"none\"}</APPROVED_PLAN>\n",
       "name": "safety-gate",
       "routes": [
         "system",
@@ -822,6 +857,7 @@
         ]
       },
       "guard": "sticky",
+      "input_template": "<TOUCHED_FILES>{file paths the implementer or main agent modified or created}</TOUCHED_FILES>\n",
       "name": "security-reviewer",
       "routes": [
         "code",
@@ -852,6 +888,7 @@
           "diff"
         ]
       },
+      "input_template": "<CONFIRMED_INTENT>{interviewer or Level 1 restate - what the sketch is meant to prove}</CONFIRMED_INTENT>\n",
       "name": "sketch-build",
       "routes": [
         "sketch"
@@ -878,6 +915,7 @@
           "findings"
         ]
       },
+      "input_template": "<TOUCHED_FILES>{file paths the implementer or main agent modified or created}</TOUCHED_FILES>\n<APPROVED_PLAN>{current APPROVED_PLAN block, or \"none\" on S/M without plan}</APPROVED_PLAN>\n",
       "name": "structure-reviewer",
       "routes": [
         "code"
@@ -889,7 +927,7 @@
           "scope-shift"
         ],
         "subscribes": [
-          "needs-tests"
+          "significant-build"
         ]
       }
     },
@@ -906,10 +944,15 @@
           "exec-log"
         ]
       },
+      "input_template": "<SYSTEM_PLAN>{system-planner output - ordered steps with backup/rollback/risk}</SYSTEM_PLAN>\n",
       "lock": [
         {
           "until": "safety-approved",
           "while": "destructive-op"
+        },
+        {
+          "until": "plan-approved",
+          "while": "plan-ready"
         }
       ],
       "name": "system-executor",
@@ -940,6 +983,7 @@
           "diagnosis"
         ]
       },
+      "input_template": "<CONFIRMED_INTENT>{interviewer or Level 1 restate - what is broken and what \"working\" looks like}</CONFIRMED_INTENT>\n",
       "name": "system-investigator",
       "routes": [
         "system",
@@ -972,6 +1016,7 @@
           "system-plan"
         ]
       },
+      "input_template": "<CONFIRMED_INTENT>{interviewer or Level 1 restate - the desired end state}</CONFIRMED_INTENT>\n<DIAGNOSIS>{system-investigator output when a fault was diagnosed, or \"none\"}</DIAGNOSIS>\n<CLARIFY_OUTPUT>{requirements-clarifier output, or \"none\"}</CLARIFY_OUTPUT>\n",
       "name": "system-planner",
       "routes": [
         "system"
@@ -1004,6 +1049,7 @@
           "verify-report"
         ]
       },
+      "input_template": "<SYSTEM_PLAN>{system-planner output - includes the VERIFY condition}</SYSTEM_PLAN>\n<EXEC_LOG>{system-executor output, or \"none\"}</EXEC_LOG>\n",
       "name": "system-verifier",
       "routes": [
         "system"
@@ -1032,6 +1078,7 @@
           "tests"
         ]
       },
+      "input_template": "<TEST_CASES>{test-plan output - the cases to write tests for}</TEST_CASES>\n<TEST_CORRECTIONS>{on a re-spawn from #tests-misaligned (test-review) or #tests-missing (test-gap): the exact misalignment or missing-coverage report; \"none\" on the first pass}</TEST_CORRECTIONS>\n",
       "name": "test-author",
       "routes": [
         "code"
@@ -1060,6 +1107,7 @@
           "findings"
         ]
       },
+      "input_template": "<DIFF>{code-implementer output - the diff to measure coverage against}</DIFF>\n",
       "name": "test-gap",
       "routes": [
         "code"
@@ -1088,6 +1136,7 @@
           "test-cases"
         ]
       },
+      "input_template": "<APPROVED_PLAN>{code-planner output - the plan whose acceptance criteria become test cases}</APPROVED_PLAN>\n",
       "name": "test-plan",
       "routes": [
         "code"
@@ -1114,6 +1163,7 @@
         },
         "output": []
       },
+      "input_template": "<TESTS>{test-author output - the red tests on disk to validate}</TESTS>\n<CONFIRMED_INTENT>{triage/interviewer output - intent to check tests against}</CONFIRMED_INTENT>\n<APPROVED_PLAN>{code-planner output - plan whose criteria the tests must cover}</APPROVED_PLAN>\n",
       "name": "test-review",
       "routes": [
         "code"
@@ -1141,6 +1191,7 @@
           "findings"
         ]
       },
+      "input_template": "<TOUCHED_FILES>{file paths the implementer or main agent modified or created}</TOUCHED_FILES>\n",
       "name": "test-verifier",
       "routes": [
         "code"
@@ -1169,6 +1220,7 @@
           "confirmed-intent"
         ]
       },
+      "input_template": "",
       "name": "triage",
       "routes": [
         "talk",
@@ -1182,17 +1234,18 @@
           "sketch",
           "code",
           "system",
-          "bug",
+          "intent-confirmed",
           "ambiguous",
+          "bug",
           "novel-domain",
+          "needs-tests",
+          "significant-build",
           "multi-file",
           "auth-surface",
           "secrets",
           "perms-change",
           "destructive-op",
           "irreversible",
-          "intent-confirmed",
-          "needs-tests",
           "est-size",
           "scope-shift"
         ],
@@ -1213,6 +1266,7 @@
           "findings"
         ]
       },
+      "input_template": "<TOUCHED_FILES>{file paths the implementer or main agent modified or created}</TOUCHED_FILES>\n",
       "name": "ux-reviewer",
       "routes": [
         "code"
@@ -1240,6 +1294,7 @@
           "findings"
         ]
       },
+      "input_template": "<TARGET>{route, component, or URL path to verify - from main agent or inferred from touched UI files}</TARGET>\n<CONFIRMED_INTENT>{interviewer or Level 1 restate}</CONFIRMED_INTENT>\n<TOUCHED_FILES>{file paths the implementer or main agent modified or created}</TOUCHED_FILES>\n",
       "name": "visual-verifier",
       "routes": [
         "code"

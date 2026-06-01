@@ -9,7 +9,7 @@ stage:
     input: ['@diff']
     output: ['@discoveries-captured']
   signals:
-    subscribes: ['#needs-tests']
+    subscribes: ['#significant-build']
     publishes: ['#scope-shift']
 ---
 
@@ -36,7 +36,7 @@ Do NOT collapse this into a single pass. The orchestrator pauses between phases 
 4. **Never modify templates.** The `templates/` directory is off-limits. Filter it out.
 5. **No new templates, no scaffolding.** The plugin's `templates/` folder ships the canonical structures. You append to existing files in the user's `docs/` only.
 
-## Inputs (tagged-slot template)
+## Input
 
 ```
 <PHASE>{1 | 2}</PHASE>

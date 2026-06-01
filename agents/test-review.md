@@ -17,3 +17,13 @@ Check the red tests against the confirmed intent and the plan's acceptance crite
 
 - Aligned: publish `#tests-ready`, which releases the implementer's lock (the TDD lock). Code cannot start until the tests are validated.
 - Misaligned: publish `tests-misaligned` with exactly what is wrong, looping back to test-author.
+
+## Input
+
+```
+<TESTS>{test-author output - the red tests on disk to validate}</TESTS>
+<CONFIRMED_INTENT>{triage/interviewer output - intent to check tests against}</CONFIRMED_INTENT>
+<APPROVED_PLAN>{code-planner output - plan whose criteria the tests must cover}</APPROVED_PLAN>
+```
+
+First step: parse required slots. On a missing required slot, emit `INPUT_ERROR: missing <slot>` and stop.

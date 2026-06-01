@@ -14,6 +14,9 @@ Sigil-bearing scalars are YAML-quoted ('@x', '?x', '#x') because @/?/# are reser
 start of a YAML scalar. Storage is bare names; required-vs-optional is a structural split,
 never a sigil. Every stage MUST declare a `routes` list (a subset of code/sketch/talk/system) -
 the generator errors loudly if one is missing or names an unknown path.
+
+Each stage also carries the verbatim fenced block under its `## Input` heading as
+`input_template` (empty string when the agent has no `## Input` section).
 """
 
 import json
@@ -110,7 +113,34 @@ def _split_inputs(items):
     return required, optional
 
 
-def normalize_stage(name, stage):
+def extract_input_template(text):
+    """Return the verbatim inner text of the fenced block under the first `## Input` heading.
+
+    First `## Input` wins. From the line after it, scan for an opening ``` fence and collect
+    lines until the closing ``` fence, returning the inner text (no heading, no fence lines).
+    The opening-fence search stops at the next `## ` heading, so a later `## Output` fence is
+    never captured. No `## Input`, or no fence before the next `## `, returns "".
+    """
+    lines = text.splitlines()
+    start = next((i for i, ln in enumerate(lines) if ln == "## Input"), None)
+    if start is None:
+        return ""
+    i = start + 1
+    while i < len(lines) and not lines[i].startswith("```"):
+        if lines[i].startswith("## "):
+            return ""
+        i += 1
+    if i >= len(lines):
+        return ""
+    inner = []
+    i += 1
+    while i < len(lines) and not lines[i].startswith("```"):
+        inner.append(lines[i])
+        i += 1
+    return "\n".join(inner) + "\n" if inner else ""
+
+
+def normalize_stage(name, stage, input_template=""):
     data, signals = stage.get("data") or {}, stage.get("signals") or {}
     req_in, opt_in = _split_inputs(_list(data, "input"))
     entry = {
@@ -125,6 +155,7 @@ def normalize_stage(name, stage):
             "publishes": [_strip_signal(s) for s in _list(signals, "publishes")],
         },
     }
+    entry["input_template"] = input_template
     if stage.get("guard"):
         entry["guard"] = stage["guard"]
     if stage.get("lock"):
@@ -135,7 +166,8 @@ def normalize_stage(name, stage):
 def build_catalog():
     stages, errors = {}, []
     for md in sorted(AGENTS_DIR.glob("*.md")):
-        fm = parse_frontmatter(md.read_text(encoding="utf-8"))
+        text = md.read_text(encoding="utf-8")
+        fm = parse_frontmatter(text)
         if not fm or "stage" not in fm or "name" not in fm:
             continue
         name = fm["name"]
@@ -149,7 +181,7 @@ def build_catalog():
                 f"{name}: unknown route(s) {unknown} (allowed: {list(PATHS)})"
             )
             continue
-        stages[name] = normalize_stage(name, fm["stage"])
+        stages[name] = normalize_stage(name, fm["stage"], extract_input_template(text))
     if errors:
         raise SystemExit("gen-catalog: ERROR - " + "; ".join(errors))
     return {"stages": stages}

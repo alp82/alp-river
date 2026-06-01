@@ -2,6 +2,18 @@
 
 All notable changes to alp-river. Versions match `.claude-plugin/plugin.json`.
 
+## 1.1.4 - 2026-06-01
+
+- Every code or system change now waits for plan approval before any edit is made, so nothing runs on a plan you have not okayed.
+- A small system or trivial change clears that approval with a single tap, and a one-file change clears it automatically.
+- How deeply a change is reviewed no longer rides on whether it needs tests, so a large change gets a full review even when there is nothing new to test.
+
+## 1.1.3 - 2026-06-01
+
+- The worked examples in the workflow guide now match what a run actually does.
+- A run shows a compact status card instead of narrating each step as it happens.
+- Runs are quieter and cost less context per task.
+
 ## 1.1.2 - 2026-06-01
 
 - An unclear system or OS request now asks a clarifying question instead of stalling.

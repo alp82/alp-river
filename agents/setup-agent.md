@@ -25,7 +25,7 @@ Five invocations, hard cap. Roles:
 
 Inv 5 always writes. The interview is over either way. If any question went unanswered, fill with best inference and report what was guessed in `REPORT` so the user knows where to review. Never wait for an Inv 6.
 
-## Inputs (tagged-slot template)
+## Input
 
 ```
 <INVOCATION>{1..5}</INVOCATION>
@@ -65,8 +65,8 @@ List the top level of the repo (`ls`-style via Glob). Then list one level down i
 
 Read existing `docs/*.md` files completely (cap each at 40 lines for the report; you may read more locally to judge merge action).
 
-GLOSSARY recon - run grep across the source roots for candidate domain terms:
-- Repeated capitalized multi-word phrases (`grep -roE '[A-Z][a-z]+([A-Z][a-z]+)+'` style heuristic; you decide).
+GLOSSARY recon - search the source roots with the Grep tool for candidate domain terms:
+- Repeated capitalized multi-word phrases (Grep pattern `[A-Z][a-z]+([A-Z][a-z]+)+`, or your own heuristic).
 - Repeated domain nouns that appear in type names, route paths, model names.
 - Cache up to 30 candidates with one `file:line` evidence pointer each. The user prunes the list later.
 

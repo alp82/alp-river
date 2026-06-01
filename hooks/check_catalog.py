@@ -8,6 +8,7 @@ Verifies the invariants a composed route relies on:
   3. `scope-shift` is published by every stage (each self-reports premise breaks)
   4. `routes` is present, non-empty, and a subset of code/sketch/talk/system on every stage
   5. every `lock` while/until signal has a publisher (family-aware) or is an external seed
+  6. every stage with a required input carries a non-empty `input_template` (except `triage`)
 
 Runnable standalone (`python3 hooks/check_catalog.py`, exits 1 on any problem) and imported
 by the router tests. External seeds are values that enter a route from outside any stage -
@@ -29,6 +30,9 @@ SEED_SIGNALS = {"request-received", "reshape", "run-visual", "design-decision"}
 # Artifacts seeded the same way - `request` is THE seed; `decision-summary` rides in on the
 # /alp-river:adr command (or a design gate that records a decision).
 SEED_ARTIFACTS = {"request", "decision-summary"}
+# Stages exempt from the template-presence invariant - `triage` consumes the raw request
+# directly and has no `## Input` template.
+TEMPLATE_EXEMPT = {"triage"}
 
 
 def _family_match(sub, published):
@@ -61,6 +65,12 @@ def check(catalog):
         for art in s["data"]["input"]["required"]:
             if art not in SEED_ARTIFACTS and art not in produced:
                 problems.append(f"{name}: requires `{art}` - no producer or seed")
+        if (
+            s["data"]["input"]["required"]
+            and name not in TEMPLATE_EXEMPT
+            and not s.get("input_template", "").strip()
+        ):
+            problems.append(f"{name}: has required input but empty input_template")
         for lk in s.get("lock", []):
             for sig in (lk["while"], lk["until"]):
                 if sig not in SEED_SIGNALS and not _family_match(sig, published):

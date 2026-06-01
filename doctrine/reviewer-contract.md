@@ -10,7 +10,7 @@ Tag each finding `[likely]` or `[unsure]` per the Confidence Tagging rules in yo
 
 ### Standard inputs
 
-Every reviewer receives inputs via a tagged-slot template defined in its own file. Every template defines at minimum:
+Every reviewer receives inputs via a tagged-slot template authored in its `## Input` section and compiled into `generated/catalog.json` as `input_template`, so the orchestrator fills slots from catalog state without opening each agent's `.md`. Every template defines at minimum:
 
 ```
 <TOUCHED_FILES>{file paths the implementer modified or created - sourced from implementer's FILES_MODIFIED + FILES_CREATED, or from main-agent session edits on S/M tasks}</TOUCHED_FILES>

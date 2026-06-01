@@ -215,10 +215,10 @@ def test_real_catalog_code_path():
         "sketch-build",
     }
     res = route.compute_route(cat, {"code"}, available={"confirmed-intent"})
-    # reuse-scanner now subscribes needs-tests, so it does NOT trigger on {code} alone
+    # reuse-scanner now subscribes significant-build, so it does NOT trigger on {code} alone
     assert "reuse-scanner" not in res["route"]
     assert "discuss" not in res["route"]  # talk-only stage stays off the code path
-    # health-checker now subscribes needs-tests too, so it does NOT trigger on {code} alone
+    # health-checker now subscribes significant-build too, so it does NOT trigger on {code} alone
     assert "health-checker" not in res["route"]
 
 
@@ -226,7 +226,7 @@ def test_real_catalog_routes_filter_on_sketch():
     cat = _real_catalog()
     res = route.compute_route(
         cat,
-        {"sketch", "needs-tests", "code-written"},
+        {"sketch", "significant-build", "code-written"},
         available={"confirmed-intent", "diff"},
     )
     assert "sketch-build" in res["route"]
@@ -285,46 +285,46 @@ def test_real_catalog_new_lenses_contract():
         assert s["routes"] == ["code"]
         assert s["data"]["input"]["required"] == ["diff"]
         assert s["data"]["output"] == ["findings"]
-        # lenses now subscribe needs-tests (was code-written)
-        assert s["signals"]["subscribes"] == ["needs-tests"]
+        # lenses now subscribe significant-build (was needs-tests, before that code-written)
+        assert s["signals"]["subscribes"] == ["significant-build"]
         assert family in s["signals"]["publishes"]
         assert "clean" in s["signals"]["publishes"]
         assert "scope-shift" in s["signals"]["publishes"]
 
 
 def test_real_catalog_new_lenses_compose_on_code_written():
-    # Renamed/retargeted: lenses are triggered by needs-tests, not code-written
+    # Retargeted: lenses subscribe significant-build (not needs-tests or code-written)
     cat = _real_catalog()
     res = route.compute_route(
         cat,
-        {"code", "needs-tests", "code-written"},
+        {"code", "significant-build", "code-written"},
         available={"confirmed-intent", "diff"},
     )
     assert "naming-clarity" in res["route"]
     assert "assumptions" in res["route"]
-    assert res["triggered_by"]["naming-clarity"] == "needs-tests"
-    assert res["triggered_by"]["assumptions"] == "needs-tests"
+    assert res["triggered_by"]["naming-clarity"] == "significant-build"
+    assert res["triggered_by"]["assumptions"] == "significant-build"
 
 
 def test_real_catalog_new_lenses_need_diff():
     cat = _real_catalog()
     res = route.compute_route(
-        cat, {"code", "needs-tests", "code-written"}, available={"confirmed-intent"}
-    )  # no diff
+        cat,
+        {"code", "significant-build", "code-written", "needs-tests"},
+        available={"confirmed-intent"},
+    )  # no diff - naming-clarity/assumptions require diff so they drop
     assert "naming-clarity" not in res["route"]
     assert "assumptions" not in res["route"]
-    # positive control: triage subscribes request-received and is seeded externally;
-    # use correctness-reviewer (code+sketch lens, triggered by code-written) as positive control
-    # but code-written requires diff, so use reuse-scanner which subscribes needs-tests
-    # and has no required inputs - it should appear in route
-    assert "reuse-scanner" in res["route"]
+    # positive control: health-checker subscribes significant-build (post-migration) and
+    # has no required inputs, so it appears on {code, significant-build, ...}
+    assert "health-checker" in res["route"]
 
 
 def test_real_catalog_new_lenses_off_sketch():
     cat = _real_catalog()
     res = route.compute_route(
         cat,
-        {"sketch", "needs-tests", "code-written"},
+        {"sketch", "significant-build", "code-written"},
         available={"confirmed-intent", "diff"},
     )
     assert res["dropped"].get("naming-clarity") == "off-path"
@@ -335,7 +335,7 @@ def test_real_catalog_new_lenses_off_sketch():
 
 
 # ---------------------------------------------------------------------------
-# LOCK / HELD UNIT TESTS (TC-U01 - TC-U21, RED - held key not yet in compute_route)
+# LOCK / HELD UNIT TESTS (TC-U01 - TC-U21)
 # ---------------------------------------------------------------------------
 
 # Synthetic catalog for lock tests; `impl` has configurable lock via S() kwarg.
@@ -645,7 +645,7 @@ def test_check_catalog_flags_lock_while_no_publisher():
     ), f"check() must flag ghost-signal in lock.while, problems={problems}"
 
 
-# --- TC-U18 ---
+# --- TC-U18b ---
 def test_check_catalog_flags_lock_until_no_publisher():
     """check() reports a problem when lock.until names an unpublished, non-seed signal."""
     phantom_catalog = {
@@ -714,8 +714,8 @@ def test_S_factory_lock_present():
 # ---------------------------------------------------------------------------
 
 
-def test_real_catalog_needs_tests_reuse_scanner_survives():
-    """GAP 1: reuse-scanner must trigger on needs-tests signal."""
+def test_real_catalog_needs_tests_reuse_scanner_absent():
+    """D-07: reuse-scanner moved to significant-build - NOT triggered by needs-tests alone."""
     cat = _real_catalog()
     res = route.compute_route(
         cat,
@@ -723,15 +723,30 @@ def test_real_catalog_needs_tests_reuse_scanner_survives():
         available={"request", "triage-read", "confirmed-intent"},
     )
     assert (
-        "reuse-scanner" in res["route"]
-    ), "reuse-scanner must appear when needs-tests is live"
+        "reuse-scanner" not in res["route"]
+    ), "reuse-scanner must NOT appear on needs-tests alone (now subscribes significant-build)"
+
+
+def test_real_catalog_significant_build_reuse_scanner_positive():
+    """D-07 positive control: reuse-scanner triggers on significant-build."""
+    cat = _real_catalog()
+    res = route.compute_route(
+        cat,
+        {"code", "significant-build"},
+        available={"confirmed-intent"},
+    )
     assert (
-        res["dropped"].get("reuse-scanner") != "unsatisfiable-input"
-    ), "reuse-scanner must not be dropped as unsatisfiable-input"
+        "reuse-scanner" in res["route"]
+    ), "reuse-scanner must appear when significant-build is live"
 
 
 def test_real_catalog_needs_tests_reuse_scanner_dropped_without_confirmed_intent():
-    """GAP 1 contrast: without confirmed-intent, reuse-scanner's required input is absent."""
+    """D-07 companion: without confirmed-intent, reuse-scanner's required input absent.
+
+    The reason field changes: previously unsatisfiable-input (when on needs-tests);
+    now reuse-scanner is not triggered at all on needs-tests, so it is off-trigger
+    (not in route and not in dropped as unsatisfiable-input on this signal set).
+    """
     cat = _real_catalog()
     res = route.compute_route(
         cat,
@@ -740,10 +755,13 @@ def test_real_catalog_needs_tests_reuse_scanner_dropped_without_confirmed_intent
     )
     assert (
         "reuse-scanner" not in res["route"]
-    ), "reuse-scanner must be absent without confirmed-intent"
+    ), "reuse-scanner must be absent without significant-build"
+    # With significant-build absent, reuse-scanner is not triggered at all - not dropped as
+    # unsatisfiable-input either, it simply is not a candidate.
     assert (
-        res["dropped"].get("reuse-scanner") == "unsatisfiable-input"
-    ), "reuse-scanner must be dropped as unsatisfiable-input without confirmed-intent"
+        res["dropped"].get("reuse-scanner") != "unsatisfiable-input"
+        or "reuse-scanner" not in res["dropped"]
+    ), "reuse-scanner is not triggered on needs-tests so must not appear as unsatisfiable-input"
 
 
 def test_optional_producer_in_route_creates_ordering_edge_without_artifact():
@@ -781,7 +799,7 @@ def test_optional_producer_in_route_creates_ordering_edge_without_artifact():
 # INTEGRATION TESTS - REAL CATALOG (TC-I01 - TC-I11, RED until catalog regen)
 # ---------------------------------------------------------------------------
 
-# EXCLUSION SET: all stages that must NOT appear in cheap-path route (no needs-tests)
+# EXCLUSION SET: all stages that must NOT appear in cheap-path route (no needs-tests, no significant-build)
 _EXCLUSION_SET = {
     "acceptance-reviewer",
     "accessibility-reviewer",
@@ -833,17 +851,17 @@ _DEEP_LENSES = {
 
 
 # --- TC-I01 ---
-def test_real_catalog_has_39_stages_no_skip_tests():
-    """After migration, catalog has 39 stages and skip-tests is absent."""
+def test_real_catalog_has_44_stages_no_skip_tests():
+    """After migration, catalog has 44 stages and skip-tests is absent."""
     cat = _real_catalog()
     stages = cat["stages"]
     assert len(stages) == 44, f"expected 44 stages, got {len(stages)}"
     assert "skip-tests" not in stages, "skip-tests must NOT exist in migrated catalog"
 
 
-# --- TC-I02 ---
+# --- TC-I02 / D-01 ---
 def test_real_catalog_implementer_contract():
-    """implementer: required input == ['approved-plan'] only; lock present with TDD guard."""
+    """implementer: required input == ['approved-plan'] only; lock has 2 entries (TDD + plan-gate)."""
     stages = _real_catalog()["stages"]
     s = stages["code-implementer"]
     assert s["data"]["input"]["required"] == [
@@ -853,9 +871,14 @@ def test_real_catalog_implementer_contract():
         "green-light" not in s["data"]["input"]["required"]
     ), "green-light must NOT be in implementer required input"
     assert "lock" in s, "implementer must have a 'lock' field"
-    assert s["lock"] == [
-        {"while": "needs-tests", "until": "tests-ready"}
-    ], f"implementer lock must be [{{while:needs-tests,until:tests-ready}}], got {s.get('lock')}"
+    lock = s["lock"]
+    assert len(lock) == 2, f"implementer lock must have exactly 2 entries, got {lock}"
+    whiles = {e["while"] for e in lock}
+    untils = {e["until"] for e in lock}
+    assert "needs-tests" in whiles, "lock must contain while:needs-tests"
+    assert "plan-ready" in whiles, "lock must contain while:plan-ready"
+    assert "tests-ready" in untils, "lock must contain until:tests-ready"
+    assert "plan-approved" in untils, "lock must contain until:plan-approved"
 
 
 # --- TC-I03 ---
@@ -876,11 +899,12 @@ def test_real_catalog_test_review_contract():
 
 # --- TC-I04 ---
 def test_real_catalog_triage_publishes_intent_confirmed_not_trivial():
-    """triage: publishes intent-confirmed and needs-tests; does not publish trivial."""
+    """triage: publishes intent-confirmed, needs-tests, and significant-build; does not publish trivial."""
     stages = _real_catalog()["stages"]
     pubs = stages["triage"]["signals"]["publishes"]
     assert "intent-confirmed" in pubs, "triage must publish intent-confirmed"
     assert "needs-tests" in pubs, "triage must publish needs-tests"
+    assert "significant-build" in pubs, "triage must publish significant-build"
     assert "trivial" not in pubs, "triage must NOT publish trivial after migration"
 
 
@@ -907,6 +931,39 @@ def test_real_catalog_correctness_publishes_needs_tests():
     ), "correctness-reviewer must publish needs-tests"
 
 
+# --- TC-I06a ---
+def test_real_catalog_correctness_publishes_significant_build():
+    """correctness-reviewer publishes significant-build (late cheap-path escalation pulls the
+    deep lenses). Both needs-tests and significant-build must be in its publishes list.
+
+    RED until correctness-reviewer's agent file is updated to publish significant-build.
+    """
+    stages = _real_catalog()["stages"]
+    s = stages["correctness-reviewer"]
+    assert (
+        "significant-build" in s["signals"]["publishes"]
+    ), "correctness-reviewer must publish significant-build (late escalation for deep lenses)"
+    assert (
+        "needs-tests" in s["signals"]["publishes"]
+    ), "correctness-reviewer must still publish needs-tests alongside significant-build"
+
+
+# --- TC-I06b ---
+def test_real_catalog_plan_challenger_publishes_plan_approved():
+    """plan-challenger publishes plan-approved (the plan-gate lock's until signal).
+
+    plan-approved must have at least one publisher in the catalog; plan-challenger is
+    the designated publisher. The router suite cannot prove the orchestrator calls it
+    at the right moment - that is integration-level. This test anchors the catalog
+    contract: plan-challenger's publishes list contains plan-approved.
+    """
+    stages = _real_catalog()["stages"]
+    s = stages["plan-challenger"]
+    assert (
+        "plan-approved" in s["signals"]["publishes"]
+    ), "plan-challenger must publish plan-approved (plan-gate lock until signal)"
+
+
 # --- TC-I07 ---
 def test_real_catalog_implementer_held_before_tests_ready():
     """TDD LOCK: before tests-ready, implementer is in held (lock active), not route."""
@@ -926,7 +983,8 @@ def test_real_catalog_implementer_held_before_tests_ready():
 
 # --- TC-I08 ---
 def test_real_catalog_implementer_in_route_after_tests_ready():
-    """TDD LOCK released: with tests-ready live, implementer is in route, not held."""
+    """TDD LOCK and plan-gate both released: with tests-ready and plan-approved live,
+    implementer is in route, not held."""
     cat = _real_catalog()
     res = route.compute_route(
         cat,
@@ -934,6 +992,7 @@ def test_real_catalog_implementer_in_route_after_tests_ready():
             "code",
             "needs-tests",
             "plan-ready",
+            "plan-approved",
             "test-cases-ready",
             "tests-red",
             "tests-ready",
@@ -942,15 +1001,15 @@ def test_real_catalog_implementer_in_route_after_tests_ready():
     )
     assert (
         "code-implementer" in res["route"]
-    ), "implementer must be in route once tests-ready is live"
+    ), "implementer must be in route once tests-ready and plan-approved are live"
     assert "code-implementer" not in res.get(
         "held", {}
-    ), "implementer must not be held once lock released"
+    ), "implementer must not be held once both locks released"
 
 
-# --- TC-I09 ---
+# --- TC-I09 / D-02 ---
 def test_real_catalog_trivial_code_implementer_runs():
-    """Cheap path (no needs-tests): implementer lock inactive, runs normally, held empty."""
+    """Cheap path with plan-ready but no plan-approved: plan-gate holds the implementer."""
     cat = _real_catalog()
     res = route.compute_route(
         cat,
@@ -958,11 +1017,30 @@ def test_real_catalog_trivial_code_implementer_runs():
         available={"confirmed-intent", "approved-plan"},
     )
     assert (
+        "code-implementer" not in res["route"]
+    ), "implementer must be held on cheap path when plan-approved is absent"
+    assert "code-implementer" in res.get(
+        "held", {}
+    ), "implementer must be in held waiting for plan-approved"
+    assert (
+        "plan-approved" in res["held"]["code-implementer"]
+    ), "held payload must list plan-approved as unmet until"
+
+
+def test_real_catalog_trivial_code_implementer_runs_with_plan_approved():
+    """Cheap path with plan-approved: plan-gate releases, implementer runs."""
+    cat = _real_catalog()
+    res = route.compute_route(
+        cat,
+        {"code", "plan-ready", "plan-approved"},
+        available={"confirmed-intent", "approved-plan"},
+    )
+    assert (
         "code-implementer" in res["route"]
-    ), "implementer must be in route on cheap path (no needs-tests)"
+    ), "implementer must be in route once plan-approved is live on cheap path"
     assert (
         res.get("held", {}).get("code-implementer") is None
-    ), "implementer must not be in held on cheap path"
+    ), "implementer must not be in held once plan-approved is live"
 
 
 # --- TC-I10 ---
@@ -985,6 +1063,133 @@ def test_real_catalog_route_held_disjoint():
     ), "route and held must be disjoint"
 
 
+# --- TC-I12 ---
+def test_real_catalog_15_movers_subscribe_significant_build():
+    """The 15 stages that moved from needs-tests to significant-build each subscribe
+    significant-build and do NOT subscribe needs-tests.
+
+    3 TDD chain stages (test-plan, test-gap, test-verifier) stay on needs-tests - they
+    are explicitly excluded from the mover set.
+    """
+    _MOVERS = {
+        "acceptance-reviewer",
+        "architecture-reviewer",
+        "assumptions",
+        "capture-agent",
+        "consistency-reviewer",
+        "health-checker",
+        "naming-clarity",
+        "performance-reviewer",
+        "plan-adherence-reviewer",
+        "plan-challenger",
+        "prototype-identifier",
+        "quality-reviewer",
+        "reuse-reviewer",
+        "reuse-scanner",
+        "structure-reviewer",
+    }
+    _TDD_CHAIN = {"test-plan", "test-gap", "test-verifier"}
+    stages = _real_catalog()["stages"]
+    for name in _MOVERS:
+        s = stages[name]
+        subs = s["signals"]["subscribes"]
+        assert (
+            "significant-build" in subs
+        ), f"{name} must subscribe significant-build (15-mover), got {subs}"
+        assert (
+            "needs-tests" not in subs
+        ), f"{name} must NOT subscribe needs-tests after migration, got {subs}"
+    for name in _TDD_CHAIN:
+        s = stages[name]
+        subs = s["signals"]["subscribes"]
+        assert (
+            "needs-tests" in subs
+        ), f"{name} is TDD chain and must still subscribe needs-tests, got {subs}"
+        assert (
+            "significant-build" not in subs
+        ), f"{name} is TDD chain and must NOT subscribe significant-build, got {subs}"
+
+
+# --- TC-I13 ---
+def test_real_catalog_significant_build_scout_stages():
+    """significant-build pulls in Scout pre-impl stages (reuse-scanner, health-checker,
+    prototype-identifier) on {code, significant-build}."""
+    cat = _real_catalog()
+    res = route.compute_route(
+        cat,
+        {"code", "significant-build"},
+        available={"confirmed-intent"},
+    )
+    for stage in ("reuse-scanner", "health-checker", "prototype-identifier"):
+        assert (
+            stage in res["route"]
+        ), f"{stage} must be in route when significant-build is live"
+
+
+# --- TC-I14 ---
+def test_real_catalog_significant_build_deep_lenses_on_code_written():
+    """significant-build pulls in deep review lenses when code-written is also live.
+
+    Stages that subscribe significant-build and require diff compose once diff is available.
+    """
+    cat = _real_catalog()
+    res = route.compute_route(
+        cat,
+        {"code", "significant-build", "code-written"},
+        available={"confirmed-intent", "diff"},
+    )
+    for stage in (
+        "naming-clarity",
+        "assumptions",
+        "architecture-reviewer",
+        "quality-reviewer",
+    ):
+        assert (
+            stage in res["route"]
+        ), f"{stage} must be in route on significant-build + code-written with diff"
+
+
+# --- TC-I15: re-numbered to avoid clash with the original TC-I11 block above ---
+def test_real_catalog_needs_tests_pulls_only_tdd_chain():
+    """needs-tests (without significant-build) pulls ONLY the TDD chain stages.
+
+    test-plan, test-gap, test-verifier are in route; the 15 movers are NOT triggered
+    by needs-tests alone.
+    """
+    cat = _real_catalog()
+    res = route.compute_route(
+        cat,
+        {"code", "needs-tests", "plan-ready"},
+        available={"confirmed-intent", "approved-plan"},
+    )
+    route_set = set(res["route"])
+    for stage in ("test-plan",):
+        assert (
+            stage in route_set
+        ), f"{stage} must be in route when needs-tests is live (TDD chain)"
+    _MOVERS = {
+        "acceptance-reviewer",
+        "architecture-reviewer",
+        "assumptions",
+        "capture-agent",
+        "consistency-reviewer",
+        "health-checker",
+        "naming-clarity",
+        "performance-reviewer",
+        "plan-adherence-reviewer",
+        "plan-challenger",
+        "prototype-identifier",
+        "quality-reviewer",
+        "reuse-reviewer",
+        "reuse-scanner",
+        "structure-reviewer",
+    }
+    for stage in _MOVERS:
+        assert (
+            stage not in route_set
+        ), f"{stage} must NOT be in route on needs-tests alone (subscribes significant-build)"
+
+
 # ---------------------------------------------------------------------------
 # REWRITTEN MIGRATION TESTS (cheap-path variants replacing trivial/skip-tests)
 # ---------------------------------------------------------------------------
@@ -992,7 +1197,8 @@ def test_real_catalog_route_held_disjoint():
 
 def test_real_catalog_cheap_path_route_minimal():
     """Cheap path (no needs-tests signal): planner fires via intent-confirmed,
-    implementer runs immediately, none of the deep review stages or TDD chain appear."""
+    none of the deep review stages or TDD chain appear. Implementer is held by
+    the plan-gate lock until plan-approved is published."""
     cat = _real_catalog()
     res = route.compute_route(
         cat,
@@ -1035,7 +1241,8 @@ def test_real_catalog_cheap_path_post_code():
 
 def test_real_catalog_cheap_path_multi_file_no_prototype_identifier():
     """LEAK GUARD: multi-file on cheap path must NOT trigger prototype-identifier.
-    prototype-identifier subscribes needs-tests only."""
+    prototype-identifier subscribes significant-build, which is absent on the cheap path.
+    """
     cat = _real_catalog()
     res = route.compute_route(
         cat,
@@ -1056,7 +1263,7 @@ def test_real_catalog_cheap_path_multi_file_no_prototype_identifier():
 
 
 def test_real_catalog_needs_tests_implementer_held_pre_test_chain():
-    """Before tests are written, implementer's lock is active - it is in held, not dropped."""
+    """Before tests are written, implementer is held by both TDD lock AND plan-gate lock."""
     cat = _real_catalog()
     res = route.compute_route(
         cat,
@@ -1072,14 +1279,16 @@ def test_real_catalog_needs_tests_implementer_held_pre_test_chain():
     assert (
         res["dropped"].get("code-implementer") != "unsatisfiable-input"
     ), "implementer must NOT be dropped as unsatisfiable-input (it is held)"
+    unmet = res["held"]["code-implementer"]
+    assert "tests-ready" in unmet, "held must list tests-ready as unmet (TDD lock)"
+    assert (
+        "plan-approved" in unmet
+    ), "held must list plan-approved as unmet (plan-gate lock)"
     assert "test-plan" in res["route"], "test-plan must be in route when plan-ready"
 
 
 def test_real_catalog_needs_tests_implementer_after_tests_ready():
-    """TDD LOCK (release side): implementer becomes runnable only once `tests-ready` is
-    live, which only test-review can publish - so test-review necessarily ran first. The
-    ordering is enforced temporally across recomposes (test-review is already_run by the
-    time the lock releases), not within one order array."""
+    """D-04: tests-ready live but plan-approved absent - plan-gate still holds implementer."""
     cat = _real_catalog()
     res = route.compute_route(
         cat,
@@ -1090,6 +1299,53 @@ def test_real_catalog_needs_tests_implementer_after_tests_ready():
             "test-cases-ready",
             "tests-red",
             "tests-ready",
+            # plan-approved intentionally absent
+        },
+        available={
+            "request",
+            "triage-read",
+            "confirmed-intent",
+            "approved-plan",
+            "test-cases",
+            "tests",
+        },
+        already_run={
+            "triage",
+            "reuse-scanner",
+            "health-checker",
+            "prototype-identifier",
+            "requirements-clarifier",
+            "code-planner",
+            "plan-challenger",
+            "test-plan",
+            "test-author",
+            "test-review",
+        },
+    )
+    assert (
+        "code-implementer" not in res["route"]
+    ), "implementer must still be held: plan-approved absent even though tests-ready is live"
+    assert (
+        "code-implementer" in res["held"]
+    ), "implementer must be in held waiting for plan-approved"
+    assert (
+        "plan-approved" in res["held"]["code-implementer"]
+    ), "held payload must list plan-approved as unmet until"
+
+
+def test_real_catalog_needs_tests_implementer_runs_with_both_released():
+    """D-04 sibling: both tests-ready AND plan-approved live - implementer runs."""
+    cat = _real_catalog()
+    res = route.compute_route(
+        cat,
+        {
+            "code",
+            "needs-tests",
+            "plan-ready",
+            "test-cases-ready",
+            "tests-red",
+            "tests-ready",
+            "plan-approved",
         },
         available={
             "request",
@@ -1114,10 +1370,10 @@ def test_real_catalog_needs_tests_implementer_after_tests_ready():
     )
     assert (
         "code-implementer" in res["route"]
-    ), "implementer is runnable once tests-ready is live"
-    assert (
-        "code-implementer" not in res["held"]
-    ), "implementer is no longer held after release"
+    ), "implementer is runnable once both tests-ready and plan-approved are live"
+    assert "code-implementer" not in res.get(
+        "held", {}
+    ), "implementer is no longer held after both locks release"
     assert (
         "test-review" not in res["route"]
     ), "test-review already ran (sole publisher of tests-ready), so it is not re-routed"
@@ -1323,6 +1579,12 @@ def test_real_catalog_visual_verifier_opt_in_only():
 
 # ---------------------------------------------------------------------------
 # SYSTEM PATH - path, safety gate, and bug disambiguation by path
+#
+# NOTE: plan-approved on the system path is orchestrator-sourced (published by
+# plan-challenger, which the orchestrator runs before system-executor). The router
+# suite cannot prove self-release - it can only verify that plan-approved in live
+# signals releases the lock. The orchestrator is responsible for ensuring plan-challenger
+# publishes plan-approved before system-executor is dispatched.
 # ---------------------------------------------------------------------------
 
 
@@ -1372,7 +1634,7 @@ def test_real_catalog_system_executor_held_on_destructive_op():
 
 
 def test_real_catalog_system_executor_runs_after_safety_approved():
-    """safety-approved releases the executor's lock - it rejoins the route."""
+    """D-06: safety-approved present but plan-approved absent - plan-gate still holds executor."""
     cat = _real_catalog()
     res = route.compute_route(
         cat,
@@ -1380,11 +1642,30 @@ def test_real_catalog_system_executor_runs_after_safety_approved():
         available={"confirmed-intent", "system-plan"},
     )
     assert (
+        "system-executor" not in res["route"]
+    ), "executor must still be held: plan-approved absent even though safety-approved is live"
+    assert "system-executor" in res.get(
+        "held", {}
+    ), "executor must be in held waiting for plan-approved"
+    assert (
+        "plan-approved" in res["held"]["system-executor"]
+    ), "held payload must list plan-approved as unmet until"
+
+
+def test_real_catalog_system_executor_runs_after_safety_and_plan_approved():
+    """D-06 sibling: both safety-approved AND plan-approved live - executor runs."""
+    cat = _real_catalog()
+    res = route.compute_route(
+        cat,
+        {"system", "plan-ready", "destructive-op", "safety-approved", "plan-approved"},
+        available={"confirmed-intent", "system-plan"},
+    )
+    assert (
         "system-executor" in res["route"]
-    ), "executor runs once safety-approved is live"
+    ), "executor runs once both safety-approved and plan-approved are live"
     assert "system-executor" not in res.get(
         "held", {}
-    ), "executor no longer held after approval"
+    ), "executor no longer held after both locks release"
 
 
 def test_real_catalog_bug_routes_to_matching_investigator():
@@ -1407,7 +1688,7 @@ def test_real_catalog_bug_routes_to_matching_investigator():
 
 
 def test_real_catalog_system_executor_runs_clean_when_no_destructive_op():
-    """No destructive-op: the executor's lock is inactive and it runs straight off the plan."""
+    """D-05: plan-ready without plan-approved now holds system-executor via plan-gate lock."""
     cat = _real_catalog()
     res = route.compute_route(
         cat,
@@ -1415,11 +1696,406 @@ def test_real_catalog_system_executor_runs_clean_when_no_destructive_op():
         available={"confirmed-intent", "system-plan"},
     )
     assert (
+        "system-executor" not in res["route"]
+    ), "executor must be held when plan-approved is absent (plan-gate lock)"
+    assert "system-executor" in res.get(
+        "held", {}
+    ), "executor must be in held waiting for plan-approved"
+    assert (
+        "plan-approved" in res["held"]["system-executor"]
+    ), "held payload must list plan-approved as unmet until"
+
+
+def test_real_catalog_system_executor_runs_with_plan_approved_no_destructive_op():
+    """D-05 sibling: plan-approved present, no destructive-op - executor runs."""
+    cat = _real_catalog()
+    res = route.compute_route(
+        cat,
+        {"system", "plan-ready", "plan-approved"},
+        available={"confirmed-intent", "system-plan"},
+    )
+    assert (
         "system-executor" in res["route"]
-    ), "executor runs when no destructive-op is live"
+    ), "executor runs when plan-approved is live and no destructive-op is present"
     assert (
         res.get("held", {}).get("system-executor") is None
-    ), "no lock held on the clean path"
+    ), "no lock held when plan-approved present and no destructive-op"
+
+
+# ---------------------------------------------------------------------------
+# RC3: extract_input_template, catalog.input_template, check_catalog invariant
+# ---------------------------------------------------------------------------
+# Load gen-catalog at module level so the module imports (collection is never
+# broken), but reference extract_input_template INSIDE each test body so that
+# AttributeError on missing function fails only the relevant test.
+
+import importlib.util as _ilu
+
+_GEN_CATALOG_PATH = Path(__file__).resolve().parents[1] / "gen-catalog.py"
+_gen_catalog_spec = _ilu.spec_from_file_location("gen_catalog", _GEN_CATALOG_PATH)
+_gen_catalog = _ilu.module_from_spec(_gen_catalog_spec)
+_gen_catalog_spec.loader.exec_module(_gen_catalog)
+
+
+# --- RC3-A01 ---
+def test_extract_input_template_happy_path():
+    """extract_input_template returns the inner fence text for a well-formed ## Input section."""
+    fn = getattr(_gen_catalog, "extract_input_template")
+    text = "## Input\n\n```\n<FOO>bar</FOO>\n```\n"
+    assert (
+        fn(text) == "<FOO>bar</FOO>\n"
+    ), f"expected inner fence text, got {fn(text)!r}"
+
+
+# --- RC3-A02 ---
+def test_extract_input_template_no_heading():
+    """extract_input_template returns '' when no ## Input section exists."""
+    fn = getattr(_gen_catalog, "extract_input_template")
+    text = "## Output\n\n```\nfoo\n```\n"
+    assert fn(text) == "", f"expected empty string, got {fn(text)!r}"
+
+
+# --- RC3-A03 ---
+def test_extract_input_template_heading_no_fence():
+    """extract_input_template returns '' when ## Input has no fence before the next ## heading."""
+    fn = getattr(_gen_catalog, "extract_input_template")
+    text = "## Input\n\nSome prose without a fence.\n\n## Output\n\n```\nfoo\n```\n"
+    assert (
+        fn(text) == ""
+    ), f"expected empty string (no fence under ## Input), got {fn(text)!r}"
+
+
+# --- RC3-A04 ---
+def test_extract_input_template_stops_at_next_heading():
+    """The fence under a later ## Output section is NOT captured when ## Input has no fence."""
+    fn = getattr(_gen_catalog, "extract_input_template")
+    # ## Input has no fence; ## Output has one - must not bleed through
+    text = "## Input\n\nNo fence here.\n\n## Output\n\n```\ncaptured-wrongly\n```\n"
+    result = fn(text)
+    assert "captured-wrongly" not in result, (
+        "fence under ## Output must not bleed into ## Input extraction, "
+        f"got {result!r}"
+    )
+    assert result == "", f"expected '', got {result!r}"
+
+
+# --- RC3-A05 ---
+def test_extract_input_template_empty_fence():
+    """extract_input_template returns '' for an empty fence (open immediately closed)."""
+    fn = getattr(_gen_catalog, "extract_input_template")
+    text = "## Input\n\n```\n```\n"
+    assert fn(text) == "", f"expected empty string for empty fence, got {fn(text)!r}"
+
+
+# --- RC3-A06 ---
+def test_extract_input_template_two_headings_first_wins():
+    """Two ## Input headings - only the first match's block is returned."""
+    fn = getattr(_gen_catalog, "extract_input_template")
+    text = (
+        "## Input\n\n```\nfirst-block\n```\n\n" "## Input\n\n```\nsecond-block\n```\n"
+    )
+    result = fn(text)
+    assert result == "first-block\n", f"expected first block only, got {result!r}"
+    assert "second-block" not in result, "second ## Input block must not appear"
+
+
+# ---------------------------------------------------------------------------
+# RC3-B: catalog assertions against the real catalog
+# ---------------------------------------------------------------------------
+
+
+# --- RC3-B01 ---
+def test_real_catalog_every_stage_has_input_template():
+    """Every stage entry in the regenerated catalog has an 'input_template' key of type str."""
+    cat = _real_catalog()
+    for name, stage in cat["stages"].items():
+        assert "input_template" in stage, f"{name}: missing 'input_template' field"
+        assert isinstance(
+            stage["input_template"], str
+        ), f"{name}: input_template must be str, got {type(stage['input_template'])}"
+
+
+# --- RC3-B02 ---
+def test_real_catalog_triage_input_template_empty():
+    """triage has no ## Input section - its input_template must be ''."""
+    cat = _real_catalog()
+    triage = cat["stages"]["triage"]
+    assert (
+        triage["input_template"] == ""
+    ), f"triage input_template must be '', got {triage['input_template']!r}"
+
+
+# --- RC3-B03 ---
+def test_real_catalog_test_chain_templates_nonempty():
+    """test-gap, test-plan, and test-review each have a non-empty input_template
+    after their ## Input sections are authored."""
+    cat = _real_catalog()
+    for name, expected_tag in (
+        ("test-gap", "<DIFF>"),
+        ("test-plan", "<APPROVED_PLAN>"),
+        ("test-review", "<TESTS>"),
+    ):
+        tmpl = cat["stages"][name]["input_template"]
+        assert tmpl, f"{name}: input_template must be non-empty after RC3"
+        assert (
+            expected_tag in tmpl
+        ), f"{name}: input_template must contain {expected_tag}, got {tmpl!r}"
+
+
+# --- RC3-B04 ---
+def test_real_catalog_adr_drafter_template_nonempty_with_tag():
+    """adr-drafter's ## Inputs heading renamed to ## Input; template is non-empty
+    and contains <DECISION_TITLE>."""
+    cat = _real_catalog()
+    tmpl = cat["stages"]["adr-drafter"]["input_template"]
+    assert (
+        tmpl
+    ), "adr-drafter: input_template must be non-empty after RC3 heading rename"
+    assert (
+        "<DECISION_TITLE>" in tmpl
+    ), f"adr-drafter: input_template must contain <DECISION_TITLE>, got {tmpl!r}"
+
+
+# ---------------------------------------------------------------------------
+# RC3-C: check_catalog template-presence invariant
+# ---------------------------------------------------------------------------
+
+
+# --- RC3-C01 ---
+def test_check_catalog_flags_consuming_stage_without_template():
+    """A stage with non-empty required input and empty input_template must be flagged.
+
+    Uses req=["request"] so `request` is a SEED_ARTIFACT - the existing producer check
+    stays silent and only the (not-yet-existing) template-presence invariant should fire.
+    """
+    bad_stage = S(
+        ["code"],
+        req=["request"],
+        out=["test-cases"],
+        sub=["request-received"],
+        pub=["scope-shift"],
+    )
+    bad_stage["input_template"] = ""  # consuming stage - no template
+    synthetic = {"stages": {"bad-consumer": bad_stage}}
+    problems = check_catalog.check(synthetic)
+    tmpl_problems = [
+        p
+        for p in problems
+        if "bad-consumer" in p and ("input_template" in p or "template" in p.lower())
+    ]
+    assert tmpl_problems, (
+        f"check() must flag bad-consumer with a template-specific problem, "
+        f"problems={problems}"
+    )
+
+
+# --- RC3-C02 ---
+def test_check_catalog_exempt_triage_passes_without_template():
+    """A stage named 'triage' (in TEMPLATE_EXEMPT) with required input and empty template
+    must NOT be flagged by the template-presence invariant."""
+    triage_stage = S(
+        ["code", "talk", "sketch", "system"],
+        req=["request"],
+        out=["triage-read"],
+        sub=["request-received"],
+        pub=["scope-shift"],
+    )
+    triage_stage["input_template"] = ""
+    synthetic = {"stages": {"triage": triage_stage}}
+    problems = check_catalog.check(synthetic)
+    # The only problem allowed is the orphan-subscribe check (request-received is a seed,
+    # so none) or produces-check; NOT a template-presence problem.
+    template_problems = [
+        p for p in problems if "input_template" in p or "template" in p.lower()
+    ]
+    assert (
+        not template_problems
+    ), f"triage must be exempt from template-presence invariant, got {template_problems}"
+
+
+# --- RC3-C03 ---
+def test_real_catalog_coherence_after_rc3():
+    """check_catalog.check(_real_catalog()) == [] after templates are authored and catalog
+    regenerated, AND stable consuming stages carry non-empty input_template
+    (regression - red until RC3 is complete)."""
+    cat = _real_catalog()
+    assert check_catalog.check(cat) == []
+    # Coupled to the RC3 deliverable: consuming stages must have non-empty input_template.
+    # KeyError-red today (field absent); green only after field is populated and catalog
+    # regenerated.
+    for stage_name in ("code-planner", "test-review", "correctness-reviewer"):
+        assert cat["stages"][stage_name][
+            "input_template"
+        ].strip(), f"{stage_name}: input_template must be non-empty after RC3"
+
+
+# ---------------------------------------------------------------------------
+# RC3-D: idempotency and no-drift
+# ---------------------------------------------------------------------------
+
+
+# --- RC3-D01 ---
+def test_build_catalog_idempotent():
+    """build_catalog() called twice yields byte-identical JSON (sort_keys=True)."""
+    first = json.dumps(_gen_catalog.build_catalog(), sort_keys=True)
+    second = json.dumps(_gen_catalog.build_catalog(), sort_keys=True)
+    assert first == second, "build_catalog() must be idempotent"
+
+
+# --- RC3-D02 ---
+def test_catalog_no_drift_from_committed():
+    """The in-memory build_catalog() output matches the committed generated/catalog.json
+    byte-for-byte (no uncommitted drift)."""
+    committed_path = Path(__file__).resolve().parents[2] / "generated" / "catalog.json"
+    committed = json.loads(committed_path.read_text(encoding="utf-8"))
+    live = _gen_catalog.build_catalog()
+    assert json.dumps(live, sort_keys=True) == json.dumps(
+        committed, sort_keys=True
+    ), "build_catalog() output differs from committed catalog.json - regenerate"
+
+
+# ---------------------------------------------------------------------------
+# RC3-E: router tolerance - no input_template key required by compute_route
+# ---------------------------------------------------------------------------
+
+
+# --- RC3-E01 ---
+def test_router_tolerates_missing_input_template():
+    """A synthetic stage with NO input_template key still routes correctly.
+    compute_route never reads input_template."""
+    stage_no_tmpl = S(
+        ["code"],
+        req=["plan"],
+        out=["diff"],
+        sub=["plan-ready"],
+        pub=["code-written", "scope-shift"],
+    )
+    # Confirm S() does not add input_template by default
+    assert (
+        "input_template" not in stage_no_tmpl
+    ), "S() must not add input_template - this confirms the router never requires it"
+    cat = {"stages": {"impl": stage_no_tmpl}}
+    res = route.compute_route(
+        cat, {"plan-ready"}, available={"plan"}, already_run=set()
+    )
+    assert (
+        "impl" in res["route"]
+    ), "stage without input_template must still route normally"
+
+
+# ---------------------------------------------------------------------------
+# COVERAGE-GAP TESTS (GAP 1 - GAP 4): plan-approval gate edge cases
+# ---------------------------------------------------------------------------
+
+
+# --- GAP 1 ---
+def test_real_catalog_system_executor_held_both_locks_simultaneously():
+    """Both safety-gate lock AND plan-gate lock are active at the same time.
+
+    live: {system, plan-ready, destructive-op} - neither safety-approved nor plan-approved
+    present. system-executor must be in held and the held payload must list BOTH
+    unmet until signals (safety-approved AND plan-approved).
+
+    Existing tests cover each lock individually; none asserts both unmet untils
+    together on the real catalog.
+    """
+    cat = _real_catalog()
+    res = route.compute_route(
+        cat,
+        {"system", "plan-ready", "destructive-op"},
+        available={"confirmed-intent", "system-plan"},
+    )
+    assert "system-executor" not in res["route"], "executor must not be in route"
+    assert "system-executor" in res["held"], "executor must be in held"
+    unmet = res["held"]["system-executor"]
+    assert (
+        "safety-approved" in unmet
+    ), f"held payload must list safety-approved as unmet until, got {unmet}"
+    assert (
+        "plan-approved" in unmet
+    ), f"held payload must list plan-approved as unmet until, got {unmet}"
+
+
+# --- GAP 2 ---
+def test_real_catalog_stale_plan_approved_artifact_does_not_release_plan_gate():
+    """Lock checks LIVE SIGNALS, not available artifacts - for the plan-gate.
+
+    plan-approved present as a stale AVAILABLE artifact (NOT in live) must NOT
+    release the plan-gate lock on code-implementer. Mirrors the existing
+    test_real_catalog_needs_tests_stale_tests_ready_artifact_does_not_release_lock
+    for the TDD lock, but exercises the plan-gate lock instead.
+    """
+    cat = _real_catalog()
+    res = route.compute_route(
+        cat,
+        {"code", "plan-ready"},  # plan-approved NOT in live
+        available={
+            "confirmed-intent",
+            "approved-plan",
+            "plan-approved",  # stale artifact in available, NOT a live signal
+        },
+    )
+    assert (
+        "code-implementer" not in res["route"]
+    ), "implementer must NOT be in route: stale plan-approved artifact does not release lock"
+    assert (
+        "code-implementer" in res["held"]
+    ), "implementer must be in held: lock checks live signals, not available artifacts"
+    assert (
+        "plan-approved" in res["held"]["code-implementer"]
+    ), "held payload must list plan-approved as unmet until"
+
+
+# --- GAP 3 ---
+def test_real_catalog_significant_build_without_needs_tests_excludes_tdd_lenses():
+    """significant-build WITHOUT needs-tests: deep review lenses ARE in route, but
+    test-gap and test-verifier are NOT.
+
+    This proves the Fix-4 property: a large no-tests change gets full review WITHOUT
+    test-gap/test-verifier nagging for TDD coverage.
+    """
+    cat = _real_catalog()
+    res = route.compute_route(
+        cat,
+        {"code", "significant-build", "code-written"},  # NO needs-tests
+        available={"confirmed-intent", "diff"},
+    )
+    route_set = set(res["route"])
+    # Deep lenses triggered by significant-build must be present (positive control)
+    for deep_lens in ("quality-reviewer", "architecture-reviewer", "naming-clarity"):
+        assert (
+            deep_lens in route_set
+        ), f"{deep_lens} must be in route on significant-build + code-written"
+    # TDD-chain lenses must NOT appear without needs-tests
+    assert (
+        "test-gap" not in route_set
+    ), "test-gap must NOT be in route without needs-tests"
+    assert (
+        "test-verifier" not in route_set
+    ), "test-verifier must NOT be in route without needs-tests"
+
+
+# --- GAP 4 ---
+def test_real_catalog_family_prefix_plan_approved_releases_plan_gate_code_implementer():
+    """Family-prefix plan-approved variant releases the plan-gate on the REAL catalog.
+
+    live: {code, plan-ready, plan-approved:auto} - a qualified variant of plan-approved
+    satisfies the until=plan-approved lock entry on code-implementer.
+    Existing family-prefix coverage is on the synthetic _lock_catalog only; this
+    anchors the same property against the real code-implementer lock.
+    """
+    cat = _real_catalog()
+    res = route.compute_route(
+        cat,
+        {"code", "plan-ready", "plan-approved:auto"},
+        available={"confirmed-intent", "approved-plan"},
+    )
+    assert (
+        "code-implementer" in res["route"]
+    ), "implementer must be in route: plan-approved:auto satisfies until=plan-approved"
+    assert (
+        res.get("held", {}).get("code-implementer") is None
+    ), "implementer must not be held once plan-approved:auto releases the plan-gate"
 
 
 if __name__ == "__main__":
