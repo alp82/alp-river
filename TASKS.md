@@ -1,13 +1,5 @@
 
-accept all url requests
-
----
-
-remove git hook
-
----
-
-proactive web search in every or selected subagents
+subagents with defined thinking tier
 
 ---
 
@@ -30,7 +22,6 @@ final step after plan:
 
 adding a component that lists cost breakdowns in a calculator classified as XXL
 based on amount of reviewers spawned (all of them)
-review fanout can be very heavy on interaction and effort
 
 ---
 
@@ -73,3 +64,8 @@ image generation
 ---
 
 video generation
+
+---
+
+remove git hook
+

@@ -27,6 +27,11 @@
 
 The last three updates:
 
+**1.1.7**
+
+- Planning and troubleshooting steps now look up a library, package, or version against current sources whenever the work commits to one, instead of only when something feels uncertain.
+- Each looked-up fact is recorded with its source and a confidence tag, so an assumption that could not be confirmed is visible rather than silently trusted.
+
 **1.1.6**
 
 - Risky parts of a task are now de-risked by a prototype matched to what is actually uncertain - an integration, a data shape, or whether something is fast enough.
@@ -37,12 +42,6 @@ The last three updates:
 - A step whose result is lost to an internal error now recovers on its own from the work already on disk, instead of stalling the run.
 - A step that hangs is now noticed and unstuck automatically, so a single stuck step no longer freezes everything behind it.
 - You are pulled in only when the recovered work genuinely does not add up, not on every hiccup.
-
-**1.1.4**
-
-- Every code or system change now waits for plan approval before any edit is made, so nothing runs on a plan you have not okayed.
-- A small system or trivial change clears that approval with a single tap, and a one-file change clears it automatically.
-- How deeply a change is reviewed no longer rides on whether it needs tests, so a large change gets a full review even when there is nothing new to test.
 
 Full history in [CHANGELOG.md](CHANGELOG.md).
 

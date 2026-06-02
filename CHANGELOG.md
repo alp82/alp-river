@@ -2,6 +2,11 @@
 
 All notable changes to alp-river. Versions match `.claude-plugin/plugin.json`.
 
+## 1.1.7 - 2026-06-02
+
+- Planning and troubleshooting steps now look up a library, package, or version against current sources whenever the work commits to one, instead of only when something feels uncertain.
+- Each looked-up fact is recorded with its source and a confidence tag, so an assumption that could not be confirmed is visible rather than silently trusted.
+
 ## 1.1.6 - 2026-06-02
 
 - Risky parts of a task are now de-risked by a prototype matched to what is actually uncertain - an integration, a data shape, or whether something is fast enough.
