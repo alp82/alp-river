@@ -1,4 +1,7 @@
+compare reviewer scopes
+after adjustments clarify model and effort too
 
+---
 
 hooks after coding:
     linter
@@ -36,6 +39,10 @@ formal verification
     linter
     TDD
     etc.
+
+---
+
+https://github.com/robinebers/skills/blob/main/skills/code-upgrade/SKILL.md
 
 ---
 

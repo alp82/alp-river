@@ -2,6 +2,10 @@
 
 All notable changes to alp-river. Versions match `.claude-plugin/plugin.json`.
 
+## 1.1.9 - 2026-06-03
+
+- A change that writes to a database, file, network, or payment system is now reviewed for whether running it twice is safe, flagging any step that would double-apply or corrupt on a re-run.
+
 ## 1.1.8 - 2026-06-03
 
 - Each step now runs at a thinking depth matched to its job instead of all inheriting the deepest setting, so the hardest planning and reviews go deep while routine checks stay lean.

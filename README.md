@@ -27,6 +27,10 @@
 
 The last three updates:
 
+**1.1.9**
+
+- A change that writes to a database, file, network, or payment system is now reviewed for whether running it twice is safe, flagging any step that would double-apply or corrupt on a re-run.
+
 **1.1.8**
 
 - Each step now runs at a thinking depth matched to its job instead of all inheriting the deepest setting, so the hardest planning and reviews go deep while routine checks stay lean.
@@ -36,11 +40,6 @@ The last three updates:
 
 - Planning and troubleshooting steps now look up a library, package, or version against current sources whenever the work commits to one, instead of only when something feels uncertain.
 - Each looked-up fact is recorded with its source and a confidence tag, so an assumption that could not be confirmed is visible rather than silently trusted.
-
-**1.1.6**
-
-- Risky parts of a task are now de-risked by a prototype matched to what is actually uncertain - an integration, a data shape, or whether something is fast enough.
-- When the look of a UI is unsettled you get a visual picker; when the steps a user moves through are unsettled you get a separate clickable walk-through, each handed straight to the plan.
 
 Full history in [CHANGELOG.md](CHANGELOG.md).
 

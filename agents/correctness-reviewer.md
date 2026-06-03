@@ -26,6 +26,8 @@ Follows the Reviewer Contract in your DOCTRINE block - confidence tags, VERDICT/
 
 **Conventions**: Read the project's CLAUDE.md and verify compliance; the workflow doctrine you need is in your DOCTRINE block.
 
+**Retry safety**: When the diff carries a side-effecting operation - a database migration, a file or data write, a network mutation, a payment or other external call - check whether re-running it is safe. The doctrine standard is idempotent read-modify-write at the side-effecting edge: the operation reads current state before writing, so a re-run over work already on disk finishes only the remainder. Flag a side-effecting step that would double-apply, duplicate, or corrupt on a second run, and point ACTION_NEEDED at the state check that makes the re-run safe. When the diff touches no side-effecting surface, stay silent on this lens.
+
 **Cheap-path escalation**: On a build that bypassed the deeper chain (the cheap path), a late `#needs-tests` pulls the TDD chain in to retroactively test the diff, and a late `#significant-build` pulls the deep Review lenses in to scrutinize it. Publish whichever the diff warrants. Neither re-holds the already-run implementer - the loop skips `already_run`; the plan gate is strictly pre-implementation.
 
 ## Priority
