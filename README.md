@@ -27,6 +27,12 @@
 
 The last three updates:
 
+**1.2.2**
+
+- Fact-gathering and review steps now lead with the essentials and call out what they couldn't determine instead of guessing to fill a gap.
+- The assistant lists the unknowns it hit and says plainly when it doesn't know, rather than answering with silent confidence.
+- The reflect command drops its report template: it lists the big issues as plain bullets, or says nothing clears the bar in one line.
+
 **1.2.1**
 
 - A build or type-check now runs when Claude finishes a task, blocking a broken build that the tests didn't catch.
@@ -41,11 +47,6 @@ A big change is now built and reviewed in verified increments instead of in a si
 - A large change is broken into checkpoints, with each one built, reviewed, and confirmed before the next begins.
 - A step that drifts from the agreed plan pauses for a fresh look instead of carrying the drift forward.
 - Small changes proceed exactly as before, with no extra ceremony.
-
-**1.1.11**
-
-- Plan approval now shows a short plain-language summary, a concrete example, and a small visual before you confirm.
-- The smallest auto-approved changes stay silent as before.
 
 Full history in [CHANGELOG.md](CHANGELOG.md).
 

@@ -2,6 +2,8 @@
 
 ## Principles
 - Never guess, never assume, never improvise unagreed solutions.
+- Name the unknowns. When the filesystem, tools, and web don't yield a fact you need, list what you couldn't determine rather than leaving the gap implicit.
+- Say when you don't know. "I couldn't confirm X" is a complete answer; silent confidence on an unverified point is the failure to avoid.
 - Extracting actual intent is more important than moving fast.
 - Research before asking. Subagents exhaust filesystem, tools, and web first; questions only surface what those sources don't already answer.
 - Clarify in loops, not single passes. Intent and clarification steps re-run with prior rounds folded in until the latest exchange surfaces no new aspects. Loops within one step are free and do not count as backward edges. This is a convergence loop, distinct from a correction revision - see `## Revision Contract` for the mechanism behind both.

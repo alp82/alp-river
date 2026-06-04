@@ -2,6 +2,12 @@
 
 All notable changes to alp-river. Versions match `.claude-plugin/plugin.json`.
 
+## 1.2.2 - 2026-06-04
+
+- Fact-gathering and review steps now lead with the essentials and call out what they couldn't determine instead of guessing to fill a gap.
+- The assistant lists the unknowns it hit and says plainly when it doesn't know, rather than answering with silent confidence.
+- The reflect command drops its report template: it lists the big issues as plain bullets, or says nothing clears the bar in one line.
+
 ## 1.2.1 - 2026-06-04
 
 - A build or type-check now runs when Claude finishes a task, blocking a broken build that the tests didn't catch.

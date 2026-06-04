@@ -1,7 +1,3 @@
-STUCK
-
----
-
 identify task size. interesting for both milestone planning and complexity classifiation
 https://github.com/pskoett/pskoett-ai-skills/blob/main/skills%2Fskill-pipeline%2FSKILL.md
 

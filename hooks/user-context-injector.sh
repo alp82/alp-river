@@ -29,16 +29,19 @@
 #                                   performance-prototyper  (user_aware=0)
 #   User-aware Y + Project-aware N: visual-verifier, plan-adherence-reviewer,
 #                                   setup-agent
-#   User-aware N + Project-aware N: test-verifier and accessibility-reviewer are
-#                                   user_aware=0 arms that fall through for a
-#                                   doctrine-only payload (DOCTRINE_MAP entries).
-#                                   unknown agent types still exit at the
-#                                   terminal `*)`.
+#   User-aware N + Project-aware N: test-verifier, accessibility-reviewer, and
+#                                   test-gap are user_aware=0 arms that fall
+#                                   through for a doctrine-only payload
+#                                   (DOCTRINE_MAP entries). unknown agent types
+#                                   still exit at the terminal `*)`.
 #
-# Behavioral invariant: only test-verifier and accessibility-reviewer change
-# observable output (they previously exited silently, now emit a DOCTRINE-only
-# block). Every other doctrine-aware agent just gains a leading `## DOCTRINE`
-# block ahead of the context it already received.
+# Behavioral invariant: test-verifier, accessibility-reviewer, and test-gap emit
+# a DOCTRINE-only block from an otherwise-silent exit - they carry no user or
+# project context, so the `## DOCTRINE` block is their whole payload (test-gap
+# newly joins the doctrine-only fall-through arm below). Every other
+# doctrine-aware agent was already user- or project-aware (the 15 reviewer rows
+# and plan-adherence-reviewer), so it just gains a leading `## DOCTRINE` block
+# ahead of the context it already received.
 #
 # Non-Agent tool calls also exit silently. Fails open on any error - missing
 # files are normal.
@@ -89,7 +92,7 @@ case "$subagent_type" in
     ;;
   # User-aware: no. Project-aware: no. They cite doctrine, so they fall through
   # for a doctrine-only payload instead of hitting the terminal exit.
-  test-verifier|accessibility-reviewer)
+  test-verifier|accessibility-reviewer|test-gap)
     user_aware=0
     ;;
   # User-aware: no. Project-aware: no (not in READ_MAP either). Silent skip.
@@ -158,21 +161,23 @@ declare -A READ_MAP=(
 # definition cites that doctrine. Independent of the user-aware, project-aware, and
 # psychology axes (see the header).
 declare -A DOCTRINE_MAP=(
-  [correctness-reviewer]="reviewer-contract confidence-tagging discoveries"
-  [quality-reviewer]="reviewer-contract confidence-tagging discoveries"
-  [architecture-reviewer]="reviewer-contract confidence-tagging discoveries"
-  [security-reviewer]="reviewer-contract confidence-tagging discoveries"
-  [performance-reviewer]="reviewer-contract confidence-tagging discoveries"
-  [consistency-reviewer]="reviewer-contract confidence-tagging discoveries"
-  [structure-reviewer]="reviewer-contract confidence-tagging discoveries"
-  [naming-clarity]="reviewer-contract confidence-tagging discoveries"
-  [assumptions]="reviewer-contract confidence-tagging discoveries"
-  [reuse-reviewer]="reviewer-contract confidence-tagging"
-  [acceptance-reviewer]="reviewer-contract confidence-tagging"
-  [test-verifier]="reviewer-contract confidence-tagging"
-  [accessibility-reviewer]="reviewer-contract confidence-tagging"
-  [ux-reviewer]="reviewer-contract confidence-tagging"
-  [design-consistency-reviewer]="reviewer-contract confidence-tagging"
+  [correctness-reviewer]="reviewer-contract confidence-tagging discoveries communication"
+  [quality-reviewer]="reviewer-contract confidence-tagging discoveries communication"
+  [architecture-reviewer]="reviewer-contract confidence-tagging discoveries communication"
+  [security-reviewer]="reviewer-contract confidence-tagging discoveries communication"
+  [performance-reviewer]="reviewer-contract confidence-tagging discoveries communication"
+  [consistency-reviewer]="reviewer-contract confidence-tagging discoveries communication"
+  [structure-reviewer]="reviewer-contract confidence-tagging discoveries communication"
+  [naming-clarity]="reviewer-contract confidence-tagging discoveries communication"
+  [assumptions]="reviewer-contract confidence-tagging discoveries communication"
+  [reuse-reviewer]="reviewer-contract confidence-tagging communication"
+  [acceptance-reviewer]="reviewer-contract confidence-tagging communication"
+  [test-verifier]="reviewer-contract confidence-tagging communication"
+  [accessibility-reviewer]="reviewer-contract confidence-tagging communication"
+  [ux-reviewer]="reviewer-contract confidence-tagging communication"
+  [design-consistency-reviewer]="reviewer-contract confidence-tagging communication"
+  # communication-only by design - fact-reporter, no reviewer-contract scope
+  [plan-adherence-reviewer]="communication"
   [code-implementer]="code-doctrine discoveries"
   [code-planner]="code-doctrine"
   [plan-challenger]="code-doctrine"
@@ -181,6 +186,8 @@ declare -A DOCTRINE_MAP=(
   [system-planner]="code-doctrine"
   [system-executor]="code-doctrine discoveries"
   [system-investigator]="discoveries"
+  # communication-only by design - coverage fact-reporter, case arm added below
+  [test-gap]="communication"
 )
 
 # Summarize active ADRs as a markdown bullet list. Empty string when nothing
