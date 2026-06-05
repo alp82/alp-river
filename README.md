@@ -27,6 +27,13 @@
 
 The last three updates:
 
+**1.2.3**
+
+- Reviews now surface a finding only when it carries a concrete, observable consequence, cutting "this could be cleaner" noise from the results.
+- A review no longer flags an issue that a guard or framework default outside the change already fully handles before the touched code runs.
+- Debugging now traces the full chain from cause to symptom and treats an unexplained jump as the next thing to investigate rather than a conclusion.
+- When candidate causes keep getting ruled out, the investigator steps back to ask why it is stuck instead of spawning more variations of a dead theory.
+
 **1.2.2**
 
 - Fact-gathering and review steps now lead with the essentials and call out what they couldn't determine instead of guessing to fill a gap.
@@ -39,14 +46,6 @@ The last three updates:
 - The after-edit formatter now reports lint problems rather than silently rewriting code to fix them.
 - The finish-line test check now catches failures it had been silently letting through.
 - A missing or timed-out test runner is no longer misread as a failing test.
-
-**1.2.0**
-
-A big change is now built and reviewed in verified increments instead of in a single pass at the end, so problems surface early while each piece is small.
-
-- A large change is broken into checkpoints, with each one built, reviewed, and confirmed before the next begins.
-- A step that drifts from the agreed plan pauses for a fresh look instead of carrying the drift forward.
-- Small changes proceed exactly as before, with no extra ceremony.
 
 Full history in [CHANGELOG.md](CHANGELOG.md).
 

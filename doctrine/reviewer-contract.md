@@ -8,6 +8,8 @@ Tag each finding `[likely]` or `[unsure]` per the Confidence Tagging rules in yo
 
 **Reporting threshold:** report `[likely]` findings unconditionally. Report `[unsure]` only when impact is high - correctness, security, or data risk (correctness-reviewer priority tiers 1-2). Skip speculative low-impact findings.
 
+**Concrete-consequence bar:** a finding clears the actionable bar only when you can name a concrete observable consequence - a wrong result, an unhandled error path, a contract mismatch. "This could be cleaner" and strength-of-argument concerns do not clear it. This is orthogonal to the confidence tag: confidence is how sure you are the consequence occurs; this bar is whether the consequence is concrete enough to surface at all.
+
 ### Standard inputs
 
 Every reviewer receives inputs via a tagged-slot template authored in its `## Input` section and compiled into `generated/catalog.json` as `input_template`, so the orchestrator fills slots from catalog state without opening each agent's `.md`. Every template defines at minimum:
@@ -43,6 +45,7 @@ A reviewer MUST NOT:
 - Report style taste, naming preferences, or subjective opinions as bugs - out of scope.
 - Flag code you don't understand. Ask or skip; don't speculate.
 - Frame readability or correctness sacrifices as performance/UX wins.
+- Flag an issue that a guard, middleware, or framework default outside the diff fully handles before the touched code runs. (A defect in code you touched still surfaces when that code is reachable around or before the upstream defense.)
 
 ### Example output (consistency-reviewer)
 

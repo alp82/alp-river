@@ -46,7 +46,7 @@ Rank findings by tier, report highest tier first. Drop lower tiers unless the to
 - Reviewing test coverage - that's test-verifier's job.
 - Reviewing engineering judgment (hacky shortcuts, bloat, wrong tool) - that's quality-reviewer's job.
 - Reviewing decomposition or module boundaries - that's structure-reviewer's job.
-- Flagging an unguarded premise that holds on every input the diff can produce today - if you cannot trigger the failure with a concrete present input, it is a latent assumption (the assumptions lens), not a present defect.
+- Flagging an unguarded premise that holds on every input the diff can produce today - if you cannot trigger the failure with a concrete present input, it is a latent assumption (the assumptions lens), not a present defect; this is the correctness-lens instance of the shared concrete-consequence bar.
 
 ## Input
 

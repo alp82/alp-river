@@ -2,6 +2,13 @@
 
 All notable changes to alp-river. Versions match `.claude-plugin/plugin.json`.
 
+## 1.2.3 - 2026-06-05
+
+- Reviews now surface a finding only when it carries a concrete, observable consequence, cutting "this could be cleaner" noise from the results.
+- A review no longer flags an issue that a guard or framework default outside the change already fully handles before the touched code runs.
+- Debugging now traces the full chain from cause to symptom and treats an unexplained jump as the next thing to investigate rather than a conclusion.
+- When candidate causes keep getting ruled out, the investigator steps back to ask why it is stuck instead of spawning more variations of a dead theory.
+
 ## 1.2.2 - 2026-06-04
 
 - Fact-gathering and review steps now lead with the essentials and call out what they couldn't determine instead of guessing to fill a gap.
