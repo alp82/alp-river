@@ -27,6 +27,11 @@
 
 The last three updates:
 
+**1.2.5**
+
+- The per-turn pipeline status now renders as formatted text, so its step icons and progress markers show reliably instead of as raw monospace.
+- The plain-language plan summary shown before approval now reads as formatted prose rather than a monospace block.
+
 **1.2.4**
 
 - Code review now flags unsafe database migrations - non-reversible changes, constraints added without a backfill, and renames that break instances still running during a rollout.
@@ -38,12 +43,6 @@ The last three updates:
 - A review no longer flags an issue that a guard or framework default outside the change already fully handles before the touched code runs.
 - Debugging now traces the full chain from cause to symptom and treats an unexplained jump as the next thing to investigate rather than a conclusion.
 - When candidate causes keep getting ruled out, the investigator steps back to ask why it is stuck instead of spawning more variations of a dead theory.
-
-**1.2.2**
-
-- Fact-gathering and review steps now lead with the essentials and call out what they couldn't determine instead of guessing to fill a gap.
-- The assistant lists the unknowns it hit and says plainly when it doesn't know, rather than answering with silent confidence.
-- The reflect command drops its report template: it lists the big issues as plain bullets, or says nothing clears the bar in one line.
 
 Full history in [CHANGELOG.md](CHANGELOG.md).
 

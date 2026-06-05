@@ -2,6 +2,11 @@
 
 All notable changes to alp-river. Versions match `.claude-plugin/plugin.json`.
 
+## 1.2.5 - 2026-06-05
+
+- The per-turn pipeline status now renders as formatted text, so its step icons and progress markers show reliably instead of as raw monospace.
+- The plain-language plan summary shown before approval now reads as formatted prose rather than a monospace block.
+
 ## 1.2.4 - 2026-06-05
 
 - Code review now flags unsafe database migrations - non-reversible changes, constraints added without a backfill, and renames that break instances still running during a rollout.

@@ -109,7 +109,7 @@ Canonical terms for this project. Agents read this to avoid renaming the same co
 **Avoid:** "replan"; not "scope-shift" (which breaks a route premise - this re-splits remaining milestones).
 
 ### Colored milestone render
-**Definition:** The milestone-status layer the render card adds during a milestone build: a `milestone k of N` header and the milestone list marked 🟩 (verified) / 🟨 (building) / 🟥 (pending), atop the existing per-stage `▶ ✓ 🔒 •` markers.
+**Definition:** The milestone-status layer the render card adds during a milestone build: a `milestone k of N` header and the milestone list marked 🟩 (verified) / 🟨 (building) / 🟥 (pending), atop the existing per-stage `▶ ✓ 🔒 •` markers. The card is native markdown, so these markers render natively.
 **Avoid:** "progress bar", "status colors".
 
 ## Surfacing
