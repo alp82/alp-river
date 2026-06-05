@@ -24,8 +24,8 @@ File-system only - no database.
 
 ## Testing
 
-No internal test suite; Stop hook (`verify-tests.sh`) runs the consumer project's tests after pipeline runs.
-- **Constraint:** Plugin changes are validated by exercising the pipeline in a real consumer repo - no unit tests inside this repo; `verify-tests.sh` must remain shell-portable and tolerate consumer repos with no test command.
+No internal test suite; Stop hook (`verify-tests.py`) runs the consumer project's tests after pipeline runs.
+- **Constraint:** Plugin changes are validated by exercising the pipeline in a real consumer repo - no unit tests inside this repo; `verify-tests.py` must remain stdlib-Python-portable (standard library only, no third-party deps, runs on a plain `python3`) and tolerate consumer repos with no test command.
 - **Why:** The plugin's behavior is mostly Markdown content and hook glue - the test-of-record is the pipeline running end-to-end against a real project.
 
 ## Plugin content conventions

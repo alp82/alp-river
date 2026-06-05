@@ -1,7 +1,7 @@
-"""Failing (red) tests for hooks/verify-build.sh.
+"""Failing (red) tests for hooks/verify-build.py.
 
 The script under test does NOT exist yet - these tests are intentionally red.
-They define the expected behaviour of verify-build.sh, which reads a JSON
+They define the expected behaviour of verify-build.py, which reads a JSON
 payload from stdin and:
 
   1. Detects a build command (currently: package.json with a `build` script).
@@ -23,25 +23,29 @@ error output - `npm run build` invokes sh to execute the script, which uses
 """
 
 import json
+import os
 import shutil
 import subprocess
 import tempfile
 from pathlib import Path
 
 # Path to the script under test (does not exist yet - tests are red by design)
-VERIFY_BUILD_SH = Path(__file__).resolve().parents[1] / "verify-build.sh"
+VERIFY_BUILD_PY = Path(__file__).resolve().parents[1] / "verify-build.py"
 
 
-def _run_hook(payload_dict):
+def _run_hook(payload_dict, *, env=None):
     """Mirror of the _run_cli pattern used in test_route.py.
 
     Passes the JSON-serialised payload on stdin and captures stdout/stderr.
+    env overrides the subprocess environment (used to restrict PATH in
+    tool-presence tests).
     """
     return subprocess.run(
-        ["bash", str(VERIFY_BUILD_SH)],
+        ["python3", str(VERIFY_BUILD_PY)],
         input=json.dumps(payload_dict),
         capture_output=True,
         text=True,
+        env=env,
     )
 
 
@@ -289,6 +293,135 @@ def test_passing_build_is_silent_pass_and_leaves_no_marker():
         assert (
             not marker.exists()
         ), f"marker {marker} must not exist after a passing (non-block) exit"
+    finally:
+        shutil.rmtree(build_dir, ignore_errors=True)
+        if marker.exists():
+            marker.unlink()
+
+
+# ---------------------------------------------------------------------------
+# TC-VB-MARKER  pre-seeded garbage marker is not treated as a retry counter
+# ---------------------------------------------------------------------------
+
+
+def test_garbage_marker_does_not_short_circuit():
+    """A marker file containing non-numeric text must not crash the hook and
+    must not trigger the retry short-circuit (which would cause a silent pass).
+
+    The garbage value is not >= 1 when interpreted numerically, so the hook
+    must proceed to run the build, find it failing, and emit a block decision.
+    """
+    assert shutil.which("npm"), "npm required to drive the failing build"
+    session_id = "test-vb-marker"
+    marker = Path(f"/tmp/.claude-build-verify-{session_id}")
+    build_dir = _make_failing_build_dir()
+    try:
+        # Pre-seed the marker with non-numeric garbage
+        marker.write_text("garbage")
+
+        result = _run_hook(
+            {"session_id": session_id, "cwd": build_dir, "stop_hook_active": False}
+        )
+        assert result.returncode == 0, (
+            f"hook must exit 0 even with a garbage marker; "
+            f"got {result.returncode}; stderr={result.stderr!r}"
+        )
+        # Must not crash -> stdout must be valid JSON (not empty, not a traceback)
+        try:
+            parsed = json.loads(result.stdout)
+        except json.JSONDecodeError as exc:
+            raise AssertionError(
+                f"stdout is not valid JSON after garbage marker: {exc}; "
+                f"raw stdout={result.stdout!r}"
+            )
+        assert parsed.get("decision") == "block", (
+            f"garbage marker must not trigger retry short-circuit; "
+            f"expected decision='block', got {parsed.get('decision')!r}"
+        )
+    finally:
+        shutil.rmtree(build_dir, ignore_errors=True)
+        if marker.exists():
+            marker.unlink()
+
+
+# ---------------------------------------------------------------------------
+# TC-VB-ASYM  Cargo.toml only, cargo absent from PATH -> silent pass
+# ---------------------------------------------------------------------------
+
+
+def test_cargo_absent_from_path_is_silent_pass():
+    """A project with only Cargo.toml but no cargo binary on PATH is a silent
+    pass.
+
+    verify-build.py gates the Rust build on cargo being present; when the
+    tool is absent it must silently skip rather than error.
+    """
+    session_id = "test-vb-asym"
+    marker = Path(f"/tmp/.claude-build-verify-{session_id}")
+    build_dir = tempfile.mkdtemp()
+    # A fake-bin dir that has python3 (symlinked) but no cargo, so the hook
+    # interpreter is reachable while the build tool is absent.
+    fake_bin = tempfile.mkdtemp()
+    try:
+        (Path(build_dir) / "Cargo.toml").write_text(
+            '[package]\nname = "test"\nversion = "0.1.0"\nedition = "2021"\n'
+        )
+        python3_real = shutil.which("python3") or "/usr/bin/python3"
+        (Path(fake_bin) / "python3").symlink_to(python3_real)
+        restricted_env = {**os.environ, "PATH": fake_bin}
+
+        result = _run_hook(
+            {"session_id": session_id, "cwd": build_dir, "stop_hook_active": False},
+            env=restricted_env,
+        )
+        assert result.returncode == 0, (
+            f"expected returncode 0 when cargo absent; "
+            f"got {result.returncode}; stderr={result.stderr!r}"
+        )
+        assert result.stdout.strip() == "", (
+            f"expected empty stdout (silent skip when cargo absent), "
+            f"got {result.stdout!r}"
+        )
+    finally:
+        shutil.rmtree(build_dir, ignore_errors=True)
+        shutil.rmtree(fake_bin, ignore_errors=True)
+        if marker.exists():
+            marker.unlink()
+
+
+# ---------------------------------------------------------------------------
+# TC-VB-RC127  build command exits 127 -> silent pass (rc-127 skip arm)
+# ---------------------------------------------------------------------------
+
+
+def test_build_command_rc127_is_silent_pass():
+    """When the build script resolves but the inner binary is not found (exit
+    code 127), the hook must treat this as a skip and exit silently.
+
+    This exercises the rc-127 arm without requiring a 150-second timeout.
+    """
+    assert shutil.which("npm"), "npm required to run the build script"
+    session_id = "test-vb-rc127"
+    marker = Path(f"/tmp/.claude-build-verify-{session_id}")
+    build_dir = tempfile.mkdtemp()
+    try:
+        pkg = {
+            "name": "test-rc127-build",
+            "version": "0.0.1",
+            "scripts": {"build": "nonexistent-binary-xyz"},
+        }
+        (Path(build_dir) / "package.json").write_text(json.dumps(pkg))
+
+        result = _run_hook(
+            {"session_id": session_id, "cwd": build_dir, "stop_hook_active": False}
+        )
+        assert result.returncode == 0, (
+            f"expected returncode 0 on rc-127 build exit; "
+            f"got {result.returncode}; stderr={result.stderr!r}"
+        )
+        assert (
+            result.stdout.strip() == ""
+        ), f"expected empty stdout (rc-127 skip arm), got {result.stdout!r}"
     finally:
         shutil.rmtree(build_dir, ignore_errors=True)
         if marker.exists():

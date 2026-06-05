@@ -1,5 +1,5 @@
 # Foundation: makes the router test-runnable. The plugin itself stays bash + markdown;
-# this only configures pytest so verify-tests.sh picks up the router suite.
+# this only configures pytest so verify-tests.py picks up the router suite.
 [tool.pytest.ini_options]
 testpaths = ["hooks/tests"]
 pythonpath = ["hooks"]

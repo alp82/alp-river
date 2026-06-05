@@ -27,6 +27,11 @@
 
 The last three updates:
 
+**1.2.4**
+
+- Code review now flags unsafe database migrations - non-reversible changes, constraints added without a backfill, and renames that break instances still running during a rollout.
+- The build and test completion checks are more reliable, so a failing build or suite can no longer slip through to a clean finish.
+
 **1.2.3**
 
 - Reviews now surface a finding only when it carries a concrete, observable consequence, cutting "this could be cleaner" noise from the results.
@@ -39,13 +44,6 @@ The last three updates:
 - Fact-gathering and review steps now lead with the essentials and call out what they couldn't determine instead of guessing to fill a gap.
 - The assistant lists the unknowns it hit and says plainly when it doesn't know, rather than answering with silent confidence.
 - The reflect command drops its report template: it lists the big issues as plain bullets, or says nothing clears the bar in one line.
-
-**1.2.1**
-
-- A build or type-check now runs when Claude finishes a task, blocking a broken build that the tests didn't catch.
-- The after-edit formatter now reports lint problems rather than silently rewriting code to fix them.
-- The finish-line test check now catches failures it had been silently letting through.
-- A missing or timed-out test runner is no longer misread as a failing test.
 
 Full history in [CHANGELOG.md](CHANGELOG.md).
 

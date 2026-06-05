@@ -2,6 +2,11 @@
 
 All notable changes to alp-river. Versions match `.claude-plugin/plugin.json`.
 
+## 1.2.4 - 2026-06-05
+
+- Code review now flags unsafe database migrations - non-reversible changes, constraints added without a backfill, and renames that break instances still running during a rollout.
+- The build and test completion checks are more reliable, so a failing build or suite can no longer slip through to a clean finish.
+
 ## 1.2.3 - 2026-06-05
 
 - Reviews now surface a finding only when it carries a concrete, observable consequence, cutting "this could be cleaner" noise from the results.

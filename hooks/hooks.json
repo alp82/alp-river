@@ -87,12 +87,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/verify-tests.sh",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/verify-tests.py",
             "timeout": 130
           },
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/verify-build.sh",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/verify-build.py",
             "timeout": 190
           }
         ]

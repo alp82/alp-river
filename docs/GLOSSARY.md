@@ -61,7 +61,7 @@ Canonical terms for this project. Agents read this to avoid renaming the same co
 **Avoid:** "checkpoint", "Gate 1", "XXL pushback" (retired named gates).
 
 ### Build gate
-**Definition:** The finish-line check (`hooks/verify-build.sh`) that runs the project's real build or type-check when Claude tries to finish, blocking on a broken build so a compile error in a file no test imports cannot slip through. Twin of the **test gate** (`hooks/verify-tests.sh`). Both fire on the Stop event, run in parallel, fall back to a silent pass when their tool is absent, and cap at one retry per session.
+**Definition:** The finish-line check (`hooks/verify-build.py`) that runs the project's real build or type-check when Claude tries to finish, blocking on a broken build so a compile error in a file no test imports cannot slip through. Twin of the **test gate** (`hooks/verify-tests.py`). Both fire on the Stop event, run in parallel, fall back to a silent pass when their tool is absent, and cap at one retry per session.
 **Avoid:** confusing with **Gate** (a workflow stage whose output is a user decision) - the build and test gates are Stop hooks, not stages.
 
 ### Triage
