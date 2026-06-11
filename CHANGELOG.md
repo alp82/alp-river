@@ -2,6 +2,15 @@
 
 All notable changes to alp-river. Versions match `.claude-plugin/plugin.json`.
 
+## 1.2.8 - 2026-06-11
+
+- A clear follow-up request now proceeds immediately on a one-line restatement instead of pausing for confirmation; only a genuinely ambiguous one stops to settle intent first.
+- Intent and review stages now run at a calmer thinking budget, so clarification loops settle faster and post-build reviews raise fewer speculative flags; the generative planning and plan-challenge stages keep full budget.
+
+## 1.2.7 - 2026-06-11
+
+- The stages whose single output steers the rest of the run - intent, planning, plan challenge, debugging, and the deepest reviews - now run on Claude Code's most capable model tier.
+
 ## 1.2.6 - 2026-06-06
 
 - A new command reports a health scorecard for the workflow itself, ranked by the fixes that would help most.

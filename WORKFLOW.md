@@ -155,17 +155,18 @@ Skipping a stage needs a positive signal; adding one needs only doubt. Safety an
 
 ## Model Tiering
 
-Each stage declares its own `model` in agent frontmatter - `opus` for planning and
-judgment, `sonnet` for analysis and implementation, `haiku` for classification and
-lookups. The router spawns each stage at its declared model; there is no per-tier override
-table. Swap a specific agent's voice under `alpRiver.psychologyOverrides`, or change its
-`model` in frontmatter.
+Each stage declares its own `model` in agent frontmatter - `fable` for the design and
+adversarial apex and the intent loops (the planners, the challenger, the deep reviewers,
+and the intent stages), `opus` for the remaining planning and judgment work, `sonnet` for
+analysis and implementation, `haiku` for classification and lookups. The router spawns each
+stage at its declared model; there is no per-tier override table. Swap a specific agent's
+voice under `alpRiver.psychologyOverrides`, or change its `model` in frontmatter.
 
 Alongside `model`, each stage declares an `effort` level - `medium`, `high`, or `max` -
 matched to the job rather than the model: mechanical stages that execute an upstream
-decision sit at `medium`, the analysis and review lenses at `high`, and the design and
-adversarial stages (the planners, the challenger, the intent loops, the deep reviewers) at
-`max`. Effort sets a stage's thinking budget independent of its model and is read by the
+decision sit at `medium`; analysis, the review lenses, and the intent loops at `high`; and
+only the generative planners (`code-planner`, `system-planner`) and the adversarial
+`plan-challenger` at `max`. Effort sets a stage's thinking budget independent of its model and is read by the
 harness at spawn, never by the router or catalog. It is model-gated: `haiku` does not honor
 effort, so the haiku classification stages (`triage`, `prototype-identifier`,
 `health-checker`) carry no `effort` line.

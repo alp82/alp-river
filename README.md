@@ -27,23 +27,28 @@
 
 The last three updates:
 
+**1.2.8**
+
+- A clear follow-up request now proceeds immediately on a one-line restatement instead of pausing for confirmation; only a genuinely ambiguous one stops to settle intent first.
+- Intent and review stages now run at a calmer thinking budget, so clarification loops settle faster and post-build reviews raise fewer speculative flags; the generative planning and plan-challenge stages keep full budget.
+
+**1.2.7**
+
+- The stages whose single output steers the rest of the run - intent, planning, plan challenge, debugging, and the deepest reviews - now run on Claude Code's most capable model tier.
+
 **1.2.6**
 
 - A new command reports a health scorecard for the workflow itself, ranked by the fixes that would help most.
 - Reflection can now review saved notes against their conventions and capture new ones, proposing each change for approval before writing.
 - Code review now names the specific silent-failure traps it checks for, so swallowed errors and missing timeouts get caught.
 
-**1.2.5**
-
-- The per-turn pipeline status now renders as formatted text, so its step icons and progress markers show reliably instead of as raw monospace.
-- The plain-language plan summary shown before approval now reads as formatted prose rather than a monospace block.
-
-**1.2.4**
-
-- Code review now flags unsafe database migrations - non-reversible changes, constraints added without a backfill, and renames that break instances still running during a rollout.
-- The build and test completion checks are more reliable, so a failing build or suite can no longer slip through to a clean finish.
-
 Full history in [CHANGELOG.md](CHANGELOG.md).
+
+## Getting Started
+
+1. Set your main Claude Code session model (the orchestrator that runs the routing loop) to at least **Fable 5 at high effort**, or a comparably capable model like **Opus** - the orchestrator drives every routing decision, so a weaker main model degrades the whole pipeline.
+2. Install the plugin (see **[Install](#install)** below).
+3. Describe what you want in plain English (or use `/alp-river:go`), then respond only at the decision points.
 
 ## Install
 
@@ -200,8 +205,8 @@ code · XXL · 18 stages
 | Stage | Model | Role |
 |-------|-------|------|
 | triage | haiku | Always-on. Reads your request, picks the path, sniffs early risk and bug-framing. |
-| interviewer | opus | When the ask is ambiguous, probes scope and success criteria, looping until intent settles. |
-| requirements-clarifier | opus | Researches the area, then surfaces edge cases and proposed acceptance criteria before planning. |
+| interviewer | fable | When the ask is ambiguous, probes scope and success criteria, looping until intent settles. |
+| requirements-clarifier | fable | Researches the area, then surfaces edge cases and proposed acceptance criteria before planning. |
 
 🧭 **Scout** - surveys the ground: what to reuse, how healthy the area is, what novelty needs a tracer-bullet first.
 
@@ -213,7 +218,7 @@ code · XXL · 18 stages
 | code-prototyper | sonnet | Builds a tracer-bullet against the real API/integration (algorithm correctness as a mode) to de-risk novelty before planning. |
 | data-prototyper | sonnet | Tries competing schemas/data shapes against real samples and writes a human-reference report. |
 | performance-prototyper | sonnet | Measures timing/scale-critical unknowns with a runnable and a charted report. |
-| researcher | haiku | Pulls library, framework, and domain knowledge from the web. |
+| researcher | sonnet | Pulls library, framework, and domain knowledge from the web. |
 
 📐 **Blueprint** - turns settled intent into a concrete blueprint, then attacks it adversarially.
 
@@ -221,8 +226,8 @@ code · XXL · 18 stages
 |-------|-------|------|
 | design-prototyper | opus | For UI with multiple legitimate visuals, builds an interactive picker; you paste back the chosen spec. |
 | ux-prototyper | opus | For multiple legitimate user flows, builds a clickable wireflow; you paste back the chosen flow spec. |
-| code-planner | opus | Turns intent into a concrete step-by-step blueprint. |
-| plan-challenger | opus | Adversarial review of the plan: holes, failure modes, simpler alternatives. |
+| code-planner | fable | Turns intent into a concrete step-by-step blueprint. |
+| plan-challenger | fable | Adversarial review of the plan: holes, failure modes, simpler alternatives. |
 
 🧪 **Tests** - derives the test cases and writes them red, validated against intent before any code is allowed.
 
@@ -237,7 +242,7 @@ code · XXL · 18 stages
 | Stage | Model | Role |
 |-------|-------|------|
 | code-implementer | opus | Executes the approved plan. Held by the TDD lock until tests are validated. |
-| code-investigator | opus | Root-cause debugging for a bug: hypothesizes, repros, traces; stops at the diagnosis. |
+| code-investigator | fable | Root-cause debugging for a bug: hypothesizes, repros, traces; stops at the diagnosis. |
 | fixer | sonnet | Applies reviewer findings and reruns the lenses it touched until clean. |
 | safety-gate | sonnet | Before anything destructive or irreversible, shows what is at stake and waits for your go-ahead. Sticky. |
 
@@ -246,13 +251,13 @@ code · XXL · 18 stages
 | Lens | Model | Runs when |
 |------|-------|-----------|
 | correctness | opus | every change |
-| quality | opus | logic changes |
+| quality | fable | logic changes |
 | acceptance | sonnet | logic changes |
 | plan-adherence | sonnet | logic changes |
 | naming-clarity | sonnet | logic changes |
-| assumptions | opus | logic changes |
+| assumptions | fable | logic changes |
 | structure | sonnet | logic changes |
-| architecture | opus | logic changes |
+| architecture | fable | logic changes |
 | consistency | sonnet | logic changes |
 | reuse | sonnet | logic changes |
 | performance | sonnet | logic changes |
@@ -289,7 +294,7 @@ code · XXL · 18 stages
 
 | Stage | Model | Role |
 |-------|-------|------|
-| system-planner | opus | Plans an OS-level change as ordered, reversible steps with backup and rollback. |
+| system-planner | fable | Plans an OS-level change as ordered, reversible steps with backup and rollback. |
 | system-executor | sonnet | Runs the plan one step at a time. Held by the safety lock before destructive steps. |
 | system-verifier | sonnet | Confirms the change actually reached its intended state. |
 | system-investigator | sonnet | Root-cause diagnosis for OS-level faults from service state, logs, and configs. |
@@ -315,7 +320,7 @@ code · XXL · 18 stages
 | Stage | Model | Role |
 |-------|-------|------|
 | triage | haiku | Always-on. Reads your request, picks the path, sniffs early risk and bug-framing. |
-| interviewer | opus | When the ask is ambiguous, probes scope and success criteria, looping until intent settles. |
+| interviewer | fable | When the ask is ambiguous, probes scope and success criteria, looping until intent settles. |
 
 🧭 **Scout** - look before answering: existing code, health, research, UI options, or a root-cause trace.
 
@@ -323,10 +328,10 @@ code · XXL · 18 stages
 |-------|-------|------|
 | reuse-scanner | sonnet | Finds reusable code and quick wins; flags duplication and missing infra. |
 | health-checker | haiku | Scores the health of the area you're touching and surfaces cleanup targets. |
-| researcher | haiku | Pulls library, framework, and domain knowledge from the web. |
+| researcher | sonnet | Pulls library, framework, and domain knowledge from the web. |
 | design-prototyper | opus | For UI with multiple legitimate visuals, builds an interactive picker; you paste back the chosen spec. |
 | ux-prototyper | opus | For multiple legitimate user flows, builds a clickable wireflow; you paste back the chosen flow spec. |
-| code-investigator | opus | Root-cause debugging for a bug: hypothesizes, repros, traces; stops at the diagnosis. |
+| code-investigator | fable | Root-cause debugging for a bug: hypothesizes, repros, traces; stops at the diagnosis. |
 | system-investigator | sonnet | Root-cause diagnosis for OS-level faults from service state, logs, and configs. |
 
 💬 **Discuss** - options with worked examples and tradeoffs, nothing written.

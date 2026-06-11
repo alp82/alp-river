@@ -1,8 +1,8 @@
 ---
 name: architecture-reviewer
 description: Reviews module shape - depth, leverage, locality, seams. Catches shallow wrappers, premature abstractions, and leaky interfaces using the deletion test.
-model: opus
-effort: max
+model: fable
+effort: high
 tools: Glob, Grep, Read, Bash
 stage:
   routes: [code]

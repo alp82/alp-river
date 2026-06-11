@@ -16,7 +16,7 @@ SOUL.md continuation
 image generation
 
 ---
-1.
+
 video generation
 
 ---
