@@ -2,6 +2,10 @@
 
 All notable changes to alp-river. Versions match `.claude-plugin/plugin.json`.
 
+## 1.2.9 - 2026-06-13
+
+- The handful of stages that were pinned to a now-retired model tier (planning, plan challenge, the intent loops, debugging, and the deepest reviews) now run on the most capable available tier, so no stage points at a model that is no longer offered.
+
 ## 1.2.8 - 2026-06-11
 
 - A clear follow-up request now proceeds immediately on a one-line restatement instead of pausing for confirmation; only a genuinely ambiguous one stops to settle intent first.

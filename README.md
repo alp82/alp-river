@@ -27,6 +27,10 @@
 
 The last three updates:
 
+**1.2.9**
+
+- The handful of stages that were pinned to a now-retired model tier (planning, plan challenge, the intent loops, debugging, and the deepest reviews) now run on the most capable available tier, so no stage points at a model that is no longer offered.
+
 **1.2.8**
 
 - A clear follow-up request now proceeds immediately on a one-line restatement instead of pausing for confirmation; only a genuinely ambiguous one stops to settle intent first.
@@ -36,17 +40,11 @@ The last three updates:
 
 - The stages whose single output steers the rest of the run - intent, planning, plan challenge, debugging, and the deepest reviews - now run on Claude Code's most capable model tier.
 
-**1.2.6**
-
-- A new command reports a health scorecard for the workflow itself, ranked by the fixes that would help most.
-- Reflection can now review saved notes against their conventions and capture new ones, proposing each change for approval before writing.
-- Code review now names the specific silent-failure traps it checks for, so swallowed errors and missing timeouts get caught.
-
 Full history in [CHANGELOG.md](CHANGELOG.md).
 
 ## Getting Started
 
-1. Set your main Claude Code session model (the orchestrator that runs the routing loop) to at least **Fable 5 at high effort**, or a comparably capable model like **Opus** - the orchestrator drives every routing decision, so a weaker main model degrades the whole pipeline.
+1. Set your main Claude Code session model (the orchestrator that runs the routing loop) to a top-tier model like **Opus at high effort** - the orchestrator drives every routing decision, so a weaker main model degrades the whole pipeline.
 2. Install the plugin (see **[Install](#install)** below).
 3. Describe what you want in plain English (or use `/alp-river:go`), then respond only at the decision points.
 
@@ -205,8 +203,8 @@ code · XXL · 18 stages
 | Stage | Model | Role |
 |-------|-------|------|
 | triage | haiku | Always-on. Reads your request, picks the path, sniffs early risk and bug-framing. |
-| interviewer | fable | When the ask is ambiguous, probes scope and success criteria, looping until intent settles. |
-| requirements-clarifier | fable | Researches the area, then surfaces edge cases and proposed acceptance criteria before planning. |
+| interviewer | opus | When the ask is ambiguous, probes scope and success criteria, looping until intent settles. |
+| requirements-clarifier | opus | Researches the area, then surfaces edge cases and proposed acceptance criteria before planning. |
 
 🧭 **Scout** - surveys the ground: what to reuse, how healthy the area is, what novelty needs a tracer-bullet first.
 
@@ -226,8 +224,8 @@ code · XXL · 18 stages
 |-------|-------|------|
 | design-prototyper | opus | For UI with multiple legitimate visuals, builds an interactive picker; you paste back the chosen spec. |
 | ux-prototyper | opus | For multiple legitimate user flows, builds a clickable wireflow; you paste back the chosen flow spec. |
-| code-planner | fable | Turns intent into a concrete step-by-step blueprint. |
-| plan-challenger | fable | Adversarial review of the plan: holes, failure modes, simpler alternatives. |
+| code-planner | opus | Turns intent into a concrete step-by-step blueprint. |
+| plan-challenger | opus | Adversarial review of the plan: holes, failure modes, simpler alternatives. |
 
 🧪 **Tests** - derives the test cases and writes them red, validated against intent before any code is allowed.
 
@@ -242,7 +240,7 @@ code · XXL · 18 stages
 | Stage | Model | Role |
 |-------|-------|------|
 | code-implementer | opus | Executes the approved plan. Held by the TDD lock until tests are validated. |
-| code-investigator | fable | Root-cause debugging for a bug: hypothesizes, repros, traces; stops at the diagnosis. |
+| code-investigator | opus | Root-cause debugging for a bug: hypothesizes, repros, traces; stops at the diagnosis. |
 | fixer | sonnet | Applies reviewer findings and reruns the lenses it touched until clean. |
 | safety-gate | sonnet | Before anything destructive or irreversible, shows what is at stake and waits for your go-ahead. Sticky. |
 
@@ -251,13 +249,13 @@ code · XXL · 18 stages
 | Lens | Model | Runs when |
 |------|-------|-----------|
 | correctness | opus | every change |
-| quality | fable | logic changes |
+| quality | opus | logic changes |
 | acceptance | sonnet | logic changes |
 | plan-adherence | sonnet | logic changes |
 | naming-clarity | sonnet | logic changes |
-| assumptions | fable | logic changes |
+| assumptions | opus | logic changes |
 | structure | sonnet | logic changes |
-| architecture | fable | logic changes |
+| architecture | opus | logic changes |
 | consistency | sonnet | logic changes |
 | reuse | sonnet | logic changes |
 | performance | sonnet | logic changes |
@@ -294,7 +292,7 @@ code · XXL · 18 stages
 
 | Stage | Model | Role |
 |-------|-------|------|
-| system-planner | fable | Plans an OS-level change as ordered, reversible steps with backup and rollback. |
+| system-planner | opus | Plans an OS-level change as ordered, reversible steps with backup and rollback. |
 | system-executor | sonnet | Runs the plan one step at a time. Held by the safety lock before destructive steps. |
 | system-verifier | sonnet | Confirms the change actually reached its intended state. |
 | system-investigator | sonnet | Root-cause diagnosis for OS-level faults from service state, logs, and configs. |
@@ -320,7 +318,7 @@ code · XXL · 18 stages
 | Stage | Model | Role |
 |-------|-------|------|
 | triage | haiku | Always-on. Reads your request, picks the path, sniffs early risk and bug-framing. |
-| interviewer | fable | When the ask is ambiguous, probes scope and success criteria, looping until intent settles. |
+| interviewer | opus | When the ask is ambiguous, probes scope and success criteria, looping until intent settles. |
 
 🧭 **Scout** - look before answering: existing code, health, research, UI options, or a root-cause trace.
 
@@ -331,7 +329,7 @@ code · XXL · 18 stages
 | researcher | sonnet | Pulls library, framework, and domain knowledge from the web. |
 | design-prototyper | opus | For UI with multiple legitimate visuals, builds an interactive picker; you paste back the chosen spec. |
 | ux-prototyper | opus | For multiple legitimate user flows, builds a clickable wireflow; you paste back the chosen flow spec. |
-| code-investigator | fable | Root-cause debugging for a bug: hypothesizes, repros, traces; stops at the diagnosis. |
+| code-investigator | opus | Root-cause debugging for a bug: hypothesizes, repros, traces; stops at the diagnosis. |
 | system-investigator | sonnet | Root-cause diagnosis for OS-level faults from service state, logs, and configs. |
 
 💬 **Discuss** - options with worked examples and tradeoffs, nothing written.
