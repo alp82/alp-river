@@ -286,7 +286,7 @@ def test_check_catalog_flags_invalid_milestone_scope_value():
 
 # --- TC-M8 ---
 def test_stage_count_stays_47_and_absence_is_valid():
-    """REUSE-GUARD: stage count stays at 48 (no stages added by this change) and a
+    """REUSE-GUARD: stage count is 48 and a
     stage without milestone-scope has no such key in the catalog (gen-catalog guard
     emit - absence stays absence).
 
@@ -295,9 +295,7 @@ def test_stage_count_stays_47_and_absence_is_valid():
     cat = _real_catalog()
     stages = cat["stages"]
 
-    assert (
-        len(stages) == 48
-    ), f"stage count must remain 48 after milestone-loop change, got {len(stages)}"
+    assert len(stages) == 48, f"stage count must remain 48, got {len(stages)}"
 
     # Spot-check: stages that must NOT gain milestone-scope
     _NO_SCOPE_STAGES = (

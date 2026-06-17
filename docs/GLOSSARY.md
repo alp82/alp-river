@@ -168,21 +168,33 @@ Canonical terms for this project. Agents read this to avoid renaming the same co
 
 ### Self-audit
 
-**Definition:** The deterministic plugin health check run by `/alp-river:audit` via `hooks/audit.py`: a pure function of repo facts (catalog stages, doctrine files, registered hooks) that scores six fixed categories and emits a 0-100 scorecard plus a machine JSON block (a `SCORECARD_JSON ` prefixed line). Stdlib-only, fail-open, always exits 0; the same repo state always yields the same scorecard. Scoring lives entirely in the hook; the command only runs and renders it.
+**Definition:** The deterministic plugin health check run by `/alp-river:audit` via `hooks/audit.py`: a pure function of repo facts (catalog stages, doctrine files, registered hooks) that scores eight fixed categories and emits a 0-100 scorecard plus a machine JSON block (a `SCORECARD_JSON ` prefixed line). Stdlib-only, fail-open, always exits 0; the same repo state always yields the same scorecard. Scoring lives entirely in the hook; the command only runs and renders it.
 
 **Avoid:** "lint", "quality check" (overloaded); confusing with the build/test gates (Stop hooks).
 
 ### Health categories
 
-**Definition:** The six fixed scoring axes of the self-audit: `tool/agent coverage`, `context efficiency`, `quality gates`, `memory persistence`, `security guardrails`, `doctrine integrity`. Each yields an int score and a list of concrete fix actions; `top_fixes` orders worst-category-first with alphabetical tie-break.
+**Definition:** The eight fixed scoring axes of the self-audit: `tool/agent coverage`, `context efficiency`, `quality gates`, `memory persistence`, `security guardrails`, `doctrine integrity`, `doctrine hygiene`, `why-anchor coverage`. Each yields an int score and a list of concrete fix actions; `top_fixes` orders worst-category-first with alphabetical tie-break.
 
 **Avoid:** "audit sections", "metrics".
 
 ### Drift canary (doctrine-integrity check)
 
-**Definition:** The sixth `/audit` category (`hooks/audit.py`, `DOCTRINE_PHRASES` + `_score_doctrine_integrity`): a presence-allowlist asserting each pinned load-bearing doctrine phrase still appears verbatim in its required file. All-or-nothing (100 or 0) and fail-open. Catches deletion of a pinned phrase, not a one-sided reword.
+**Definition:** The `doctrine integrity` `/audit` category (`hooks/audit.py`, `DOCTRINE_PHRASES` + `_score_doctrine_integrity`): a presence-allowlist asserting each pinned load-bearing doctrine phrase still appears verbatim in its required file. All-or-nothing (100 or 0) and fail-open. Catches deletion of a pinned phrase, not a one-sided reword.
 
 **Avoid:** "doctrine lint", "phrase check".
+
+### Doctrine hygiene (audit lens)
+
+**Definition:** The graduated `/audit` lens (`hooks/audit.py`, `_score_doctrine_hygiene`) that flags a prose instruction line duplicated verbatim across two different `agents/`/`doctrine/` files (after normalization, excluding frontmatter, fenced templates, and explicit `See doctrine/...` cross-references). Score is the fraction of checked instruction lines not duplicated; offenders name the line and both files. Fail-open - an unreadable file counts conservatively as a failing item. Enforces the CLAUDE.md doctrine-hygiene rule: one fact, one home.
+
+**Avoid:** "dedup check", "duplicate finder".
+
+### Why-anchor coverage (audit lens)
+
+**Definition:** The graduated `/audit` lens (`hooks/audit.py`, `_score_why_anchor`) that scores the fraction of load-bearing directive lines (carrying an all-caps `MUST`/`NEVER`/`ALWAYS`/`REQUIRED`/`HARD` marker) in `agents/`/`doctrine/` that are anchored to a rationale - a `because`/`so that`/`to avoid`/... marker on the directive's own line or the line that continues it. Offenders name the unanchored directives (file:line + text). Fail-open.
+
+**Avoid:** "rationale lint", "comment check".
 
 ### Memory audit (reflect step)
 
@@ -227,6 +239,14 @@ Canonical terms for this project. Agents read this to avoid renaming the same co
 **Definition:** The hard stop on the lean-toward bias: required trust-boundary input validation, data-loss-preventing error handling, security, accessibility, hardware calibration, and the one runnable check behind non-trivial logic are load-bearing, not bloat. A reviewer never tags these `delete:` / `yagni:` / `shrink:`. Defined in `doctrine/code-doctrine.md` and echoed in `doctrine/reviewer-contract.md`.
 
 **Avoid:** "essential code", "non-negotiables".
+
+## Build evidence
+
+### Evidence receipt
+
+**Definition:** The `EVIDENCE_RECEIPT:` block `code-implementer` appends to its output contract: one line per plan item carrying the `file:line` where that item landed plus the existing pattern it reused. `plan-adherence-reviewer` reads it from `<IMPLEMENTER_NOTES>` to trace each plan item to verifiable evidence rather than re-deriving the trace cold, falling back to the cold trace when no receipt is present.
+
+**Avoid:** "audit trail", "change log".
 
 ## Relationships
 

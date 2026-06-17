@@ -66,7 +66,7 @@ First step every invocation: parse required slots. On a missing required slot, e
    ```
 
    and stop. Zero writes.
-3. **Bail on empty input.** If `<AGGREGATED_DISCOVERIES>` is `none` OR every bucket across every block is `(none)`, emit `PHASE_RESULT: complete-empty` and stop.
+3. **Bail on empty input.** If `<AGGREGATED_DISCOVERIES>` is `none` (or every bucket across every block is `(none)`), emit `PHASE_RESULT: complete-empty` and stop.
 4. **Read PROJECT_CONTEXT files** (load via Read - the hook already injected them, but reading a second time gives current line numbers for append targets):
    - `docs/INTENT.md` (if present)
    - `docs/STACK.md` (if present)

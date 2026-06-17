@@ -859,7 +859,7 @@ _DEEP_LENSES = {
 
 # --- TC-I01 / TC-P01 ---
 def test_real_catalog_has_44_stages_no_skip_tests():
-    """After prototyper split, catalog has 48 stages and skip-tests is absent."""
+    """Catalog has 48 stages and skip-tests is absent."""
     cat = _real_catalog()
     stages = cat["stages"]
     assert len(stages) == 48, f"expected 48 stages, got {len(stages)}"

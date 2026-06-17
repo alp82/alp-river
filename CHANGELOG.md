@@ -2,6 +2,11 @@
 
 All notable changes to alp-river. Versions match `.claude-plugin/plugin.json`.
 
+## 1.2.11 - 2026-06-17
+
+- The workflow health scorecard now also flags when the same instruction is copied across files and when a hard rule lacks a stated reason.
+- Post-build plan checks now follow a structured receipt the build leaves behind, so each planned item traces straight to where it landed.
+
 ## 1.2.10 - 2026-06-17
 
 - The workflow health scorecard now tracks a sixth area that flags when load-bearing doctrine wording goes missing.

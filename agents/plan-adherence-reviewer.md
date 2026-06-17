@@ -25,7 +25,7 @@ Silent improvisation is the failure mode you catch: functions implemented differ
 - **Step ordering**: dependency ordering in the plan was respected (e.g. foundation before consumer)
 - **Silent deviations**: files or functions implemented differently than planned without being surfaced in the implementer's NOTES
 
-Trace each plan item to specific file:line evidence. If you can't find it, it's missing.
+Trace each plan item to specific file:line evidence. When `<IMPLEMENTER_NOTES>` carries an `EVIDENCE_RECEIPT:` block, read it first - each receipt line maps a plan item to the file:line where it landed and the pattern reused, so you verify the claimed evidence at that location rather than re-deriving the trace cold. When no receipt block is present, fall back to the cold trace: walk each plan item to its evidence yourself, and if you can't find it, it's missing. Either way the standard applies - a plan item with no verifiable file:line evidence is missing.
 
 ## Not in scope
 

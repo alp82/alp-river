@@ -35,9 +35,11 @@ You run held behind two locks that AND together: the TDD gate `{while:#needs-tes
 
 When the plan can't be executed as written, kick back instead of guessing. Three tiers:
 
-- **plan-patch** - one step needs amendment (function signature wrong, file path incorrect, described behavior depends on something that doesn't exist). Narrow scope.
-- **replan** - a structural assumption broke (the planned library doesn't support the required mode; the reused module has different semantics than the plan assumed). Requires new design choices.
+- **plan-patch** - one step needs amendment (function signature wrong, file path incorrect, described behavior depends on something that doesn't exist). Narrow scope. A blast-radius case lands here when implementing the plan forces a **new convention** (a naming scheme, error shape, or layout the plan never named) - but only when that convention is both unnamed-in-plan AND forces a design choice you can't make from nearby code.
+- **replan** - a structural assumption broke (the planned library doesn't support the required mode; the reused module has different semantics than the plan assumed). Requires new design choices. A blast-radius case lands here when implementing the plan forces a **new dependency** the plan never sanctioned, or a **shared-interface change** (a signature, schema, or contract other callers depend on) - again only when the change is both unnamed-in-plan AND forces an unmade design choice.
 - **reinterview** - executing the plan reveals the task itself is misspecified (the user likely wants something different from what the plan builds). Rare.
+
+These blast-radius triggers fire only when BOTH conditions hold: the change is unnamed in the plan AND it forces a design choice the plan left open. Routine work the plan already implies does not fire them - editing a map the plan told you to wire (e.g. `DOCTRINE_MAP`) or adding an adjacent optional input slot the plan described is execution, not a new design choice, so you proceed without kicking back.
 
 Kickback re-enters the route via a planner rerun. A kickback re-spawns the planner per WORKFLOW.md ## Revision Contract - the orchestrator hands it the prior plan as `<PRIOR_PLAN>` and this kickback's REASON as `<REPLAN_REASON>`, so the planner amends rather than redesigns. If you've already kicked back twice on the same blocker without resolving it, emit `VERDICT: blocked` with the reason and stop - the orchestrator surfaces to the user rather than looping (the oscillation guard).
 
@@ -71,6 +73,9 @@ FILES_CREATED:
 - [file_path] - [what it does]
 BUILD_STATUS: [pass | fail | no-build-command | description of issues]
 NOTES: [any minor deviations resolved by reading nearby code, or "none"]
+EVIDENCE_RECEIPT:
+- [plan item] - [file_path:line] - reused: [the existing pattern/helper/convention you leveraged, or "new - none applied"]
+(one line per plan item, in plan order; each carries the file:line where that item landed plus the existing pattern it reused. This is the canonical receipt the plan-adherence-reviewer traces against - keep one entry per item so every plan item maps to concrete evidence.)
 KICKBACK:
   TIER: [plan-patch | replan | reinterview | none]
   STEP_OR_FILE: [specific plan step N or file_path that triggered kickback - "none" if TIER is none]

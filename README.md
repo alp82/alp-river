@@ -27,6 +27,11 @@
 
 The last three updates:
 
+**1.2.11**
+
+- The workflow health scorecard now also flags when the same instruction is copied across files and when a hard rule lacks a stated reason.
+- Post-build plan checks now follow a structured receipt the build leaves behind, so each planned item traces straight to where it landed.
+
 **1.2.10**
 
 - The workflow health scorecard now tracks a sixth area that flags when load-bearing doctrine wording goes missing.
@@ -36,11 +41,6 @@ The last three updates:
 **1.2.9**
 
 - The handful of stages that were pinned to a now-retired model tier (planning, plan challenge, the intent loops, debugging, and the deepest reviews) now run on the most capable available tier, so no stage points at a model that is no longer offered.
-
-**1.2.8**
-
-- A clear follow-up request now proceeds immediately on a one-line restatement instead of pausing for confirmation; only a genuinely ambiguous one stops to settle intent first.
-- Intent and review stages now run at a calmer thinking budget, so clarification loops settle faster and post-build reviews raise fewer speculative flags; the generative planning and plan-challenge stages keep full budget.
 
 Full history in [CHANGELOG.md](CHANGELOG.md).
 

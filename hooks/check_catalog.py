@@ -26,7 +26,12 @@ PATHS = ("talk", "sketch", "code", "system")
 
 # Signals that enter from outside any stage (orchestrator seed, user/gate decision, the
 # /alp-river:adr command) - subscribing to one is not an orphan.
-SEED_SIGNALS = {"request-received", "reshape", "run-visual", "design-decision"}
+SEED_SIGNALS = {
+    "request-received",
+    "reshape",
+    "run-visual",
+    "design-decision",
+}
 # Artifacts seeded the same way - `request` is THE seed; `decision-summary` rides in on the
 # /alp-river:adr command (or a design gate that records a decision).
 SEED_ARTIFACTS = {"request", "decision-summary"}

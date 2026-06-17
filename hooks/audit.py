@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Deterministic self-audit: score the plugin against six health categories.
+"""Deterministic self-audit: score the plugin against eight health categories.
 
 Mirrors the verify-build.py shape - stdlib only, fail-open, always exits 0. The
 score is a pure function of repo facts (catalog stages, doctrine files, registered
@@ -22,7 +22,7 @@ import check_catalog
 
 ROOT = Path(__file__).resolve().parent.parent
 
-# Exactly the six category names the contract pins.
+# Exactly the eight category names the contract pins.
 CATEGORIES = (
     "tool/agent coverage",
     "context efficiency",
@@ -30,6 +30,8 @@ CATEGORIES = (
     "memory persistence",
     "security guardrails",
     "doctrine integrity",
+    "doctrine hygiene",
+    "why-anchor coverage",
 )
 
 # Pinned doctrine phrases: each entry is (phrase, repo-relative-path).
@@ -42,10 +44,37 @@ DOCTRINE_PHRASES = (
     ("est-size > S", "WORKFLOW.md"),
     ("est-size <= S", "WORKFLOW.md"),
     ("ONE runnable check", "doctrine/code-doctrine.md"),
+    ("extend it not restate", "CLAUDE.md"),
 )
 
 # Catalog stages that mark a present quality gate (test chain + review lenses).
 QUALITY_GATE_HINTS = ("test-plan", "test-verifier", "reviewer")
+
+# Doctrine subtrees the hygiene + why-anchor lenses scan for instruction lines.
+DOCTRINE_LENS_DIRS = ("agents", "doctrine")
+
+# All-caps strength markers that make a directive line load-bearing.
+STRENGTH_MARKERS = ("MUST", "NEVER", "ALWAYS", "REQUIRED", "HARD")
+
+# Rationale markers that anchor a directive to its why.
+# NOTE: these are naked-substring matches, correct on today's corpus but authoring-fragile -
+# a future doctrine edit that rewrites the rationale phrasing could silently shift a score.
+RATIONALE_MARKERS = (
+    "because",
+    "so that",
+    "so ",
+    "so as to",
+    "to avoid",
+    "otherwise",
+    "since",
+    "rationale",
+    "which keeps",
+    "which prevents",
+)
+
+# Instruction lines shorter than this (after normalization) are too trivial to
+# count as a meaningful cross-file duplicate.
+HYGIENE_MIN_LEN = 24
 
 
 def _read_file(root, relpath):
@@ -71,6 +100,34 @@ def _clamp(score):
     return max(0, min(100, int(score)))
 
 
+def _coverage_routes_points(stages, fixes):
+    """Routes component: 25 pts scaled by the fraction of stages carrying `routes`."""
+    routed = 0
+    for name in sorted(stages):
+        stage = stages[name]
+        if not isinstance(stage, dict):
+            fixes.append(f"stage '{name}' is malformed")
+            continue
+        if stage.get("routes") or []:
+            routed += 1
+        else:
+            fixes.append(f"stage '{name}' is missing `routes`")
+    return routed * 25 // len(stages)
+
+
+def _coverage_coherence_points(catalog, fixes):
+    """Coherence component: 15 pts iff check_catalog.check finds no problems."""
+    try:
+        problems = check_catalog.check(catalog)
+    except Exception:
+        fixes.append("catalog coherence check could not run - inspect check_catalog.py")
+        return 0
+    if problems:
+        fixes.append("resolve catalog coherence problems (run check_catalog.py)")
+        return 0
+    return 15
+
+
 def _score_catalog_coverage(catalog, ok):
     """Catalog stage count + every stage carries routes + input_template coherence."""
     fixes = []
@@ -82,32 +139,10 @@ def _score_catalog_coverage(catalog, ok):
     if not stages:
         return 0, ["no stages in catalog - regenerate it from the agent definitions"]
 
-    count = len(stages)
     # Breadth: saturates at 40 stages (the live repo carries ~47).
-    breadth = min(60, count * 60 // 40)
-
-    routed = 0
-    for name in sorted(stages):
-        stage = stages[name]
-        if not isinstance(stage, dict):
-            fixes.append(f"stage '{name}' is malformed")
-            continue
-        if stage.get("routes") or []:
-            routed += 1
-        else:
-            fixes.append(f"stage '{name}' is missing `routes`")
-    routes_pts = routed * 25 // count
-
-    coherence_pts = 15
-    try:
-        problems = check_catalog.check(catalog)
-        if problems:
-            coherence_pts = 0
-            fixes.append("resolve catalog coherence problems (run check_catalog.py)")
-    except Exception:
-        coherence_pts = 0
-        fixes.append("catalog coherence check could not run - inspect check_catalog.py")
-
+    breadth = min(60, len(stages) * 60 // 40)
+    routes_pts = _coverage_routes_points(stages, fixes)
+    coherence_pts = _coverage_coherence_points(catalog, fixes)
     return _clamp(breadth + routes_pts + coherence_pts), fixes
 
 
@@ -130,33 +165,38 @@ def _score_context(root):
     return _clamp(score), fixes
 
 
-def _score_quality_gates(root, catalog, ok, hooks_text):
-    """Catalog test/review stages + verify-build/verify-tests + reviewer count in hooks."""
-    fixes = []
-    score = 0
-
+def _gate_catalog_points(catalog, ok, fixes):
+    """Catalog component: 12 pts per present test/review gate stage, capped at 36."""
     stages = {}
     if ok and catalog is not None:
         stages = catalog.get("stages") or {}
         if not isinstance(stages, dict):
             stages = {}
     gate_stages = sorted(n for n in stages if any(h in n for h in QUALITY_GATE_HINTS))
-    # Catalog component: 12 points per present gate stage, capped at 36.
-    score += min(36, len(gate_stages) * 12)
     if not gate_stages:
         fixes.append("no test or review stages in the catalog - add the quality gates")
+    return min(36, len(gate_stages) * 12)
 
-    verify_build_file = root / "hooks" / "verify-build.py"
-    verify_tests_file = root / "hooks" / "verify-tests.py"
 
-    if "verify-build" in hooks_text and verify_build_file.is_file():
+def _gate_verify_points(root, hooks_text, fixes):
+    """Verify-hook component: 16 pts each for registered + present verify-build/tests."""
+    score = 0
+    if "verify-build" in hooks_text and (root / "hooks" / "verify-build.py").is_file():
         score += 16
     else:
         fixes.append("register the build verification Stop hook (verify-build)")
-    if "verify-tests" in hooks_text and verify_tests_file.is_file():
+    if "verify-tests" in hooks_text and (root / "hooks" / "verify-tests.py").is_file():
         score += 16
     else:
         fixes.append("register the test verification Stop hook (verify-tests)")
+    return score
+
+
+def _score_quality_gates(root, catalog, ok, hooks_text):
+    """Catalog test/review stages + verify-build/verify-tests + reviewer count in hooks."""
+    fixes = []
+    score = _gate_catalog_points(catalog, ok, fixes)
+    score += _gate_verify_points(root, hooks_text, fixes)
 
     reviewers = 0
     agents_dir = root / "agents"
@@ -223,6 +263,212 @@ def _score_doctrine_integrity(root):
     return (100, []) if not problems else (0, problems)
 
 
+def _normalize_instruction(line):
+    """Lowercase, strip punctuation, collapse whitespace. '' for a too-trivial line."""
+    lowered = "".join(c if c.isalnum() or c.isspace() else " " for c in line.lower())
+    collapsed = " ".join(lowered.split())
+    return collapsed if len(collapsed) >= HYGIENE_MIN_LEN else ""
+
+
+def _is_cross_reference(line):
+    """An explicit cross-reference line ('See doctrine/...') is excluded from dup checks."""
+    return line.strip().lower().startswith("see doctrine/")
+
+
+# Phrase fragments that identify mandated-contract restatements. These appear
+# verbatim in multiple agents by design (Input Template Contract and Reviewer Contract).
+# NOTE: naked-substring matches - a doctrine reword without updating this list silently re-flags these as duplicates.
+_MANDATED_CONTRACT_FRAGMENTS = (
+    # Input Template Contract: required-slot parse + error stop.
+    "first step every invocation: parse required slots",
+    "first step: parse required slots",
+    "first step: parse `<confirmed_intent>`",
+    "first step: parse `<system_plan>`",
+    "on a missing required slot, emit `input_error: missing <slot>` and stop",
+    # Reviewer Contract: shared opener line.
+    "follows the reviewer contract in your doctrine block",
+)
+
+
+def _is_mandated_contract(line):
+    """Return True when a line is a mandated-contract restatement, not an accidental dup."""
+    lowered = line.strip().lower()
+    return any(frag in lowered for frag in _MANDATED_CONTRACT_FRAGMENTS)
+
+
+def _instruction_lines(text):
+    """Yield (source_lineno, line) pairs for prose instruction lines only.
+
+    Skips YAML frontmatter and fenced blocks - they are structural scaffolding the
+    agent family shares by design, not duplicated doctrine. source_lineno is the
+    true 1-based line number in the original file so callers can report accurate
+    locations without needing to account for stripped frontmatter or fenced blocks.
+
+    The leading `---`-delimited frontmatter (stage contract, tools, signals) and any
+    ``` ... ``` fenced block (the verbatim `## Input`/`## Output` templates with their
+    shared slot and contract-field lines) are excluded from yielded pairs."""
+    lines = text.splitlines()
+    i = 0
+    # Strip a leading frontmatter block.
+    if lines and lines[0].strip() == "---":
+        i = 1
+        while i < len(lines) and lines[i].strip() != "---":
+            i += 1
+        i += 1  # skip the closing fence
+    in_fence = False
+    while i < len(lines):
+        line = lines[i]
+        if line.lstrip().startswith("```"):
+            in_fence = not in_fence
+        elif not in_fence:
+            yield i + 1, line  # i + 1 converts 0-based index to 1-based line number
+        i += 1
+
+
+def _read_md(path):
+    """Return file text or None on read failure (missing/non-utf8)."""
+    try:
+        return path.read_text(encoding="utf-8")
+    except (OSError, ValueError):
+        return None
+
+
+def _doctrine_lens_files(root):
+    """Sorted (relpath, text_or_None) pairs for every agents/ + doctrine/ markdown file.
+
+    text is None when the file could not be read (missing/non-utf8) - the caller
+    counts such a file conservatively as failing, never raising."""
+    out = []
+    for subdir in DOCTRINE_LENS_DIRS:
+        d = root / subdir
+        if not d.is_dir():
+            continue
+        for path in sorted(d.glob("*.md")):
+            out.append((f"{subdir}/{path.name}", _read_md(path)))
+    return out
+
+
+def _build_line_frequency_map(files):
+    """Phase 1: map each normalized instruction line to the set of files containing it.
+
+    Excludes cross-reference lines, mandated-contract restatements, and lines that
+    normalize to the empty string or below HYGIENE_MIN_LEN. Unreadable files
+    (text is None) are skipped here; callers handle them separately."""
+    line_files = {}
+    for relpath, text in files:
+        if text is None:
+            continue
+        for _lineno, raw in _instruction_lines(text):
+            if _is_cross_reference(raw):
+                continue
+            if _is_mandated_contract(raw):
+                continue
+            norm = _normalize_instruction(raw)
+            if not norm:
+                continue
+            line_files.setdefault(norm, {})[relpath] = raw.strip()
+    return line_files
+
+
+def _score_from_frequency_map(line_files, unreadable):
+    """Phase 2: compute (score, offenders) from the frequency map + unreadable list."""
+    total, duplicated, offenders = 0, 0, []
+    for norm, where in sorted(line_files.items()):
+        total += 1
+        if len(where) > 1:
+            duplicated += 1
+            paths = sorted(where)
+            first_text = where[paths[0]]
+            offenders.append(f"'{first_text}' duplicated across {', '.join(paths)}")
+    # Unreadable files count as failing items so a corrupt file degrades the score.
+    for relpath in unreadable:
+        total += 1
+        duplicated += 1
+        offenders.append(f"could not read {relpath} - counted as a hygiene failure")
+    if total == 0:
+        return 100, []
+    score = (total - duplicated) * 100 // total
+    return _clamp(score), offenders
+
+
+def _score_doctrine_hygiene(root):
+    """Graduated: fraction of instruction lines NOT duplicated verbatim across files.
+
+    Normalizes each instruction line; flags one whose normalized form exactly
+    matches a line in a DIFFERENT agents/ or doctrine/ file. Cross-reference and
+    mandated-contract lines are excluded. Unreadable files count their absence
+    conservatively as a failing item. Returns (int_score, offender_list)."""
+    files = _doctrine_lens_files(root)
+    unreadable = [relpath for relpath, text in files if text is None]
+    line_files = _build_line_frequency_map(files)
+    return _score_from_frequency_map(line_files, unreadable)
+
+
+def _is_load_bearing(line):
+    """A directive line carrying an all-caps strength marker as a whole word."""
+    tokens = line.replace("`", " ").split()
+    # Strip surrounding punctuation so "REQUIRED." and "MUST," are recognized.
+    clean_tokens = {t.strip(".,;:!?()[]\"'") for t in tokens}
+    return any(m in clean_tokens for m in STRENGTH_MARKERS)
+
+
+def _has_rationale(line):
+    return any(m in line.lower() for m in RATIONALE_MARKERS)
+
+
+def _is_anchor_excluded(line):
+    """Skip headings (lstrip starts with '#') and list-headers (stripped ends with ':')."""
+    stripped = line.lstrip()
+    if stripped.startswith("#"):
+        return True
+    if line.rstrip().endswith(":"):
+        return True
+    return False
+
+
+def _score_why_anchor(root):
+    """Graduated: fraction of load-bearing directives anchored to a rationale.
+
+    A directive is anchored when it or an adjacent line carries a rationale marker.
+    Only prose instruction lines are scored - YAML frontmatter and fenced blocks
+    (output-contract MUST lines, shared slot lines) are excluded via _instruction_lines.
+    Heading lines and list-header lines (ending with ':') are also excluded.
+    Unreadable files count their MUST-like content conservatively as failing.
+    Returns (int_score, offender_list)."""
+    total, anchored, offenders = 0, 0, []
+    for relpath, text in _doctrine_lens_files(root):
+        if text is None:
+            # Conservative: an unreadable file counts as one failing directive.
+            total += 1
+            offenders.append(f"could not read {relpath} - counted as unanchored")
+            continue
+        # Filter to prose-only instruction lines (drops frontmatter and fenced blocks).
+        # Each element is a (source_lineno, line) pair where source_lineno is the
+        # true 1-based line number in the original file.
+        prose_pairs = list(_instruction_lines(text))
+        for idx, (source_lineno, line) in enumerate(prose_pairs):
+            if _is_anchor_excluded(line):
+                continue
+            if not _is_load_bearing(line):
+                continue
+            total += 1
+            # Anchored by a rationale on the directive's own line or the line that
+            # continues it. Forward-only: a preceding line belongs to its own
+            # directive, so its rationale must not leak onto this one.
+            neighbors = [line]
+            if idx + 1 < len(prose_pairs):
+                neighbors.append(prose_pairs[idx + 1][1])
+            if any(_has_rationale(n) for n in neighbors):
+                anchored += 1
+            else:
+                offenders.append(f"{relpath}:{source_lineno} - {line.strip()}")
+
+    if total == 0:
+        return 100, []
+    score = anchored * 100 // total
+    return _clamp(score), offenders
+
+
 def build_scorecard(root):
     """Pure scorecard over repo facts. Fail-open: never raises, every score an int."""
     root = Path(root)
@@ -246,6 +492,8 @@ def build_scorecard(root):
     category_results["memory persistence"] = _score_memory(root)
     category_results["security guardrails"] = _score_security(root, hooks_text)
     category_results["doctrine integrity"] = _score_doctrine_integrity(root)
+    category_results["doctrine hygiene"] = _score_doctrine_hygiene(root)
+    category_results["why-anchor coverage"] = _score_why_anchor(root)
 
     categories = {}
     for name in CATEGORIES:
