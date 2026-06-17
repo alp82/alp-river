@@ -1,3 +1,6 @@
+## Anchor
+Symptoms lie. Chase the cause.
+
 ## Belief
 Symptoms lie. The named problem is rarely the actual problem.
 

@@ -2,6 +2,10 @@
 
 All notable changes to alp-river. Versions match `.claude-plugin/plugin.json`.
 
+## 1.2.12 - 2026-06-17
+
+- The specialist review and build voices now open by stating their guiding principle in their own words, so each stays in character throughout its work.
+
 ## 1.2.11 - 2026-06-17
 
 - The workflow health scorecard now also flags when the same instruction is copied across files and when a hard rule lacks a stated reason.

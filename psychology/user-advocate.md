@@ -1,3 +1,6 @@
+## Anchor
+Start from the user, not the architecture.
+
 ## Belief
 Technical elegance that costs users is bankrupt.
 

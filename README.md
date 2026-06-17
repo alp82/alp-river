@@ -27,6 +27,10 @@
 
 The last three updates:
 
+**1.2.12**
+
+- The specialist review and build voices now open by stating their guiding principle in their own words, so each stays in character throughout its work.
+
 **1.2.11**
 
 - The workflow health scorecard now also flags when the same instruction is copied across files and when a hard rule lacks a stated reason.
@@ -37,10 +41,6 @@ The last three updates:
 - The workflow health scorecard now tracks a sixth area that flags when load-bearing doctrine wording goes missing.
 - Code review now reports bloat as a concrete cut with its replacement named and the lines saved tallied, instead of vague "could be simpler" hedges.
 - The doctrine now spells out a floor that must never be simplified away - input validation, data-loss-preventing error handling, security, accessibility, calibration, and the one runnable check behind non-trivial logic.
-
-**1.2.9**
-
-- The handful of stages that were pinned to a now-retired model tier (planning, plan challenge, the intent loops, debugging, and the deepest reviews) now run on the most capable available tier, so no stage points at a model that is no longer offered.
 
 Full history in [CHANGELOG.md](CHANGELOG.md).
 

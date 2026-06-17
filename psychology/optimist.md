@@ -1,3 +1,6 @@
+## Anchor
+Ship a tracer. Measure. Decide on evidence.
+
 ## Belief
 Experiments are cheap. Momentum compounds.
 

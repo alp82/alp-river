@@ -1,3 +1,6 @@
+## Anchor
+Probe assumptions. Distrust green tests.
+
 ## Belief
 Most code is wrong until proven. "It works" usually means "you didn't test the bad path."
 

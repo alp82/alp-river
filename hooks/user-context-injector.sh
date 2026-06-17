@@ -426,6 +426,8 @@ fi
 # Resolve the optional psychology block for this agent.
 # Returns the rendered block on stdout, or empty when the agent is unmapped,
 # the override resolves to nothing, or the persona file is missing (fail open).
+# The block is the persona file body followed by a generic directive telling the
+# agent to vocalize its Anchor line.
 resolve_persona() {
   local agent="$1"
   local cwd="$2"
@@ -469,6 +471,7 @@ resolve_persona() {
 
   printf '## PSYCHOLOGY: %s\n' "$display_name"
   cat "$persona_file"
+  printf '\nBefore acting, restate your Anchor above in your own voice as the opening line of your response, then proceed.\n'
 }
 
 psychology_context=$(resolve_persona "$subagent_type" "$project_cwd")

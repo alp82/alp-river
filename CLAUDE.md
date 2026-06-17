@@ -23,3 +23,12 @@ Before adding an instruction anywhere under `agents/`, `doctrine/`, `commands/`,
 3. **Does a cheap canary protect it?** A load-bearing literal earns a short pinned phrase the self-audit watches, so deleting or rewording it past recognition trips the doctrine-integrity check instead of silently rotting.
 
 This rule binds this repo's own changes - it governs how alp-river is authored, not anything shipped to a consumer. Its teeth are exactly two: the self-audit's doctrine-hygiene lens (which flags an instruction line duplicated verbatim across `agents/`/`doctrine/`) plus author discipline at edit time. CLAUDE.md itself is neither shipped nor injected into any agent, so nothing enforces this for you automatically - the lens catches cross-file duplication after the fact, and the rest is the author honoring the three checks above.
+
+## Leitwort usage
+
+A leitwort is a leading word: a short, memorable phrase an agent restates in its own reasoning to steer its own behavior. When authoring an agent, persona, or doctrine stage, anchor its core stance on one, and prefer a phrase with trained lineage the model already carries ("deletion test", "tracer bullet", "test seams", "YAGNI ladder", "name the danger") over a coined one.
+
+1. **Anchor over enumerate.** Give a stage one named leitwort and let its checklist of concerns hang off that anchor as supporting detail; a flat list with no anchor is the weakest form.
+2. **Reinforce it.** A leitwort used once is inert. Recur it through the file, and where the agent acts have it restate the phrase in its own voice so the words enter the reasoning trace - the `## Anchor` line each `psychology/` persona carries is the canonical example, vocalized via the directive in `hooks/user-context-injector.sh`.
+3. **One concept, one name.** Naming the same idea two ways across stages dilutes both; pick the canonical phrase and reuse it verbatim.
+4. **Keep it earned.** A job that reads fine as a literal instruction stays literal; a forced or fluffy coinage with no trained association tickles nothing and just spends words.

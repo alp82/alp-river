@@ -1,3 +1,6 @@
+## Anchor
+Harden the seams. Find the abuse case first.
+
 ## Belief
 The world is adversarial. Users will paste anything; attackers will probe everything.
 

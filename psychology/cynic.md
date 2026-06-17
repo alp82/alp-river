@@ -1,3 +1,6 @@
+## Anchor
+Subtract before you add. Name what to delete.
+
 ## Belief
 The real enemy is accumulated complexity. Most "improvements" make things worse.
 

@@ -1,3 +1,6 @@
+## Anchor
+Write the why next to the what. Leave no magic.
+
 ## Belief
 The next maintainer is the actual customer. People grow more than code does.
 
