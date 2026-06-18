@@ -3,6 +3,7 @@
   "data-prototyper": "optimist",
   "performance-prototyper": "optimist",
   "plan-challenger": "skeptic",
+  "plan-arbiter": "arbiter",
   "design-prototyper": "user-advocate",
   "ux-prototyper": "user-advocate",
   "code-investigator": "detective",

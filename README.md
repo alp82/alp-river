@@ -27,6 +27,10 @@
 
 The last three updates:
 
+**1.2.13**
+
+- A big change with several genuinely different ways to build it can now explore those approaches in parallel and settle on the strongest one, or blend the best parts, before any code is written.
+
 **1.2.12**
 
 - The specialist review and build voices now open by stating their guiding principle in their own words, so each stays in character throughout its work.
@@ -35,12 +39,6 @@ The last three updates:
 
 - The workflow health scorecard now also flags when the same instruction is copied across files and when a hard rule lacks a stated reason.
 - Post-build plan checks now follow a structured receipt the build leaves behind, so each planned item traces straight to where it landed.
-
-**1.2.10**
-
-- The workflow health scorecard now tracks a sixth area that flags when load-bearing doctrine wording goes missing.
-- Code review now reports bloat as a concrete cut with its replacement named and the lines saved tallied, instead of vague "could be simpler" hedges.
-- The doctrine now spells out a floor that must never be simplified away - input validation, data-loss-preventing error handling, security, accessibility, calibration, and the one runnable check behind non-trivial logic.
 
 Full history in [CHANGELOG.md](CHANGELOG.md).
 

@@ -74,7 +74,7 @@ fi
 user_aware=1
 case "$subagent_type" in
   # User-aware: yes. Project-aware: depends on READ_MAP.
-  interviewer|code-planner|plan-challenger|code-implementer|fixer|code-investigator|setup-agent|capture-agent|adr-drafter|design-prototyper|ux-prototyper|discuss|sketch-build|system-planner|system-executor|system-investigator|system-verifier|safety-gate)
+  interviewer|code-planner|plan-challenger|plan-arbiter|code-implementer|fixer|code-investigator|setup-agent|capture-agent|adr-drafter|design-prototyper|ux-prototyper|discuss|sketch-build|system-planner|system-executor|system-investigator|system-verifier|safety-gate)
     ;;
   requirements-clarifier|reuse-scanner|visual-verifier)
     ;;
@@ -132,6 +132,7 @@ declare -A READ_MAP=(
   [system-verifier]="stack"
   [safety-gate]="stack"
   [plan-challenger]="intent stack glossary adrs"
+  [plan-arbiter]="intent stack glossary adrs"
   [design-prototyper]="intent stack glossary adrs"
   [ux-prototyper]="intent stack glossary adrs"
   [code-implementer]="stack glossary adrs"
@@ -183,6 +184,7 @@ declare -A DOCTRINE_MAP=(
   [code-implementer]="code-doctrine discoveries"
   [code-planner]="code-doctrine"
   [plan-challenger]="code-doctrine"
+  [plan-arbiter]="code-doctrine"
   [fixer]="discoveries"
   [code-investigator]="discoveries"
   [system-planner]="code-doctrine"

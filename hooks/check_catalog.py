@@ -31,10 +31,21 @@ SEED_SIGNALS = {
     "reshape",
     "run-visual",
     "design-decision",
+    # Multi-plan adjudication trigger - enters the route from outside any stage; the
+    # orchestrator seeds it (atomic co-publish, see doctrine/multi-plan.md). Same basis as
+    # request-received/reshape: orchestrator-sourced, no in-catalog publisher.
+    "critiques-ready",
 }
 # Artifacts seeded the same way - `request` is THE seed; `decision-summary` rides in on the
-# /alp-river:adr command (or a design gate that records a decision).
-SEED_ARTIFACTS = {"request", "decision-summary"}
+# /alp-river:adr command (or a design gate that records a decision); `competing-plans` and
+# `plan-critiques` are orchestrator-sourced on a multi-plan run - values that enter a route
+# from outside any stage; the orchestrator seeds these (see doctrine/multi-plan.md).
+SEED_ARTIFACTS = {
+    "request",
+    "decision-summary",
+    "competing-plans",
+    "plan-critiques",
+}
 # Stages exempt from the template-presence invariant - `triage` consumes the raw request
 # directly and has no `## Input` template.
 TEMPLATE_EXEMPT = {"triage"}

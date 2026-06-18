@@ -77,6 +77,7 @@ New topics are added here first, then used.
 | ux-flow-locked | user-flow spec captured | ux-prototyper | plan |
 | plan-ready | a plan artifact exists and is awaiting approval - arms the plan-gate lock on both implementers | code-planner, system-planner | code-implementer's plan-gate lock (while), system-executor's plan-gate lock (while) |
 | plan-challenged | plan survived challenge | challenge | after-plan gate |
+| critiques-ready | every competing plan has been critiqued; the arbiter may now adjudicate (multi-plan code build only) | orchestrator | plan-arbiter |
 | code-written | a diff exists | implement, fixer, system-executor | correctness-reviewer |
 | milestone-diverged | the remaining milestone breakdown is wrong; re-split forward | code-implementer | plan-challenger |
 | milestones-complete | the final milestone shipped; the orchestrator releases @diff and #code-written for the End Review wave | orchestrator | orchestrator |
@@ -122,7 +123,9 @@ fires, so code never starts against an unapproved plan.
 | cleanup-first | health gate decision | health gate | orchestrator |
 | run-visual | user opted into a visual check | gate | visual-verifier |
 | safety-approved | user cleared a destructive/irreversible system action | safety-gate | system-executor's lock |
-| plan-approved | the plan cleared its approval gate, releasing both implementers' plan-gate lock | plan-challenger (code path); orchestrator (system / trivial-code, where no in-route stage publishes it) | code-implementer's lock, system-executor's lock |
+| plan-approved | the plan cleared its approval gate, releasing both implementers' plan-gate lock | plan-challenger (code path, single-plan terminal gate); plan-arbiter (code path, multi-plan adjudication); orchestrator (system / trivial-code, where no in-route stage publishes it) | code-implementer's lock, system-executor's lock |
+
+On a multi-plan code build the per-plan critique-only challengers do NOT publish `#plan-approved` - the arbiter does, on its Adopt verdict (see `doctrine/multi-plan.md`). `critiques-ready`, `competing-plans`, and `plan-critiques` are orchestrator-sourced (seeded into the route, see `doctrine/multi-plan.md` ## Seed rationale), so `plan-challenger` does NOT publish `critiques-ready`.
 
 ## diagnose  (investigator runs inside the `code` or `system` path via `bug`, not a separate route)
 

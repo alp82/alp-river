@@ -245,7 +245,8 @@
             "prototypes",
             "design-spec",
             "ux-spec",
-            "diagnosis"
+            "diagnosis",
+            "planning-lens"
           ],
           "required": [
             "confirmed-intent"
@@ -255,7 +256,7 @@
           "approved-plan"
         ]
       },
-      "input_template": "<CONFIRMED_INTENT>{interviewer or Level 1 restate}</CONFIRMED_INTENT>\n<CLARIFY_OUTPUT>{requirements-clarifier output}</CLARIFY_OUTPUT>\n<SCOUT>\n  <reuse>{reuse-scanner output}</reuse>\n  <health>{health-checker output}</health>\n  <prototypes>{prototyper output OR \"none\"}</prototypes>\n  <research>{researcher output OR \"none\"}</research>\n</SCOUT>\n<LOCKED_DESIGN_SPEC>{labeled key-value spec the user pasted back from the design-prototyper's picker page, OR \"none\" when the design loop didn't run}</LOCKED_DESIGN_SPEC>\n<DESIGN_CLEANUP>{design-prototyper's CLEANUP_NEEDED list - only when HOST_DECISION was \"real-page\" so the planner removes picker artifacts before shipping; \"none\" otherwise}</DESIGN_CLEANUP>\n<LOCKED_UX_SPEC>{labeled key-value flow spec the user pasted back from the ux-prototyper's wireflow page, OR \"none\" when the user-flow loop didn't run}</LOCKED_UX_SPEC>\n<UX_CLEANUP>{ux-prototyper's CLEANUP_NEEDED list - only when HOST_DECISION was \"real-page\" so the planner removes wireflow artifacts before shipping; \"none\" otherwise}</UX_CLEANUP>\n<DIAGNOSIS>{investigator root-cause report OR \"none\"}</DIAGNOSIS>\n<PRIOR_PLAN>{previous APPROVED_PLAN block - only on replan/plan-patch, otherwise absent; reproduce it verbatim except where REPLAN_REASON applies (## Revision modes)}</PRIOR_PLAN>\n<REPLAN_REASON>{challenger BLOCKERS or implementer kickback reason - only on replan/plan-patch; the exact corrections to apply, nothing else changes}</REPLAN_REASON>\n",
+      "input_template": "<CONFIRMED_INTENT>{interviewer or Level 1 restate}</CONFIRMED_INTENT>\n<CLARIFY_OUTPUT>{requirements-clarifier output}</CLARIFY_OUTPUT>\n<SCOUT>\n  <reuse>{reuse-scanner output}</reuse>\n  <health>{health-checker output}</health>\n  <prototypes>{prototyper output OR \"none\"}</prototypes>\n  <research>{researcher output OR \"none\"}</research>\n</SCOUT>\n<LOCKED_DESIGN_SPEC>{labeled key-value spec the user pasted back from the design-prototyper's picker page, OR \"none\" when the design loop didn't run}</LOCKED_DESIGN_SPEC>\n<DESIGN_CLEANUP>{design-prototyper's CLEANUP_NEEDED list - only when HOST_DECISION was \"real-page\" so the planner removes picker artifacts before shipping; \"none\" otherwise}</DESIGN_CLEANUP>\n<LOCKED_UX_SPEC>{labeled key-value flow spec the user pasted back from the ux-prototyper's wireflow page, OR \"none\" when the user-flow loop didn't run}</LOCKED_UX_SPEC>\n<UX_CLEANUP>{ux-prototyper's CLEANUP_NEEDED list - only when HOST_DECISION was \"real-page\" so the planner removes wireflow artifacts before shipping; \"none\" otherwise}</UX_CLEANUP>\n<DIAGNOSIS>{investigator root-cause report OR \"none\"}</DIAGNOSIS>\n<PLANNING_LENS>{optional lens directive the orchestrator injects on a multi-plan run (e.g. smallest-shippable, risk-first, dead-simple, reuse-first) - bias the plan toward it while keeping every requirement intact; absent on a single-plan run}</PLANNING_LENS>\n<PRIOR_PLAN>{previous APPROVED_PLAN block - only on replan/plan-patch, otherwise absent; reproduce it verbatim except where REPLAN_REASON applies (## Revision modes)}</PRIOR_PLAN>\n<REPLAN_REASON>{challenger BLOCKERS or implementer kickback reason - only on replan/plan-patch; the exact corrections to apply, nothing else changes}</REPLAN_REASON>\n",
       "name": "code-planner",
       "routes": [
         "code"
@@ -662,10 +663,40 @@
         ]
       }
     },
-    "plan-challenger": {
+    "plan-arbiter": {
       "data": {
         "input": {
           "optional": [],
+          "required": [
+            "competing-plans",
+            "plan-critiques"
+          ]
+        },
+        "output": [
+          "arbiter-decision"
+        ]
+      },
+      "input_template": "<CONFIRMED_INTENT>{interviewer or Level 1 restate}</CONFIRMED_INTENT>\n<CLARIFY_OUTPUT>{requirements-clarifier output}</CLARIFY_OUTPUT>\n<COMPETING_PLANS>{the N APPROVED_PLAN blocks, each tagged with the lens its planner ran under}</COMPETING_PLANS>\n<PLAN_CRITIQUES>{the N critique blocks - one critique-only plan-challenger run per competing plan}</PLAN_CRITIQUES>\n",
+      "name": "plan-arbiter",
+      "routes": [
+        "code"
+      ],
+      "signals": {
+        "publishes": [
+          "plan-approved",
+          "scope-shift"
+        ],
+        "subscribes": [
+          "critiques-ready"
+        ]
+      }
+    },
+    "plan-challenger": {
+      "data": {
+        "input": {
+          "optional": [
+            "critique-only"
+          ],
           "required": [
             "approved-plan"
           ]
@@ -674,7 +705,7 @@
           "plan-challenge"
         ]
       },
-      "input_template": "<CONFIRMED_INTENT>{interviewer or Level 1 restate}</CONFIRMED_INTENT>\n<CLARIFY_OUTPUT>{requirements-clarifier output}</CLARIFY_OUTPUT>\n<APPROACHES>{planner's APPROACHES block - only present on XL with multi-approach}</APPROACHES>\n<APPROVED_PLAN>{planner's APPROVED_PLAN block for the recommended/single approach}</APPROVED_PLAN>\n",
+      "input_template": "<CONFIRMED_INTENT>{interviewer or Level 1 restate}</CONFIRMED_INTENT>\n<CLARIFY_OUTPUT>{requirements-clarifier output}</CLARIFY_OUTPUT>\n<CRITIQUE_ONLY>{set on a multi-plan run - emit BLOCKERS/CONCERNS/STRENGTHS but omit the picker and never publish #plan-approved; absent on a single-plan run (terminal mode)}</CRITIQUE_ONLY>\n<APPROVED_PLAN>{planner's APPROVED_PLAN block for the plan you are reviewing}</APPROVED_PLAN>\n",
       "name": "plan-challenger",
       "routes": [
         "code"

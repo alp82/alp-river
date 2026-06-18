@@ -2,6 +2,10 @@
 
 All notable changes to alp-river. Versions match `.claude-plugin/plugin.json`.
 
+## 1.2.13 - 2026-06-18
+
+- A big change with several genuinely different ways to build it can now explore those approaches in parallel and settle on the strongest one, or blend the best parts, before any code is written.
+
 ## 1.2.12 - 2026-06-17
 
 - The specialist review and build voices now open by stating their guiding principle in their own words, so each stays in character throughout its work.

@@ -295,7 +295,7 @@ def test_stage_count_stays_47_and_absence_is_valid():
     cat = _real_catalog()
     stages = cat["stages"]
 
-    assert len(stages) == 48, f"stage count must remain 48, got {len(stages)}"
+    assert len(stages) == 49, f"stage count must remain 49, got {len(stages)}"
 
     # Spot-check: stages that must NOT gain milestone-scope
     _NO_SCOPE_STAGES = (

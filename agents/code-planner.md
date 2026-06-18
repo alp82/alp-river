@@ -7,7 +7,7 @@ tools: Glob, Grep, Read, WebSearch, WebFetch
 stage:
   routes: [code]
   data:
-    input: ['@confirmed-intent', '?clarified-intent', '?reuse-map', '?health-findings', '?research-findings', '?prototypes', '?design-spec', '?ux-spec', '?diagnosis']
+    input: ['@confirmed-intent', '?clarified-intent', '?reuse-map', '?health-findings', '?research-findings', '?prototypes', '?design-spec', '?ux-spec', '?diagnosis', '?planning-lens']
     output: ['@approved-plan']
   signals:
     subscribes: ['#clarified', '#intent-confirmed']
@@ -26,16 +26,11 @@ On a code build with no clarifier output (no `#clarified`), the planner runs off
 4b. **If `<UX_CLEANUP>` is not "none"**: fold every listed cleanup item into the plan's implementation steps (typically as the final steps before testing). The wireflow artifacts must not ship.
 5. **If `<DIAGNOSIS>` is not "none"** (bug-build): design the fix around the RECOMMENDED FIX and ROOT CAUSE in the diagnosis - target the named root-cause line(s), not the symptom.
 6. Trace similar features in the codebase - follow their patterns.
-7. If multiple viable architectural approaches exist (XL), present them before committing.
-8. Design a plan that fits naturally into the existing architecture.
+7. Design a plan that fits naturally into the existing architecture.
 
-## Multiple Approaches (XL)
+## Planning Lens
 
-When meaningful architectural alternatives exist (not stylistic differences), present 2-3 approaches BEFORE committing. For each: name it, visualize with ASCII diagrams, state trade-offs, give recommendation.
-
-Use ASCII visuals liberally. Skip multi-approach when there's clearly one right way.
-
-L tasks: pick the single best approach directly - no multi-approach presentation.
+When `<PLANNING_LENS>` is present (a multi-plan run, where the orchestrator runs several planners in parallel under different lenses), bias the plan toward that lens while keeping every requirement intact - the lens shapes which trade-offs you favor, never which requirements you drop. Name the lens in `## Approach` so the reader knows the bias the plan was authored under. When the slot is absent, plan as usual.
 
 ## Plan Requirements
 
@@ -83,29 +78,14 @@ Both producers of a revision - the challenger's `revise` and the implementer's k
 <LOCKED_UX_SPEC>{labeled key-value flow spec the user pasted back from the ux-prototyper's wireflow page, OR "none" when the user-flow loop didn't run}</LOCKED_UX_SPEC>
 <UX_CLEANUP>{ux-prototyper's CLEANUP_NEEDED list - only when HOST_DECISION was "real-page" so the planner removes wireflow artifacts before shipping; "none" otherwise}</UX_CLEANUP>
 <DIAGNOSIS>{investigator root-cause report OR "none"}</DIAGNOSIS>
+<PLANNING_LENS>{optional lens directive the orchestrator injects on a multi-plan run (e.g. smallest-shippable, risk-first, dead-simple, reuse-first) - bias the plan toward it while keeping every requirement intact; absent on a single-plan run}</PLANNING_LENS>
 <PRIOR_PLAN>{previous APPROVED_PLAN block - only on replan/plan-patch, otherwise absent; reproduce it verbatim except where REPLAN_REASON applies (## Revision modes)}</PRIOR_PLAN>
 <REPLAN_REASON>{challenger BLOCKERS or implementer kickback reason - only on replan/plan-patch; the exact corrections to apply, nothing else changes}</REPLAN_REASON>
 ```
 
 ## Output (strict)
 
-When multiple approaches exist (XL), lead with:
-
-```
-APPROACHES:
-
-## A: [Name]
-[2-3 sentences + ASCII diagram]
-Trade-offs: [gains vs losses]
-
-## B: [Name]
-[2-3 sentences + ASCII diagram]
-Trade-offs: [gains vs losses]
-
-RECOMMENDATION: [which approach and why]
-```
-
-Then, for the recommended (or only) approach, wrap the plan in an APPROVED_PLAN block with version:
+Wrap the plan in an APPROVED_PLAN block with version:
 
 ```
 <APPROVED_PLAN version="N">

@@ -112,6 +112,14 @@ Canonical terms for this project. Agents read this to avoid renaming the same co
 **Definition:** The milestone-status layer the render card adds during a milestone build: a `milestone k of N` header and the milestone list marked 🟩 (verified) / 🟨 (building) / 🟥 (pending), atop the existing per-stage `▶ ✓ 🔒 •` markers. The card is native markdown, so these markers render natively.
 **Avoid:** "progress bar", "status colors".
 
+### plan-arbiter
+**Definition:** The read-only stage that cross-reviews N competing personality-driven plans against intent and the codebase and decides Adopt / Hybrid / Revise-first. Distinct from plan-challenger, which renders an Approve/Revise verdict on a single plan.
+**Avoid:** confusing with plan-challenger (single-plan Approve/Revise verdict).
+
+### multi-plan mode
+**Definition:** The gated, orchestrator-decided fan-out that spins up N distinct personality-lens planners. Distinct from code-planner's former single-planner A/B/C APPROACHES (now removed).
+**Avoid:** "A/B/C approaches" (the retired single-planner framing).
+
 ## Surfacing
 
 ### Concise Surfacing Contract
