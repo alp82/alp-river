@@ -916,10 +916,10 @@ def test_g02_verify_tests_file_absent_lower_score():
 # ---------------------------------------------------------------------------
 
 
-def _get_claude_md_phrase():
-    """Return the canary phrase paired to CLAUDE.md from audit.DOCTRINE_PHRASES (dynamic)."""
-    for phrase, relpath in audit.DOCTRINE_PHRASES:
-        if relpath == "CLAUDE.md":
+def _get_phrase_for(relpath):
+    """Return the canary phrase paired to relpath from audit.DOCTRINE_PHRASES (dynamic)."""
+    for phrase, rel in audit.DOCTRINE_PHRASES:
+        if rel == relpath:
             return phrase
     return None
 
@@ -929,9 +929,11 @@ def _make_doctrine_root(
     workflow_content=None,
     code_doctrine_content=None,
     claude_md_content=None,
+    surfacing_ladder_content=None,
     include_workflow=True,
     include_code_doctrine=True,
     include_claude_md=True,
+    include_surfacing_ladder=True,
 ):
     """Build a minimal repo root in tmp_path with controlled doctrine files.
 
@@ -958,13 +960,23 @@ def _make_doctrine_root(
         )
     if claude_md_content is None:
         # Build content that includes the canary phrase dynamically.
-        canary = _get_claude_md_phrase()
+        canary = _get_phrase_for("CLAUDE.md")
         if canary is not None:
             claude_md_content = f"# Doctrine hygiene\n{canary}\n"
         else:
             # If no CLAUDE.md entry exists yet, write a placeholder (will fail
             # phrase checks, which is correct for a not-yet-implemented test).
             claude_md_content = "# CLAUDE.md\n(placeholder - no canary phrase found)\n"
+    if surfacing_ladder_content is None:
+        # Build content that includes the surfacing-ladder leitwort dynamically,
+        # mirroring the claude_md default so a green-path root scores 100.
+        leitwort = _get_phrase_for("doctrine/surfacing-ladder.md")
+        if leitwort is not None:
+            surfacing_ladder_content = f"# Surfacing Ladder\n{leitwort}\n"
+        else:
+            surfacing_ladder_content = (
+                "# surfacing-ladder\n(placeholder - no leitwort phrase found)\n"
+            )
 
     if include_workflow:
         (tmp_path / "WORKFLOW.md").write_text(workflow_content, encoding="utf-8")
@@ -974,6 +986,10 @@ def _make_doctrine_root(
     if include_code_doctrine:
         (doctrine_dir / "code-doctrine.md").write_text(
             code_doctrine_content, encoding="utf-8"
+        )
+    if include_surfacing_ladder:
+        (doctrine_dir / "surfacing-ladder.md").write_text(
+            surfacing_ladder_content, encoding="utf-8"
         )
 
     if include_claude_md:
@@ -1069,18 +1085,19 @@ def test_h07_all_phrases_absent_score_zero(tmp_path):
     assert score == 0, f"all phrases absent: expected score 0, got {score}"
 
 
-def test_h12_all_phrases_absent_exactly_four_fixes(tmp_path):
-    """H-12: all four required phrases absent -> exactly 4 problem strings (one per table entry)."""
+def test_h12_all_phrases_absent_exactly_five_fixes(tmp_path):
+    """H-12: all required phrases absent -> one problem string per table entry (5 entries)."""
     root = _make_doctrine_root(
         tmp_path,
         workflow_content="# WORKFLOW\nno relevant phrases here\n",
         code_doctrine_content="# code-doctrine\nno relevant phrases here\n",
         claude_md_content="# CLAUDE.md\nno relevant phrases here\n",
+        surfacing_ladder_content="# surfacing-ladder\nno relevant phrases here\n",
     )
     _, fixes = audit._score_doctrine_integrity(root)
-    assert len(fixes) == 4, (
-        f"all phrases absent: expected exactly 4 fixes (one per pinned phrase), "
-        f"got {len(fixes)}: {fixes!r}"
+    assert len(fixes) == len(audit.DOCTRINE_PHRASES), (
+        f"all phrases absent: expected one fix per pinned phrase "
+        f"({len(audit.DOCTRINE_PHRASES)}), got {len(fixes)}: {fixes!r}"
     )
 
 
@@ -1332,10 +1349,11 @@ def test_h21_subprocess_scorecard_json_has_doctrine_integrity():
 # ---------------------------------------------------------------------------
 
 
-def test_phrases_length_is_four():
-    """PHRASES-01: audit.DOCTRINE_PHRASES has exactly 4 entries after adding CLAUDE.md entry."""
-    assert len(audit.DOCTRINE_PHRASES) == 4, (
-        f"DOCTRINE_PHRASES must have exactly 4 entries (3 existing + 1 CLAUDE.md); "
+def test_phrases_length_is_five():
+    """PHRASES-01: audit.DOCTRINE_PHRASES has exactly 5 entries (4 prior + surfacing-ladder)."""
+    assert len(audit.DOCTRINE_PHRASES) == 5, (
+        f"DOCTRINE_PHRASES must have exactly 5 entries "
+        f"(3 originals + CLAUDE.md + surfacing-ladder); "
         f"got {len(audit.DOCTRINE_PHRASES)}: {audit.DOCTRINE_PHRASES!r}"
     )
 
@@ -1355,7 +1373,7 @@ def test_phrases_exactly_one_claude_md_entry():
 
 def test_phrases_claude_md_canary_is_nonempty():
     """PHRASES-03: the CLAUDE.md canary phrase is a non-empty string."""
-    canary = _get_claude_md_phrase()
+    canary = _get_phrase_for("CLAUDE.md")
     assert (
         canary is not None
     ), "no DOCTRINE_PHRASES entry is paired to 'CLAUDE.md' - implementer must add one"
@@ -1368,7 +1386,7 @@ def test_phrases_canary_absent_doctrine_integrity_scores_zero(tmp_path):
     """PHRASES-04: CLAUDE.md present but with the 4th canary phrase removed ->
     _score_doctrine_integrity returns 0 and the fix mentions the phrase and CLAUDE.md.
     """
-    canary = _get_claude_md_phrase()
+    canary = _get_phrase_for("CLAUDE.md")
     assert (
         canary is not None
     ), "no CLAUSE.md phrase in DOCTRINE_PHRASES - RED by missing impl"
@@ -1391,7 +1409,7 @@ def test_phrases_canary_present_prose_reword_still_100(tmp_path):
     """PHRASES-05: CLAUDE.md has the canary phrase present (even inside a reworded sentence) ->
     _score_doctrine_integrity still returns 100 (substring match, not exact-line match).
     """
-    canary = _get_claude_md_phrase()
+    canary = _get_phrase_for("CLAUDE.md")
     assert (
         canary is not None
     ), "no CLAUSE.md phrase in DOCTRINE_PHRASES - RED by missing impl"
@@ -1414,7 +1432,7 @@ def test_phrases_canary_present_prose_reword_still_100(tmp_path):
 def test_phrases_claude_md_absent_scores_zero(tmp_path):
     """PHRASES-06: CLAUDE.md file entirely absent -> _score_doctrine_integrity returns 0,
     no raise, and fixes mentions the missing canary."""
-    canary = _get_claude_md_phrase()
+    canary = _get_phrase_for("CLAUDE.md")
     assert (
         canary is not None
     ), "no CLAUSE.md phrase in DOCTRINE_PHRASES - RED by missing impl"

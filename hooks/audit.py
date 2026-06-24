@@ -45,6 +45,10 @@ DOCTRINE_PHRASES = (
     ("est-size <= S", "WORKFLOW.md"),
     ("ONE runnable check", "doctrine/code-doctrine.md"),
     ("extend it not restate", "CLAUDE.md"),
+    (
+        "the AI proposes the rung, the human negotiates bandwidth",
+        "doctrine/surfacing-ladder.md",
+    ),
 )
 
 # Catalog stages that mark a present quality gate (test chain + review lenses).

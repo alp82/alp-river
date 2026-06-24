@@ -1,4 +1,5 @@
 .prototypes/
+.scratchpad/
 .pytest_cache/
 __pycache__/
 .claude/

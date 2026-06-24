@@ -2,6 +2,11 @@
 
 All notable changes to alp-river. Versions match `.claude-plugin/plugin.json`.
 
+## 1.2.16 - 2026-06-25
+
+- At the moments where the assistant asks you to confirm direction, settle intent, or sign off on a plan, you can now pull up a richer side-by-side view as a single page you open, compare at a glance, and answer from - or stay with the quick inline choice.
+- The richer view is built only when you ask for it, and closing it without answering changes nothing - the original question stays open until you decide.
+
 ## 1.2.15 - 2026-06-24
 
 - A finished run now ends with a timing summary: total time, time per phase, and time per milestone when the work was built in milestones.

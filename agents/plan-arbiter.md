@@ -78,7 +78,12 @@ ARBITER_DECISION:
       - label: Revise-first
         description: No plan is shippable as-is. The planner re-spawns with the prior plan reproduced verbatim and the blocking critiques applied as corrections, version bumped. Counts as one backward edge; re-earns approval.
         preview: [the blocking critiques driving the revision - one per line]
+      - label: See it as an interactive doc
+        description: The orchestrator renders the competing-plans side-by-side table as a static page you open to compare at a glance, then paste back `verdict: adopt|hybrid|revise-first | keep: <...> | graft: <...>`. The picker stays the open gate until that token arrives.
+        preview: [SELECTION one-liner + COMPLEMENTARY_STRENGTHS seam(s)]
 ```
+
+The `See it as an interactive doc` option is read-only on your side: the orchestrator writes and hosts the doc from the competing-plans side-by-side table (the marquee multi-plan view); you only offer the option and name the paste-back token (see the surfacing-ladder doctrine in your DOCTRINE block).
 
 `Adopt` = ship the selected plan to the implementer - this is the ONLY verdict that publishes `#plan-approved`, releasing both implementers' plan-gate lock so the code path can proceed. `Hybrid` = graft the complementary strengths into one plan; the planner re-spawns with the prior plan reproduced verbatim and the graft applied as the correction, version bumped (a backward edge; see WORKFLOW.md ## Revision Contract). `Revise-first` = no plan ships as-is; the planner re-spawns with the prior plan reproduced verbatim and the blocking critiques applied as corrections, version bumped (a backward edge).
 

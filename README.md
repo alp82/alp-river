@@ -27,6 +27,11 @@
 
 The last three updates:
 
+**1.2.16**
+
+- At the moments where the assistant asks you to confirm direction, settle intent, or sign off on a plan, you can now pull up a richer side-by-side view as a single page you open, compare at a glance, and answer from - or stay with the quick inline choice.
+- The richer view is built only when you ask for it, and closing it without answering changes nothing - the original question stays open until you decide.
+
 **1.2.15**
 
 - A finished run now ends with a timing summary: total time, time per phase, and time per milestone when the work was built in milestones.
@@ -34,10 +39,6 @@ The last three updates:
 **1.2.14**
 
 - Removed the opt-in screenshot-based visual check because they were unreliable.
-
-**1.2.13**
-
-- A big change with several genuinely different ways to build it can now explore those approaches in parallel and settle on the strongest one, or blend the best parts, before any code is written.
 
 Full history in [CHANGELOG.md](CHANGELOG.md).
 
