@@ -241,19 +241,43 @@ def _score_memory(root):
     return _clamp(score), fixes
 
 
-def _score_security(root, hooks_text):
-    """block-git-writes.sh present + registered in hooks.json."""
+def _score_security(root, hooks_text, catalog, ok):
+    """Git-write guard (block-git-writes.sh present + registered) + ship gate (ship-gate stage + ship-executor ship-ready lock); four 25-pt sub-checks."""
     fixes = []
     score = 0
     if (root / "hooks" / "block-git-writes.sh").is_file():
-        score += 50
+        score += 25
     else:
         fixes.append("restore hooks/block-git-writes.sh - the git-write guard")
 
     if "block-git-writes" in hooks_text:
-        score += 50
+        score += 25
     else:
         fixes.append("register block-git-writes.sh as a PreToolUse Bash hook")
+
+    stages = catalog.get("stages", {}) if ok else {}
+    if not isinstance(stages, dict):
+        stages = {}
+    if ok and "ship-gate" in stages:
+        score += 25
+    else:
+        fixes.append(
+            "register the ship-gate stage - the convergence-gated ship decision"
+        )
+
+    # lock entries are dicts {while, until} with BARE topics (no '#'); a gen-catalog representation change must update this check.
+    executor = stages.get("ship-executor", {}) if ok else {}
+    locks = executor.get("lock", []) or []
+    has_ship_lock = any(
+        lk.get("while") == "ship-ready" and lk.get("until") == "ship-approved"
+        for lk in locks
+    )
+    if ok and has_ship_lock:
+        score += 25
+    else:
+        fixes.append(
+            "hold ship-executor with a {while:ship-ready, until:ship-approved} lock"
+        )
     return _clamp(score), fixes
 
 
@@ -494,7 +518,9 @@ def build_scorecard(root):
         root, catalog, ok, hooks_text
     )
     category_results["memory persistence"] = _score_memory(root)
-    category_results["security guardrails"] = _score_security(root, hooks_text)
+    category_results["security guardrails"] = _score_security(
+        root, hooks_text, catalog, ok
+    )
     category_results["doctrine integrity"] = _score_doctrine_integrity(root)
     category_results["doctrine hygiene"] = _score_doctrine_hygiene(root)
     category_results["why-anchor coverage"] = _score_why_anchor(root)

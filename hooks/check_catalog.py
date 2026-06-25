@@ -34,6 +34,11 @@ SEED_SIGNALS = {
     # orchestrator seeds it (atomic co-publish, see doctrine/multi-plan.md). Same basis as
     # request-received/reshape: orchestrator-sourced, no in-catalog publisher.
     "critiques-ready",
+    # Ship-tail trigger - orchestrator-emitted at convergence on a ship request (reliably
+    # emitted, not the unsatisfiable #milestones-complete case), so the ship-gate subscribe
+    # and the executor's `while:ship-ready` resolve. (`ship-approved` resolves via the
+    # ship-gate publisher; `ship-requested` via triage - neither needs a seed.)
+    "ship-ready",
 }
 # Artifacts seeded the same way - `request` is THE seed; `decision-summary` rides in on the
 # /alp-river:adr command (or a design gate that records a decision); `competing-plans` and

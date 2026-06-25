@@ -1967,3 +1967,582 @@ def test_k02_live_repo_doctrine_hygiene_score_gt_0():
         f"The scorer is collapsing - check _score_doctrine_hygiene and "
         f"_build_line_frequency_map."
     )
+
+
+# ---------------------------------------------------------------------------
+# Group K-SEC - Extended _score_security (M2: 4-arg, four 25-pt sub-checks)
+# ---------------------------------------------------------------------------
+# The current _score_security(root, hooks_text) takes 2 args.
+# M2 extends it to _score_security(root, hooks_text, catalog, ok) with 4 sub-checks:
+#   (a) hooks/block-git-writes.sh file present under root  (25 pts)
+#   (b) "block-git-writes" substring in hooks_text         (25 pts)
+#   (c) "ship-gate" key in catalog["stages"]               (25 pts)
+#   (d) ship-executor stage lock contains
+#       {"while":"ship-ready","until":"ship-approved"}    (25 pts)
+# Fail-open: ok=False -> (c)+(d) fail unconditionally, no raise.
+#
+# All direct-call cases below raise TypeError against the current 2-arg signature
+# (correct red state). The implementer makes them green by extending the scorer.
+# ---------------------------------------------------------------------------
+
+# Catalog fixtures for sub-checks (c) and (d)
+
+
+def _catalog_with_ship_gate_and_lock():
+    """Full-pass catalog: has ship-gate stage AND ship-executor with the correct lock."""
+    return {
+        "stages": {
+            "ship-gate": {
+                "routes": ["code"],
+                "data": {"input": {"required": [], "optional": []}, "output": []},
+                "signals": {"subscribes": [], "publishes": []},
+            },
+            "ship-executor": {
+                "routes": ["code"],
+                "data": {"input": {"required": [], "optional": []}, "output": []},
+                "signals": {"subscribes": [], "publishes": []},
+                "lock": [{"while": "ship-ready", "until": "ship-approved"}],
+            },
+        }
+    }
+
+
+def _catalog_no_ship_gate():
+    """Catalog with ship-executor (correct lock) but NO ship-gate stage."""
+    return {
+        "stages": {
+            "ship-executor": {
+                "routes": ["code"],
+                "data": {"input": {"required": [], "optional": []}, "output": []},
+                "signals": {"subscribes": [], "publishes": []},
+                "lock": [{"while": "ship-ready", "until": "ship-approved"}],
+            },
+        }
+    }
+
+
+def _catalog_no_ship_executor():
+    """Catalog with ship-gate but NO ship-executor stage at all."""
+    return {
+        "stages": {
+            "ship-gate": {
+                "routes": ["code"],
+                "data": {"input": {"required": [], "optional": []}, "output": []},
+                "signals": {"subscribes": [], "publishes": []},
+            },
+        }
+    }
+
+
+def _catalog_ship_executor_wrong_lock(lock_value):
+    """Catalog with ship-gate AND ship-executor, but lock set to lock_value."""
+    return {
+        "stages": {
+            "ship-gate": {
+                "routes": ["code"],
+                "data": {"input": {"required": [], "optional": []}, "output": []},
+                "signals": {"subscribes": [], "publishes": []},
+            },
+            "ship-executor": {
+                "routes": ["code"],
+                "data": {"input": {"required": [], "optional": []}, "output": []},
+                "signals": {"subscribes": [], "publishes": []},
+                "lock": lock_value,
+            },
+        }
+    }
+
+
+def _make_security_fixture(tmp_path, include_guard_file=True, hooks_text_dict=None):
+    """Create a temp repo root for _score_security direct-call tests.
+
+    Mirrors the Group G _make_repo_with_hooks style.
+    - include_guard_file: whether to write hooks/block-git-writes.sh
+    - hooks_text_dict: dict written as hooks.json content; defaults to registering
+      block-git-writes so sub-check (b) passes.
+    Returns (root_path, hooks_text_str).
+    """
+    root = tmp_path
+    hooks_dir = root / "hooks"
+    hooks_dir.mkdir(exist_ok=True)
+
+    if include_guard_file:
+        (hooks_dir / "block-git-writes.sh").write_text(
+            "#!/bin/bash\n# guard\n", encoding="utf-8"
+        )
+
+    if hooks_text_dict is None:
+        hooks_text_dict = {"hooks": ["block-git-writes"]}
+
+    hooks_json_str = json.dumps(hooks_text_dict)
+    (hooks_dir / "hooks.json").write_text(hooks_json_str, encoding="utf-8")
+
+    # Provide a stub catalog so build_scorecard doesn't interfere via its own load.
+    _write_stub_catalog(root)
+
+    return root, hooks_json_str
+
+
+# --- Direct-call cases: K-SEC-01 through K-SEC-15 ---
+
+
+def test_k_sec_01_all_pass_ok_true(tmp_path):
+    """K-SEC-01: a,b,c,d all hold, ok=True -> (int, list), score 100, fixes == []."""
+    root, hooks_text = _make_security_fixture(tmp_path, include_guard_file=True)
+    catalog = _catalog_with_ship_gate_and_lock()
+    score, fixes = audit._score_security(root, hooks_text, catalog, True)
+    assert isinstance(score, int), f"score must be int, got {type(score)}"
+    assert isinstance(fixes, list), f"fixes must be list, got {type(fixes)}"
+    assert score == 100, f"all sub-checks pass: expected score 100, got {score}"
+    assert fixes == [], f"all sub-checks pass: expected empty fixes, got {fixes!r}"
+
+
+def test_k_sec_02_a_fails_no_file(tmp_path):
+    """K-SEC-02: a FAILS (no block-git-writes.sh), b,c,d hold, ok=True -> score 75, exactly 1 fix containing 'block-git-writes.sh'."""
+    root, hooks_text = _make_security_fixture(tmp_path, include_guard_file=False)
+    catalog = _catalog_with_ship_gate_and_lock()
+    score, fixes = audit._score_security(root, hooks_text, catalog, True)
+    assert score == 75, f"only (a) fails: expected score 75, got {score}"
+    assert (
+        len(fixes) == 1
+    ), f"only (a) fails: expected exactly 1 fix, got {len(fixes)}: {fixes!r}"
+    assert (
+        "block-git-writes.sh" in fixes[0]
+    ), f"(a)-fix must contain 'block-git-writes.sh'; got {fixes[0]!r}"
+    # Must NOT contain the (b) registration wording, (c) ship-gate, or (d) ship-executor keywords
+    assert "block-git-writes" not in fixes[0].replace(
+        "block-git-writes.sh", ""
+    ), f"(a)-fix must not describe the registration issue; got {fixes[0]!r}"
+
+
+def test_k_sec_03_b_fails_no_registration(tmp_path):
+    """K-SEC-03: b FAILS (hooks_text lacks 'block-git-writes'), a,c,d hold, ok=True -> score 75, 1 fix with registration wording."""
+    root, _ = _make_security_fixture(
+        tmp_path,
+        include_guard_file=True,
+        hooks_text_dict={"hooks": []},
+    )
+    hooks_text = json.dumps({"hooks": []})
+    catalog = _catalog_with_ship_gate_and_lock()
+    score, fixes = audit._score_security(root, hooks_text, catalog, True)
+    assert score == 75, f"only (b) fails: expected score 75, got {score}"
+    assert (
+        len(fixes) == 1
+    ), f"only (b) fails: expected exactly 1 fix, got {len(fixes)}: {fixes!r}"
+    assert (
+        "block-git-writes" in fixes[0]
+    ), f"(b)-fix must contain 'block-git-writes'; got {fixes[0]!r}"
+    # The fix must carry registration wording (not the file-presence wording)
+    # Registration wording: something about registering/hook registration
+    assert any(
+        word in fixes[0].lower() for word in ("register", "hook", "registration")
+    ), f"(b)-fix must contain registration wording; got {fixes[0]!r}"
+
+
+def test_k_sec_04_c_fails_no_ship_gate(tmp_path):
+    """K-SEC-04: c FAILS (no 'ship-gate' in stages), a,b,d hold, ok=True -> score 75, 1 fix containing 'ship-gate'."""
+    root, hooks_text = _make_security_fixture(tmp_path, include_guard_file=True)
+    catalog = _catalog_no_ship_gate()
+    score, fixes = audit._score_security(root, hooks_text, catalog, True)
+    assert score == 75, f"only (c) fails: expected score 75, got {score}"
+    assert (
+        len(fixes) == 1
+    ), f"only (c) fails: expected exactly 1 fix, got {len(fixes)}: {fixes!r}"
+    assert (
+        "ship-gate" in fixes[0]
+    ), f"(c)-fix must contain 'ship-gate'; got {fixes[0]!r}"
+
+
+def test_k_sec_05_d_fails_wrong_lock_topics(tmp_path):
+    """K-SEC-05: d FAILS (ship-executor lock=[{'while':'plan-ready','until':'plan-approved'}]), a,b,c hold, ok=True -> score 75, 1 fix mentioning ship-executor/ship-ready/ship-approved."""
+    root, hooks_text = _make_security_fixture(tmp_path, include_guard_file=True)
+    catalog = _catalog_ship_executor_wrong_lock(
+        [{"while": "plan-ready", "until": "plan-approved"}]
+    )
+    score, fixes = audit._score_security(root, hooks_text, catalog, True)
+    assert score == 75, f"only (d) fails (wrong topics): expected score 75, got {score}"
+    assert (
+        len(fixes) == 1
+    ), f"only (d) fails: expected exactly 1 fix, got {len(fixes)}: {fixes!r}"
+    fix_text = fixes[0]
+    assert any(
+        kw in fix_text for kw in ("ship-executor", "ship-ready", "ship-approved")
+    ), f"(d)-fix must contain one of ship-executor/ship-ready/ship-approved; got {fix_text!r}"
+
+
+def test_k_sec_06_d_fails_no_ship_executor(tmp_path):
+    """K-SEC-06: d FAILS (no ship-executor stage at all), a,b,c hold, ok=True -> score 75, 1 fix (d-string)."""
+    root, hooks_text = _make_security_fixture(tmp_path, include_guard_file=True)
+    catalog = _catalog_no_ship_executor()
+    score, fixes = audit._score_security(root, hooks_text, catalog, True)
+    assert (
+        score == 75
+    ), f"only (d) fails (no ship-executor): expected score 75, got {score}"
+    assert (
+        len(fixes) == 1
+    ), f"only (d) fails: expected exactly 1 fix, got {len(fixes)}: {fixes!r}"
+    fix_text = fixes[0]
+    assert any(
+        kw in fix_text for kw in ("ship-executor", "ship-ready", "ship-approved")
+    ), f"(d)-fix must contain one of ship-executor/ship-ready/ship-approved; got {fix_text!r}"
+
+
+def test_k_sec_07_d_fails_empty_lock(tmp_path):
+    """K-SEC-07: d FAILS (ship-executor lock=[]), a,b,c hold, ok=True -> score 75, 1 fix (d-string)."""
+    root, hooks_text = _make_security_fixture(tmp_path, include_guard_file=True)
+    catalog = _catalog_ship_executor_wrong_lock([])
+    score, fixes = audit._score_security(root, hooks_text, catalog, True)
+    assert score == 75, f"only (d) fails (empty lock): expected score 75, got {score}"
+    assert (
+        len(fixes) == 1
+    ), f"only (d) fails: expected exactly 1 fix, got {len(fixes)}: {fixes!r}"
+    fix_text = fixes[0]
+    assert any(
+        kw in fix_text for kw in ("ship-executor", "ship-ready", "ship-approved")
+    ), f"(d)-fix must contain one of ship-executor/ship-ready/ship-approved; got {fix_text!r}"
+
+
+def test_k_sec_08_d_fails_wrong_until(tmp_path):
+    """K-SEC-08: d FAILS (lock=[{'while':'ship-ready','until':'something-else'}]), a,b,c hold, ok=True -> score 75, 1 fix (d-string)."""
+    root, hooks_text = _make_security_fixture(tmp_path, include_guard_file=True)
+    catalog = _catalog_ship_executor_wrong_lock(
+        [{"while": "ship-ready", "until": "something-else"}]
+    )
+    score, fixes = audit._score_security(root, hooks_text, catalog, True)
+    assert score == 75, f"only (d) fails (wrong until): expected score 75, got {score}"
+    assert (
+        len(fixes) == 1
+    ), f"only (d) fails: expected exactly 1 fix, got {len(fixes)}: {fixes!r}"
+    fix_text = fixes[0]
+    assert any(
+        kw in fix_text for kw in ("ship-executor", "ship-ready", "ship-approved")
+    ), f"(d)-fix must contain one of ship-executor/ship-ready/ship-approved; got {fix_text!r}"
+
+
+def test_k_sec_09_d_fails_wrong_while(tmp_path):
+    """K-SEC-09: d FAILS (lock=[{'while':'something-else','until':'ship-approved'}]), a,b,c hold, ok=True -> score 75, 1 fix (d-string)."""
+    root, hooks_text = _make_security_fixture(tmp_path, include_guard_file=True)
+    catalog = _catalog_ship_executor_wrong_lock(
+        [{"while": "something-else", "until": "ship-approved"}]
+    )
+    score, fixes = audit._score_security(root, hooks_text, catalog, True)
+    assert score == 75, f"only (d) fails (wrong while): expected score 75, got {score}"
+    assert (
+        len(fixes) == 1
+    ), f"only (d) fails: expected exactly 1 fix, got {len(fixes)}: {fixes!r}"
+    fix_text = fixes[0]
+    assert any(
+        kw in fix_text for kw in ("ship-executor", "ship-ready", "ship-approved")
+    ), f"(d)-fix must contain one of ship-executor/ship-ready/ship-approved; got {fix_text!r}"
+
+
+def test_k_sec_10_ok_false_a_b_pass(tmp_path):
+    """K-SEC-10: ok=False, a,b hold -> no raise; (int,list); score 50; fixes contain c-string and d-string."""
+    root, hooks_text = _make_security_fixture(tmp_path, include_guard_file=True)
+    # catalog content is irrelevant when ok=False; use full catalog to confirm it is ignored
+    catalog = _catalog_with_ship_gate_and_lock()
+    try:
+        result = audit._score_security(root, hooks_text, catalog, False)
+    except Exception as exc:
+        raise AssertionError(
+            f"_score_security must not raise when ok=False; got {type(exc).__name__}: {exc}"
+        ) from exc
+    assert (
+        isinstance(result, tuple) and len(result) == 2
+    ), f"expected (int, list) 2-tuple, got {result!r}"
+    score, fixes = result
+    assert isinstance(score, int), f"score must be int, got {type(score)}"
+    assert isinstance(fixes, list), f"fixes must be list, got {type(fixes)}"
+    assert score == 50, f"ok=False, a+b pass: expected score 50, got {score}"
+    fix_text = " ".join(fixes)
+    assert (
+        "ship-gate" in fix_text
+    ), f"ok=False fixes must contain c-string ('ship-gate'); got {fixes!r}"
+    assert any(
+        kw in fix_text for kw in ("ship-executor", "ship-ready", "ship-approved")
+    ), f"ok=False fixes must contain d-string; got {fixes!r}"
+
+
+def test_k_sec_11_ok_false_a_fails(tmp_path):
+    """K-SEC-11: ok=False, a FAILS, b holds -> no raise; score 25; exactly 3 fixes (a,c,d strings present)."""
+    root, hooks_text = _make_security_fixture(tmp_path, include_guard_file=False)
+    catalog = _catalog_with_ship_gate_and_lock()
+    try:
+        score, fixes = audit._score_security(root, hooks_text, catalog, False)
+    except Exception as exc:
+        raise AssertionError(
+            f"_score_security must not raise; got {type(exc).__name__}: {exc}"
+        ) from exc
+    assert score == 25, f"ok=False, a fails, b holds: expected score 25, got {score}"
+    assert (
+        len(fixes) == 3
+    ), f"ok=False, a fails: expected exactly 3 fixes (a,c,d), got {len(fixes)}: {fixes!r}"
+    fix_text = " ".join(fixes)
+    assert "block-git-writes.sh" in fix_text, f"a-fix must be present; got {fixes!r}"
+    assert "ship-gate" in fix_text, f"c-fix must be present; got {fixes!r}"
+    assert any(
+        kw in fix_text for kw in ("ship-executor", "ship-ready", "ship-approved")
+    ), f"d-fix must be present; got {fixes!r}"
+
+
+def test_k_sec_12_ok_false_a_and_b_fail(tmp_path):
+    """K-SEC-12: ok=False, a FAILS, b FAILS -> no raise; score 0; exactly 4 fixes (a,b,c,d)."""
+    root, _ = _make_security_fixture(
+        tmp_path,
+        include_guard_file=False,
+        hooks_text_dict={"hooks": []},
+    )
+    hooks_text = json.dumps({"hooks": []})
+    catalog = _catalog_with_ship_gate_and_lock()
+    try:
+        score, fixes = audit._score_security(root, hooks_text, catalog, False)
+    except Exception as exc:
+        raise AssertionError(
+            f"_score_security must not raise; got {type(exc).__name__}: {exc}"
+        ) from exc
+    assert score == 0, f"ok=False, a+b fail: expected score 0, got {score}"
+    assert (
+        len(fixes) == 4
+    ), f"ok=False, a+b fail: expected exactly 4 fixes (a,b,c,d), got {len(fixes)}: {fixes!r}"
+    fix_text = " ".join(fixes)
+    assert "block-git-writes.sh" in fix_text, f"a-fix must be present; got {fixes!r}"
+    assert "block-git-writes" in fix_text, f"b-fix must be present; got {fixes!r}"
+    assert "ship-gate" in fix_text, f"c-fix must be present; got {fixes!r}"
+    assert any(
+        kw in fix_text for kw in ("ship-executor", "ship-ready", "ship-approved")
+    ), f"d-fix must be present; got {fixes!r}"
+
+
+def test_k_sec_13_ok_false_catalog_irrelevant(tmp_path):
+    """K-SEC-13: ok=False, catalog WOULD satisfy c,d if loaded -> score 50 (not 100); c,d fix strings present (ok=False forces c,d fail)."""
+    root, hooks_text = _make_security_fixture(tmp_path, include_guard_file=True)
+    # This catalog would satisfy both (c) and (d) if ok were True
+    catalog = _catalog_with_ship_gate_and_lock()
+    try:
+        score, fixes = audit._score_security(root, hooks_text, catalog, False)
+    except Exception as exc:
+        raise AssertionError(
+            f"_score_security must not raise; got {type(exc).__name__}: {exc}"
+        ) from exc
+    assert (
+        score == 50
+    ), f"ok=False must force c+d to fail regardless of catalog; expected score 50, got {score}"
+    fix_text = " ".join(fixes)
+    assert (
+        "ship-gate" in fix_text
+    ), f"ok=False: c-fix ('ship-gate') must be present even when catalog has ship-gate; got {fixes!r}"
+    assert any(
+        kw in fix_text for kw in ("ship-executor", "ship-ready", "ship-approved")
+    ), f"ok=False: d-fix must be present even when catalog has correct lock; got {fixes!r}"
+
+
+def test_k_sec_14_return_type(tmp_path):
+    """K-SEC-14: a,b,c,d hold, ok=True -> isinstance(result, tuple), len 2, result[0] is int, result[1] is list."""
+    root, hooks_text = _make_security_fixture(tmp_path, include_guard_file=True)
+    catalog = _catalog_with_ship_gate_and_lock()
+    result = audit._score_security(root, hooks_text, catalog, True)
+    assert isinstance(result, tuple), f"result must be tuple, got {type(result)}"
+    assert len(result) == 2, f"result must be length-2 tuple, got len {len(result)}"
+    assert isinstance(result[0], int), f"result[0] must be int, got {type(result[0])}"
+    assert isinstance(result[1], list), f"result[1] must be list, got {type(result[1])}"
+
+
+def test_k_sec_15_clamp_bounds(tmp_path):
+    """K-SEC-15: all pass ok=True -> score in [0,100] and ==100; a,b fail ok=False -> score in [0,100] and ==0."""
+    catalog = _catalog_with_ship_gate_and_lock()
+
+    # All pass: build a compliant fixture in tmp_path/full
+    root_full = tmp_path / "full"
+    root_full.mkdir()
+    root_full, hooks_text_full = _make_security_fixture(
+        root_full, include_guard_file=True
+    )
+    score_full, _ = audit._score_security(root_full, hooks_text_full, catalog, True)
+    assert 0 <= score_full <= 100, f"score must be in [0,100]; got {score_full}"
+    assert score_full == 100, f"all pass: score must be 100, got {score_full}"
+
+    # a,b fail, ok=False -> score 0
+    root_none = tmp_path / "none"
+    root_none.mkdir()
+    hooks_dir_none = root_none / "hooks"
+    hooks_dir_none.mkdir()
+    hooks_text_none = json.dumps({"hooks": []})
+    (hooks_dir_none / "hooks.json").write_text(hooks_text_none, encoding="utf-8")
+    _write_stub_catalog(root_none)
+
+    score_none, _ = audit._score_security(root_none, hooks_text_none, catalog, False)
+    assert 0 <= score_none <= 100, f"score must be in [0,100]; got {score_none}"
+    assert score_none == 0, f"a,b fail ok=False: score must be 0, got {score_none}"
+
+
+# --- Build-scorecard regression cases: K-SEC-REG-01 through K-SEC-REG-06 ---
+
+
+def _make_security_build_fixture(
+    tmp_path, catalog_dict, include_guard_file=True, hooks_text_dict=None
+):
+    """Build a full repo fixture for build_scorecard regression tests.
+
+    Writes: hooks/hooks.json, optionally hooks/block-git-writes.sh,
+    and generated/catalog.json from catalog_dict.
+    Returns the root Path.
+    """
+    hooks_dir = tmp_path / "hooks"
+    hooks_dir.mkdir(exist_ok=True)
+
+    if include_guard_file:
+        (hooks_dir / "block-git-writes.sh").write_text(
+            "#!/bin/bash\n# guard\n", encoding="utf-8"
+        )
+
+    if hooks_text_dict is None:
+        hooks_text_dict = {"hooks": ["block-git-writes"]}
+
+    (hooks_dir / "hooks.json").write_text(json.dumps(hooks_text_dict), encoding="utf-8")
+
+    gen = tmp_path / "generated"
+    gen.mkdir(exist_ok=True)
+    (gen / "catalog.json").write_text(json.dumps(catalog_dict), encoding="utf-8")
+
+    return tmp_path
+
+
+def test_k_sec_reg_01_eight_categories(tmp_path):
+    """K-SEC-REG-01: build_scorecard -> 8 categories; set of keys == CATEGORY_NAMES."""
+    root = _make_security_build_fixture(tmp_path, _catalog_with_ship_gate_and_lock())
+    result = audit.build_scorecard(root)
+    assert (
+        set(result["categories"].keys()) == CATEGORY_NAMES
+    ), f"expected category keys {CATEGORY_NAMES!r}, got {set(result['categories'].keys())!r}"
+    assert (
+        len(result["categories"]) == 8
+    ), f"expected exactly 8 categories, got {len(result['categories'])}"
+
+
+def test_k_sec_reg_02_security_guardrails_is_category(tmp_path):
+    """K-SEC-REG-02: 'security guardrails' is a category key in build_scorecard output."""
+    root = _make_security_build_fixture(tmp_path, _catalog_with_ship_gate_and_lock())
+    result = audit.build_scorecard(root)
+    assert (
+        "security guardrails" in result["categories"]
+    ), f"'security guardrails' must be in categories; got {list(result['categories'].keys())}"
+
+
+def test_k_sec_reg_03_doctrine_phrases_length_five():
+    """K-SEC-REG-03: len(audit.DOCTRINE_PHRASES) == 5 (regression pin; mirrors test_phrases_length_is_five)."""
+    assert len(audit.DOCTRINE_PHRASES) == 5, (
+        f"DOCTRINE_PHRASES must have exactly 5 entries; "
+        f"got {len(audit.DOCTRINE_PHRASES)}: {audit.DOCTRINE_PHRASES!r}"
+    )
+
+
+def test_k_sec_reg_04_compliant_fixture_scores_100(tmp_path):
+    """K-SEC-REG-04: compliant fixture (a,b,c,d all satisfied) -> security guardrails score 100 and fixes == []."""
+    root = _make_security_build_fixture(
+        tmp_path,
+        _catalog_with_ship_gate_and_lock(),
+        include_guard_file=True,
+        hooks_text_dict={"hooks": ["block-git-writes"]},
+    )
+    result = audit.build_scorecard(root)
+    cat = result["categories"]["security guardrails"]
+    assert cat["score"] == 100, (
+        f"compliant fixture: 'security guardrails' must score 100, got {cat['score']}; "
+        f"fixes={cat['fixes']!r}"
+    )
+    assert (
+        cat["fixes"] == []
+    ), f"compliant fixture: 'security guardrails' fixes must be empty, got {cat['fixes']!r}"
+
+
+def test_k_sec_reg_05_missing_ship_ready_lock_degrades(tmp_path):
+    """K-SEC-REG-05: a,b,c hold but ship-executor lacks the ship-ready lock -> security guardrails score < 100 and a fix references the missing lock."""
+    catalog = _catalog_ship_executor_wrong_lock(
+        [{"while": "plan-ready", "until": "plan-approved"}]
+    )
+    root = _make_security_build_fixture(
+        tmp_path,
+        catalog,
+        include_guard_file=True,
+        hooks_text_dict={"hooks": ["block-git-writes"]},
+    )
+    result = audit.build_scorecard(root)
+    cat = result["categories"]["security guardrails"]
+    assert (
+        cat["score"] < 100
+    ), f"missing ship-ready lock: 'security guardrails' must score < 100, got {cat['score']}"
+    fix_text = " ".join(cat["fixes"])
+    assert any(
+        kw in fix_text for kw in ("ship-executor", "ship-ready", "ship-approved")
+    ), f"a fix must reference the missing lock; got {cat['fixes']!r}"
+
+
+def test_k_sec_16_ok_true_catalog_no_stages_key(tmp_path):
+    """K-SEC-16: ok=True but catalog has no 'stages' key -> no raise; score 50; (c) and (d) fix strings present."""
+    root, hooks_text = _make_security_fixture(tmp_path, include_guard_file=True)
+    # catalog dict has no 'stages' key at all
+    catalog = {}
+    try:
+        score, fixes = audit._score_security(root, hooks_text, catalog, True)
+    except Exception as exc:
+        raise AssertionError(
+            f"_score_security must not raise when catalog has no 'stages' key; got {type(exc).__name__}: {exc}"
+        ) from exc
+    assert (
+        score == 50
+    ), f"ok=True but no 'stages' key: (c) and (d) must fail, expected score 50, got {score}"
+    fix_text = " ".join(fixes)
+    assert "ship-gate" in fix_text, f"(c)-fix must be present; got {fixes!r}"
+    assert any(
+        kw in fix_text for kw in ("ship-executor", "ship-ready", "ship-approved")
+    ), f"(d)-fix must be present; got {fixes!r}"
+
+
+def test_ship_ready_in_seed_signals():
+    """Regression pin: 'ship-ready' must remain in check_catalog.SEED_SIGNALS."""
+    assert "ship-ready" in check_catalog.SEED_SIGNALS, (
+        "'ship-ready' was removed from check_catalog.SEED_SIGNALS; "
+        "the ship-executor lock and ship-gate subscribe will become orphaned signals. "
+        "Restore it or update the seed set and this regression pin together."
+    )
+
+
+def test_k_sec_reg_06_missing_catalog_guard_present(tmp_path):
+    """K-SEC-REG-06: no generated/catalog.json (load fails), guard file present and registered -> NO raise; 'security guardrails' present; score is int == 50; fixes reference 'ship-gate' and one of ship-executor/ship-ready/ship-approved."""
+    # Do NOT create generated/catalog.json; only write hooks with guard registered
+    hooks_dir = tmp_path / "hooks"
+    hooks_dir.mkdir(exist_ok=True)
+    (hooks_dir / "block-git-writes.sh").write_text(
+        "#!/bin/bash\n# guard\n", encoding="utf-8"
+    )
+    (hooks_dir / "hooks.json").write_text(
+        json.dumps({"hooks": ["block-git-writes"]}), encoding="utf-8"
+    )
+    # No generated/catalog.json - catalog load will fail -> ok=False
+
+    try:
+        result = audit.build_scorecard(tmp_path)
+    except Exception as exc:
+        raise AssertionError(
+            f"build_scorecard must not raise when catalog is missing; "
+            f"got {type(exc).__name__}: {exc}"
+        ) from exc
+
+    assert (
+        "security guardrails" in result["categories"]
+    ), "'security guardrails' must still be present when catalog is missing"
+    cat = result["categories"]["security guardrails"]
+    assert isinstance(
+        cat["score"], int
+    ), f"'security guardrails' score must be int; got {type(cat['score'])}"
+    assert cat["score"] == 50, (
+        f"missing catalog, guard present+registered: expected score 50 (a+b pass, c+d fail); "
+        f"got {cat['score']}; fixes={cat['fixes']!r}"
+    )
+    fix_text = " ".join(cat["fixes"])
+    assert (
+        "ship-gate" in fix_text
+    ), f"fixes must reference 'ship-gate' when catalog is missing; got {cat['fixes']!r}"
+    assert any(
+        kw in fix_text for kw in ("ship-executor", "ship-ready", "ship-approved")
+    ), f"fixes must reference the ship-executor lock; got {cat['fixes']!r}"

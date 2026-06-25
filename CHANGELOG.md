@@ -2,6 +2,12 @@
 
 All notable changes to alp-river. Versions match `.claude-plugin/plugin.json`.
 
+## 1.2.17 - 2026-06-25
+
+- When you ask to ship the work from a session, the run now offers to commit it, push the branch, and open a draft pull request for you - only after you confirm, and only when you ask.
+- Before it runs, you see exactly which commands will touch the remote and how to undo each one.
+- Routine local git work (add, commit, push) now runs without interruption; only destructive git operations (force-push, reset, rebase, branch or remote delete) remain blocked as user-only.
+
 ## 1.2.16 - 2026-06-25
 
 - At the moments where the assistant asks you to confirm direction, settle intent, or sign off on a plan, you can now pull up a richer side-by-side view as a single page you open, compare at a glance, and answer from - or stay with the quick inline choice.

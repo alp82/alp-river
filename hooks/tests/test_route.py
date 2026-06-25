@@ -856,11 +856,11 @@ _DEEP_LENSES = {
 
 
 # --- TC-I01 / TC-P01 ---
-def test_real_catalog_has_48_stages_no_skip_tests():
-    """Catalog has 48 stages and skip-tests is absent."""
+def test_real_catalog_has_50_stages_no_skip_tests():
+    """Catalog has 50 stages and skip-tests is absent."""
     cat = _real_catalog()
     stages = cat["stages"]
-    assert len(stages) == 48, f"expected 48 stages, got {len(stages)}"
+    assert len(stages) == 50, f"expected 50 stages, got {len(stages)}"
     assert "skip-tests" not in stages, "skip-tests must NOT exist in migrated catalog"
 
 

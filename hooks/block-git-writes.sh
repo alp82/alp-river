@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# PreToolUse hook: git write operations are user-only.
-# Parses Bash tool input and blocks git commands that modify state.
-# Logs blocked attempts to ~/.claude/debug/git-block.log (rotated at ~1MB).
+# PreToolUse hook: block the dangerous, allow the forward.
+# Parses Bash tool input and blocks git commands that rewrite or destroy
+# history/state, while letting the forward ship ops (add/commit/plain push)
+# through. Logs blocked attempts to ~/.claude/debug/git-block.log (rotated at ~1MB).
 
 set -euo pipefail
 
@@ -52,21 +53,35 @@ if [ -z "$command" ]; then
   exit 0
 fi
 
+# Shared optional run of git global options between `git` and its subcommand.
+# Generic consumer: -c and -C are listed first (arg-taking shorts, consume one
+# extra token); every other long option is arg-less or =value form; every other
+# short is treated as arg-less. This means an unknown future global option
+# cannot break verb adjacency - it is absorbed without consuming the verb token.
+# Rationale: git's ONLY separate-token short global options are -c and -C;
+# every other short is arg-less, and every long option is arg-less or =value.
+gopt='([[:space:]]+(-c[[:space:]]+[^[:space:]]+|-C[[:space:]]+[^[:space:]]+|--[A-Za-z][A-Za-z-]*(=[^[:space:]]*)?|-[A-Za-z]))*'
+
 # Match git write verbs at subcommand boundaries.
 # The leading class excludes word characters, path separators, and hyphens so
 # `echo "git add"` (git after a quote) still matches (intentionally conservative),
 # but `foogit add` (no boundary) does not.
-blocked_verbs='(^|[^[:alnum:]_/-])git[[:space:]]+(add|commit|push|cherry-pick|rebase|reset|merge|revert|restore|rm|mv|stash|apply|am|clean|pull)([[:space:]]|$)'
+blocked_verbs="(^|[^[:alnum:]_/-])git${gopt}[[:space:]]+(cherry-pick|rebase|reset|merge|revert|restore|rm|mv|stash|apply|am|clean|pull)([[:space:]]|$)"
+# Destructive `git push` forms the narrowed verb list now lets through:
+# force/delete flags (long forms, bundled short clusters containing f/d),
+# whitespace-led `+` refspecs (force-push, with or without colon), and
+# whitespace-led `:` empty-source refspecs (remote-branch delete).
+blocked_push_destructive="(^|[^[:alnum:]_/-])git${gopt}[[:space:]]+push([[:space:]][^;&|]*)?([[:space:]](--force|--force-with-lease|--delete|--mirror|--prune)(=[^[:space:]]*)?([[:space:]]|$)|(^|[[:space:]])-[[:alnum:]]*[fd][[:alnum:]]*([[:space:]]|$)|[[:space:]][+][^[:space:]]|[[:space:]]:[^[:space:]])"
 # `git tag <name>` (create) and `git tag -d`/`-a`/`-s`/`-f` (create/delete/sign/force)
-blocked_tag='(^|[^[:alnum:]_/-])git[[:space:]]+tag[[:space:]]+([^-[:space:]]|-[adsfm])'
+blocked_tag="(^|[^[:alnum:]_/-])git${gopt}[[:space:]]+tag[[:space:]]+([^-[:space:]]|-[adsfm])"
 # `git branch -D|-d|-m|-M` (delete/rename)
-blocked_branch='(^|[^[:alnum:]_/-])git[[:space:]]+branch[[:space:]]+-[DdmM]'
+blocked_branch="(^|[^[:alnum:]_/-])git${gopt}[[:space:]]+branch[[:space:]]+-[DdmM]"
 # `git checkout -- <path>` (discard working-tree changes)
-blocked_checkout='(^|[^[:alnum:]_/-])git[[:space:]]+checkout[[:space:]]+--[[:space:]]'
+blocked_checkout="(^|[^[:alnum:]_/-])git${gopt}[[:space:]]+checkout[[:space:]]+--[[:space:]]"
 
-if echo "$command" | grep -qE "$blocked_verbs|$blocked_tag|$blocked_branch|$blocked_checkout"; then
+if echo "$command" | grep -qE "$blocked_verbs|$blocked_tag|$blocked_branch|$blocked_checkout|$blocked_push_destructive"; then
   log "BLOCKED: $command"
-  reason="Git write operations are user-only (see the alp-river plugin workflow and your project memory feedback). Blocked command: ${command}. If the user explicitly wants this run, surface the exact command for them to execute themselves."
+  reason="This git command rewrites or destroys history/state and is user-only. Forward ops (add/commit/push) are allowed; this one is blocked: ${command}. If you explicitly want it, surface the exact command for the user to run."
   jq -nc --arg reason "$reason" '{decision:"block", reason:$reason}'
   exit 0
 fi

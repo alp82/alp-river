@@ -27,6 +27,12 @@
 
 The last three updates:
 
+**1.2.17**
+
+- When you ask to ship the work from a session, the run now offers to commit it, push the branch, and open a draft pull request for you - only after you confirm, and only when you ask.
+- Before it runs, you see exactly which commands will touch the remote and how to undo each one.
+- Routine local git work (add, commit, push) now runs without interruption; only destructive git operations (force-push, reset, rebase, branch or remote delete) remain blocked as user-only.
+
 **1.2.16**
 
 - At the moments where the assistant asks you to confirm direction, settle intent, or sign off on a plan, you can now pull up a richer side-by-side view as a single page you open, compare at a glance, and answer from - or stay with the quick inline choice.
@@ -184,7 +190,7 @@ code · XXL · 18 stages
 
 ## Stages
 
-48 composable stages plus a command-only setup agent. Each declares its routes and data/signal contract in frontmatter (see `doctrine/CATALOG.md`, `doctrine/SIGNALS.md`). Below they are grouped by conversation path; a stage that runs in several paths appears under each.
+50 composable stages plus a command-only setup agent. Each declares its routes and data/signal contract in frontmatter (see `doctrine/CATALOG.md`, `doctrine/SIGNALS.md`). Below they are grouped by conversation path; a stage that runs in several paths appears under each.
 
 ### Code
 
@@ -265,6 +271,13 @@ code · XXL · 18 stages
 | ux | sonnet | UI touched |
 | accessibility | sonnet | UI touched |
 | design-consistency | sonnet | UI touched |
+
+🚀 **Ship** - opt-in at convergence: on a ship request, gates the forward git/gh commands, then commits, pushes, and opens a draft PR.
+
+| Stage | Model | Role |
+|-------|-------|------|
+| ship-gate | sonnet | On a ship request at convergence, names the commit/push/PR commands and how to undo each, and waits for your go-ahead. Sticky. |
+| ship-executor | sonnet | Composes one commit, pushes the branch, opens a draft PR. Held by the ship lock until the gate clears. |
 
 📓 **Document** - records the glossary, stack, and intent updates the run surfaced, only after you approve.
 
@@ -393,9 +406,9 @@ alp-river/
 ├── .claude-plugin/         <- plugin.json (version), marketplace.json
 ├── WORKFLOW.md             <- the full router-loop doctrine
 ├── doctrine/               <- CATALOG.md (stage schema), SIGNALS.md (signal vocabulary), ...
-├── generated/catalog.json  <- compiled stage catalog (48 stages; tracked; the router reads it)
+├── generated/catalog.json  <- compiled stage catalog (50 stages; tracked; the router reads it)
 ├── hooks/                  <- route.py (router), gen-catalog.py (compiler), *.sh (inject, format, context, reinject-state)
-├── agents/                 <- 48 stage definitions + setup-agent
+├── agents/                 <- 50 stage definitions + setup-agent
 ├── commands/               <- 6 slash commands
 ├── psychology/             <- per-agent voice / persona overrides
 └── templates/              <- copy into your project's docs/ for context injection

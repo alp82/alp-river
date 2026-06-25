@@ -965,6 +965,68 @@
         ]
       }
     },
+    "ship-executor": {
+      "data": {
+        "input": {
+          "optional": [
+            "diff"
+          ],
+          "required": []
+        },
+        "output": [
+          "exec-log"
+        ]
+      },
+      "input_template": "<CONFIRMED_INTENT>{triage or interviewer read of the request - the basis for the commit subject}</CONFIRMED_INTENT>\n<DIFF>{the session diff summary, or \"none\" to read the live working tree}</DIFF>\n",
+      "lock": [
+        {
+          "until": "ship-approved",
+          "while": "ship-ready"
+        }
+      ],
+      "name": "ship-executor",
+      "routes": [
+        "code"
+      ],
+      "signals": {
+        "publishes": [
+          "shipped",
+          "scope-shift"
+        ],
+        "subscribes": [
+          "ship-ready"
+        ]
+      }
+    },
+    "ship-gate": {
+      "data": {
+        "input": {
+          "optional": [
+            "diff"
+          ],
+          "required": []
+        },
+        "output": [
+          "ship-verdict"
+        ]
+      },
+      "guard": "sticky",
+      "input_template": "<DIFF>{the session diff - working-tree summary, or \"none\" to read live}</DIFF>\n<CONFIRMED_INTENT>{triage or interviewer read of the request}</CONFIRMED_INTENT>\n",
+      "name": "ship-gate",
+      "routes": [
+        "code"
+      ],
+      "signals": {
+        "publishes": [
+          "ship-approved",
+          "abandon",
+          "scope-shift"
+        ],
+        "subscribes": [
+          "ship-ready"
+        ]
+      }
+    },
     "simplicity-reviewer": {
       "data": {
         "input": {
@@ -1366,7 +1428,8 @@
           "destructive-op",
           "irreversible",
           "est-size",
-          "scope-shift"
+          "scope-shift",
+          "ship-requested"
         ],
         "subscribes": [
           "request-received"

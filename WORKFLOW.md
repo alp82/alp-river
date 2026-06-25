@@ -329,6 +329,8 @@ reads.
 
 The `system-executor` carries a `{while:#destructive-op, until:#safety-approved}` lock (the **safety gate**): on a destructive or irreversible system step, `system-planner` (or `triage`) publishes `#destructive-op`, so the executor is held until the `safety-gate` stage carries the action to the user and `#safety-approved` fires - no destructive command runs unconfirmed.
 
+The `ship-executor` carries a single `{while:#ship-ready, until:#ship-approved}` lock (the **ship gate**): the orchestrator emits `#ship-ready` at convergence on a ship request (see `## Shipping`), so the executor is held until the `ship-gate` stage - a real `routes:[code]` stage that publishes `#ship-approved` in-route - carries the forward git/gh commands to the user and `#ship-approved` fires. No commit, push, or PR runs unconfirmed.
+
 The `code-implementer`'s `{while:#needs-tests, until:#tests-ready}` lock is the **TDD gate**. On a
 logic build `triage` publishes `#needs-tests`, so the implementer is held until `test-review`
 publishes `#tests-ready` after validating the red tests - code cannot start against
@@ -376,6 +378,14 @@ A second, orthogonal choice the orchestrator makes off that same `#significant-b
 **N=1 / cheap path.** Below a significant build (no `#significant-build` live), the loop does not engage - a single pass, byte-AND-cost-identical to today, with no early pass.
 
 **Colored render.** During a milestone build the render card shows the milestone list with `🟩` (verified) / `🟨` (building) / `🟥` (pending) plus a `milestone k of N` header, all native markdown that renders inline; the stage lines keep their existing `▶ ✓ 🔒 •` markers (`## Pipeline` > The loop, step 2).
+
+## Shipping
+
+The shipping tail is **opt-in and in-session only**: it ships the work built THIS run as one commit, one pushed branch, and one draft PR. It engages only when the request explicitly asks to ship, release, or open a PR - `triage` then publishes `#ship-requested` (a marker, alongside `code`, never its own path; see `agents/triage.md`). With no such request the tail never composes and the run converges normally.
+
+The ship gate is **surfaced only at convergence**, so it is a deliberate appendix after the build is done, not a stage woven into the route. The trigger is a HARD REQUIRED orchestrator emit, the same shape as the `#plan-approved` orchestrator-emit (`## Locks`, Release policy): when the router returns an empty `route` AND an empty `held` map AND every lens that ran is `clean` (the convergence definition, `## Convergence`) AND `#ship-requested` is live AND `#ship-ready` is not already live, the orchestrator emits `#ship-ready`. That emit re-populates the route (`ship-gate`, which subscribes `#ship-ready`) and `held` (`ship-executor`, held on its `{while:#ship-ready, until:#ship-approved}` lock, `## Locks`). The `ship-gate` carries the forward git/gh commands to the user; its Proceed publishes `#ship-approved` in-route, releasing the executor. True final convergence is reached only after the executor publishes `#shipped` and the route empties again.
+
+- **Seed.** `#ship-ready` is in `SEED_SIGNALS` (`hooks/check_catalog.py`) because it is orchestrator-emitted at convergence, not published by any stage - the same basis as `#request-received` and `#critiques-ready`. It is reliably emitted (the convergence trigger above), unlike the unsatisfiable `#milestones-complete` case. The generic seed cost applies: a future stage that subscribes `#ship-ready` on a path where the orchestrator does NOT emit it would not be caught as an orphan, because the seed exempts the topic from the publisher check.
 
 ## Input Template Contract
 

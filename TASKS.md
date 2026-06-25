@@ -1,12 +1,4 @@
----
 
-https://mqlang.org
-
----
-
-https://github.com/robinebers/skills/blob/main/skills/code-upgrade/SKILL.md
-
----
 
 improve
     https://github.com/shadcn/improve
@@ -53,3 +45,4 @@ reviewer-calibration harness: run a reviewer N times over a fixture set of diffs
 experiment/judge optimization loop: define a metric (scalar or LLM-judge rubric), generate N prompt/code variants, score over fixtures, keep the winner; for tuning alp-river's own agent prompts against labeled fixtures.
 
 ---
+^
