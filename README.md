@@ -65,9 +65,6 @@ Then:
 > [!TIP]
 > Run the main session on a top-tier model like Opus at high effort. The orchestrator drives every routing decision, so a weaker main model degrades the whole pipeline.
 
-> [!NOTE]
-> Two one-time allowlist grants keep a run prompt-free. Add `Read(~/.claude/plugins/cache/alperortac/alp-river/**)` so the agent can read the plugin's doctrine, and `Write(.alp-river/**)` so it can persist run state to disk every turn (this is what lets a run survive compaction). The plugin ships no consumer permissions, so these are documented, not auto-granted.
-
 ---
 
 ## 🌊 How it works
