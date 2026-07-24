@@ -16,11 +16,14 @@ disk, so it is agnostic to both how the findings were written and by whom. The
 mtime comparison (findings newer than the marker) is what keeps "review then
 edit again" honest: stale findings from before the last change do not settle.
 
-If no findings postdate the change, it was never reviewed: block once and say
-so. No command runs here - the block message IS the enforcement. Max 1 block
-per session: at the cap the gate clears both markers and stands down (new edits
-re-arm it). Respects stop_hook_active so an already-blocked Stop loop is never
-re-blocked.
+If no findings postdate the change, it was never reviewed: block once per debt
+and say so. No command runs here - the block message IS the enforcement. After
+a block, further Stops on the same unsettled debt stay silent; the spent retry
+marker holds until a review settles the debt, and settling clears both markers
+so the next unreviewed change earns a fresh block. The settle check runs even
+when stop_hook_active is set, so findings from the blocked continuation settle
+at that same Stop. While a debt sits unsettled, later changes fold into it
+silently - if no review ever runs, per-debt degrades to per-session, by design.
 
 Stdlib only. Always exits 0 (Claude hook contract). The block is a single JSON
 object on stdout; every pass/skip branch prints nothing.
@@ -71,6 +74,9 @@ def review_ran_since(review_marker, cwd):
     False - block and ask for re-review rather than settle on shaky evidence.
     """
     try:
+        # Stat before walk: a missing marker raises OSError right here, so the
+        # chat-only fast path never touches .forge - this ordering IS the
+        # guard; callers need no exists() check of their own.
         marker_mtime = review_marker.stat().st_mtime
         forge = (Path(cwd) if cwd else Path.cwd()) / ".forge"
         if not forge.is_dir():
@@ -97,21 +103,30 @@ def main():
     retry_marker = session_marker(RETRY_PREFIX, sid)
     review_marker = session_marker(REVIEW_CHANGE_PREFIX, sid)
 
-    # Inside an already-blocked Stop loop: stand down for this turn, keep the
-    # review debt armed for the next one.
+    # Settle first, even on a blocked continuation's Stop - findings written
+    # inside that continuation refund the retry right here. The .forge walk
+    # deliberately runs ahead of the stop_hook_active short-circuit: checking
+    # after it made this branch unreachable exactly when the gate had just
+    # demanded the wave. Keep this ordering - hoisting the short-circuit back
+    # above it reintroduces that blind spot.
+    if review_ran_since(review_marker, cwd):
+        silent_pass(retry_marker, review_marker)
+
+    # Unsettled blocked loop: stand down for this turn; both markers stay put
+    # so the debt and its spent retry survive to the next real Stop. (Clearing
+    # the retry here was one half of the re-fire bug.)
     if stop_hook_active is True or stop_hook_active == "true":
-        silent_pass(retry_marker)
+        sys.exit(0)
 
     if not review_marker.exists():
         sys.exit(0)
 
-    # A review wave whose findings postdate the change settles the debt.
-    if review_ran_since(review_marker, cwd):
-        silent_pass(retry_marker, review_marker)
-
-    # Already blocked once this session - give up cleanly, clear the debt.
+    # Already blocked for this debt - stay silent, keep both markers; the debt
+    # stays settleable by a later wave, and only settling re-arms the gate.
+    # (Clearing both here was the other half of the re-fire bug: the next edit
+    # re-armed the change marker with the retry reset to zero.)
     if read_marker_count(retry_marker) >= 1:
-        silent_pass(retry_marker, review_marker)
+        sys.exit(0)
 
     retry_marker.write_text("1")
     print(json.dumps({"decision": "block", "reason": BLOCK_REASON}))

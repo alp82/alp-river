@@ -4,7 +4,7 @@ Project-specific rules for this plugin repo. The pipeline lives in `skills/forge
 
 ## Versioning
 
-Plugin version lives in `.claude-plugin/plugin.json`. The same version is mirrored in `.claude-plugin/marketplace.json` and in the `Version` badge at the top of `README.md` - bump all three together, always.
+Plugin version lives in `.claude-plugin/plugin.json` (canonical) and is mirrored in every file registered in `scripts/version_mirrors.py` - that registry, not any list here, is the source of truth for where the version lives. Bump with `python3 scripts/bump-version.py <version>`, the only sanctioned writer; never edit version strings by hand.
 
 - **Patch bump** after a successful task when the workflow itself changes: anything under `skills/` or `adapters/`. Same trigger: add a `CHANGELOG.md` entry, and update `README.md` if the public surface description shifts.
 - **No bump** for doc-only changes (README, CHANGELOG, CLAUDE.md, comment polish). `marketplace.json` listing edits (description, keywords) are metadata, not workflow.

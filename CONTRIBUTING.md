@@ -41,7 +41,7 @@ forge/
 
 ## 🏷️ Versioning and changelog
 
-The plugin version lives in `.claude-plugin/plugin.json` and is mirrored in `.claude-plugin/marketplace.json` and the README version badge - bump all three together.
+The plugin version lives in `.claude-plugin/plugin.json` (canonical) and is stamped into every mirror registered in `scripts/version_mirrors.py` - that registry is the single source of truth for where the version lives. Bump with `python3 scripts/bump-version.py <version>` (or `--patch`/`--minor`/`--major`), the only sanctioned writer: it rewrites every mirror in one shot and scaffolds the CHANGELOG entry. Never edit version strings by hand - a missed mirror turns the release guard (`adapters/claude-code/hooks/tests/test_release_version.py`) red.
 
 ### Changelog style
 
