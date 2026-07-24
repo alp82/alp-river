@@ -1,7 +1,6 @@
 ---
 name: crossfire
-description: Fire the review wave over a change - standing lenses always, conditional lenses by trigger, a different-model worker alongside. The ad-hoc review verb for any diff, branch, or file set.
-disable-model-invocation: true
+description: Fire forge's multi-lens review wave - parallel independent lenses plus a different-model worker over one change. Use when a stop gate says a review wave is owed, or the user asks for crossfire or the review wave by name. Reviews of a branch, a PR, or changes since a commit belong to other review skills. Skip when your own prompt names a run dir and a brief to follow: you are inside a run that fires this wave itself.
 argument-hint: files, a commit range, or nothing for the working diff
 ---
 

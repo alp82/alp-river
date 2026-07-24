@@ -89,12 +89,15 @@ non-replaceable duty — knowing the session isn't done — survives as enforcem
 mark-code-change stamps edits, and a review-owed Stop gate blocks completion while code
 changed but tests/review never ran.
 
-**Two tiers, not three.** User-invoked skills (`disable-model-invocation: true`):
-`/forge` and `/crossfire` public, `/audit` and `/reflect` repo-internal (this repo's own
-`.claude/skills/`, outside the plugin payload). The model-invoked tier is **empty** —
+**Two tiers, not three** (amended in 2.2.3: the model-invoked tier is no longer empty).
+As of 2.2.3 the model-invoked tier holds `/forge` and `/crossfire` - the review-owed stop
+gate demands a wave only the model can fire mid-session, so the flow verbs were promoted
+on demonstrated need, each with a narrow routing description. User-invoked skills
+(`disable-model-invocation: true`): `/setup-forge` in the adapter, `/audit` and `/reflect`
+repo-internal (this repo's own `.claude/skills/`, outside the plugin payload).
 [#11](https://github.com/alp82/alp-river/issues/11) demoted the four primitives to
-internal briefs with zero namespace footprint. Stage briefs, primitive briefs, and lens
-briefs are sibling files: zero names, zero context cost.
+internal briefs with zero namespace footprint, and they stay briefs. Stage briefs,
+primitive briefs, and lens briefs are sibling files: zero names, zero context cost.
 
 **Composition contract: file-carried artifacts, path-passing spawns.** Every stage output
 a later stage consumes is a markdown file in a gitignored per-run working directory

@@ -2,6 +2,12 @@
 
 All notable changes to forge (previously alp-river). Versions match `.claude-plugin/plugin.json`.
 
+## 2.2.3 - 2026-07-24
+
+- The model can now route code-modifying requests into forge on its own instead of waiting for the user to type the command.
+- The model can now fire the review wave the end-of-turn gate asks for, instead of being blocked with a demand it could not satisfy.
+- The unreviewed-code gate now blocks once per review debt instead of re-blocking after every edit; further changes fold into an open debt silently, and the gate re-arms only after a review settles it.
+
 ## 2.2.2 - 2026-07-21
 
 - forge's independent second opinion now always comes from a different AI model than the one running forge, so the check can no longer be one model agreeing with itself.

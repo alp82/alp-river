@@ -20,7 +20,8 @@ the marker rendezvous and cwd anchoring work unchanged. stop_hook_active is a
 Claude field the codex survey does not mention (RISK-5) - the tolerant read
 below treats an absent key as falsy and proceeds; even if codex offers no
 in-block-loop signal, the max-1-retry marker cap makes an infinite Stop loop
-structurally impossible (each gate blocks at most once per session).
+structurally impossible (each gate blocks at most once per open debt, so a
+Stop loop cannot spin without a settle in between re-arming it).
 
 Stdlib only. session_marker() carries the session-keyed /tmp convention with a
 pid-keyed fallback.

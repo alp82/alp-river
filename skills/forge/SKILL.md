@@ -1,7 +1,6 @@
 ---
 name: forge
-description: Run a code-modifying request end to end - triage with detection detours, plan, challenge, implement test-first, review wave, fix. Every code-modifying request enters here.
-disable-model-invocation: true
+description: Run a code-modifying request end to end - triage, plan, challenge, implement test-first, review wave, fix. Use for any request that changes project code or config - features, fixes, refactors, even small or mechanical ones - instead of editing inline. Skip when your own prompt names a run dir and a brief to follow: you are inside a forge run, and the pipeline never re-enters itself.
 argument-hint: the request, or a tracker ticket reference
 ---
 
