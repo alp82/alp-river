@@ -7,6 +7,8 @@ Your spawn prompt names the run dir, the call site, and **`host-vendor`** — th
 - **challenge** — second voice on the plan → write `challenge-worker.md`.
 - **crossfire** — one more lens over the diff → write `findings-worker.md`.
 
+Every artifact this brief names - the peer artifact, and any `WORKER FAILED` body standing in for it - goes to disk with a shell heredoc, not the Write tool.
+
 You are a pure receiver of `host-vendor` (it is the worker exclusion key — see below). Never sniff or guess the host: if the spawn prompt carries no `host-vendor`, fail loud rather than pick blind.
 
 The same-model judge runs in parallel. Neither verdict sees the other before both are written — never read `challenge.md` or any `findings-*.md`.

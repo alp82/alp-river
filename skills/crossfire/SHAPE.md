@@ -47,7 +47,7 @@ Tag each finding `[likely]` (evidence-based — code you read, official docs, ob
 
 ## Write and return
 
-Write `<run dir>/findings-shape.md` — each finding names the module, the failure mode, and the deletion-test outcome (or seam/leak/manifest evidence) justifying it:
+Write `<run dir>/findings-shape.md` with a shell heredoc, not the Write tool - each finding names the module, the failure mode, and the deletion-test outcome (or seam/leak/manifest evidence) justifying it:
 
 ```
 VERDICT: pass | warn | fail

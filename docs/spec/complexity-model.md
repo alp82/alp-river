@@ -6,6 +6,8 @@
 
 **Provenance.** Every ruling below is the resolution of a locked decision ticket on the [complexity-model map](https://github.com/alp82/forge/issues/67): axis model [#69](https://github.com/alp82/forge/issues/69), routing table [#70](https://github.com/alp82/forge/issues/70), signal source [#71](https://github.com/alp82/forge/issues/71), lens scaling [#72](https://github.com/alp82/forge/issues/72), escalation policy [#73](https://github.com/alp82/forge/issues/73), validation / migration / claims [#74](https://github.com/alp82/forge/issues/74). Prior-art survey: [`docs/research/complexity-routing-prior-art.md`](../research/complexity-routing-prior-art.md).
 
+**Amendments.** §3.4, §4, §5.2 and §5.3 were amended by [#85](https://github.com/alp82/forge/issues/85), the alignment gate on the [build map](https://github.com/alp82/forge/issues/82), against the findings of the doctrine-expression survey ([#83](https://github.com/alp82/forge/issues/83)) and the size-token site sweep ([#84](https://github.com/alp82/forge/issues/84)). §2.2 was amended by [#88](https://github.com/alp82/forge/issues/88), which gave `elevated`'s convergence a token and routed its `reject` case. The model itself - axes, grid, routing table, lens membership, escalation policy - is unchanged.
+
 ---
 
 ## 1. The model
@@ -83,8 +85,10 @@ One deliberate coupling crosses the dials (§2.3); everything else is independen
 | RISK | challenge |
 |---|---|
 | routine | **none** |
-| elevated | **challenger only** (no worker), **autonomous** planner↔challenger ping-pong to convergence, **capped at 2 revise rounds**; converged → proceed; still-blocked after 2 → **escalate to HITL** (surface the standing blocker with Approve / Revise / Reshape). The human is not otherwise involved. |
+| elevated | **challenger only** (no worker), **autonomous** planner↔challenger ping-pong, **capped at 2 revise rounds**; `VERDICT: approve` → proceed; still-blocked after 2 → **escalate to HITL** (surface the standing blocker with Approve / Revise / Reshape). `reject` escalates immediately (below). The human is not otherwise involved. |
 | critical | **challenger + worker** (cross-vendor second opinion), **HITL** Approve / Revise / Reshape gate with both verdicts. |
+
+**Convergence is a token, and `reject` is not a round** (amended by [#88](https://github.com/alp82/forge/issues/88)). The `elevated` loop reads `CHALLENGER.md`'s existing `VERDICT` line rather than judging convergence for itself: `approve` → converged, proceed; `revise` → re-spawn the planner with the BLOCKERS, consuming one of the 2 rounds; `reject` → **escalate to the human immediately, without consuming a round**. `reject` means the plan answers the wrong question, which routes back to the interview - and the interview questions the user, so a subagent cannot run it. There is no autonomous continuation of a `reject`, and spending a capped round on one only delays the escalation it already requires. This makes the `elevated` loop a three-way on a rail every challenge already emits plus a round counter - the same shape as the existing two-strike KICKBACK guard - rather than the unrailed new judgment [#83](https://github.com/alp82/forge/issues/83) flagged it as.
 
 **Review-wave depth** is **risk × size**, not risk-only (§2.5). Risk's sole review-wave lever is the **worker** lens at critical; size governs the structural lenses.
 
@@ -165,6 +169,7 @@ Forward-only stays the rule. A single carve-out overrides the normal implementer
 - **Trigger:** RISK re-scores to `critical` **AND** the challenge was gated `none` (never ran) → the re-plan **re-fires the challenge** (challenger + worker + HITL gate). This is the *zero-adversary → critical* gap.
 - **Why it clears asymmetric rigor:** (1) the challenge is a *design-time* adversary on the plan - reviewing finished code is not a substitute; (2) at critical the challenge tier carries the **HITL sign-off**, which the review wave never restores. Shipping a genuinely critical change that was never challenged is the costly-to-skip-wrongly case.
 - **Not triggered** when the challenge already ran at challenger-only (`elevated → critical`): the plan already faced an adversary, and the deepened review wave + worker lens covers the increment.
+- **Read the trigger from a marker, not from memory** (amended by #85). The second conjunct - "the challenge was gated `none`" - is a state fact the orchestrator would otherwise have to carry across the whole forward loop, which is the shape a prose-following agent is most likely to never evaluate at all. The challenge stage instead writes a marker into the run dir when it fires, and the rewind check reads its absence. This is the one place §3's "no new machinery" is relaxed, and narrowly: the run dir is already the pipeline's state, so the marker is one more artifact in an artifact-passing machine, not a new mechanism.
 - **Loop guard:** once per run - the re-fired challenge is thereafter a passed gate and cannot be rewound again. Combined with never-down and the two-strike KICKBACK guard, no loop.
 - **Reachable from both** the implementer `KICKBACK: replan` and the review-wave seam; both funnel through the planner re-score, so single-writer holds.
 
@@ -191,7 +196,7 @@ Stage-set legend: **Plan** {skip / light / full} · **Tests** {yes / no} · **Ch
 | 9 | Make the worker second opinion vendor-relative (`c569fdb` / #65) | substantial | elevated | sub×ele | full | yes | challenger | floor + CONVENTIONS + SIMPLICITY + SHAPE | Multi-file contract change, no sensitive surface |
 | 10 | Build the codex adapter (`2f7ab1c` / #45) | substantial | critical | sub×cri | full | yes | challenger+worker+HITL | floor + CONVENTIONS + SIMPLICITY + SHAPE + worker | **Anchor:** reproduces today's full pipeline (git-guard + Stop-gate = critical surface) |
 
-**Coverage:** all three SIZE bands × all three RISK bands are hit (rows 1-10 touch 8 distinct cells including both anchors and the `substantial × routine` motivating gap). Rows 2 and 3 exercise the plan-floor coupling (§2.3); row 6 is the class the rewind exception (§3.4) protects when a request *arrives* looking routine and re-scores to critical.
+**Coverage:** all three SIZE bands × all three RISK bands are hit - rows 1-10 touch **all nine cells** (row 7 repeats row 4's `moderate × routine`), including both anchors and the `substantial × routine` motivating gap. *(Corrected by #85: this line previously undercounted the grid as 8 cells.)* Rows 2 and 3 exercise the plan-floor coupling (§2.3); row 6 is the class the rewind exception (§3.4) protects when a request *arrives* looking routine and re-scores to critical.
 
 **One documented refinement to the anchor.** Today's `trivial` short path runs CORRECTNESS + any triggered conditional. The new `minimal + routine` floor adds **ACCEPTANCE** (per §2.5, always-on wherever confirmed intent exists - and triage always writes `intent.md`). So the reproduction is *exact on pipeline shape* (skip plan, no challenge, no tests, minimal wave) and a deliberate **superset by one always-on spec-check lens**. This is intended: "is it what was asked" should not have been skippable on the short path. The build's acceptance gate treats this one-lens addition as expected, not as a reproduction failure.
 
@@ -206,15 +211,24 @@ The spec hands off the cutover **shape**; carrying the edits is a downstream for
 - `trivial` → the corner `minimal + routine` (the reproduction anchor).
 - `standard` → **nothing single.** The "not-trivial ⇒ fire everything" blob dissolves into active grid placement. Triage now scores SIZE + RISK instead of defaulting everything-not-trivial to the full path.
 
-### 5.2 What breaks - three contained edit sites
+### 5.2 What breaks - four contained edit sites
+
+*(Amended by #85: the site sweep found this list short by one. `PLANNER.md` is site 4.)*
 
 1. **`skills/forge/TRIAGE.md`** - the return block: `SIZE: trivial | standard` → `SIZE: minimal | moderate | substantial` **plus a new `RISK: routine | elevated | critical` line**, and the sizing prose gains the RISK-signal reading (§1.3). `NEEDS-TESTS` survives almost unchanged - tests fire on the logic-load sub-signal, risk-independent.
 2. **`skills/forge/SKILL.md`** - the gating: the "Trivial short path" block and the implicit `standard` = full-pipeline become the **separable dials** of §2 (size → plan + tests; risk → challenge + review depth; the §2.3 plan-floor coupling; the §2.5 size-keyed review-wave membership; the §2.4 planner re-score; the §3 escalation policy including the §3.4 rewind exception as a documented override of the "KICKBACK replan does not re-gate the challenge" line).
 3. **`skills/forge/IMPLEMENTER.md`** - one clause: "On the trivial short path there is no plan" → "when no plan ran" (the skip-plan corner is now `minimal + routine`, not `trivial`).
+4. **`skills/forge/PLANNER.md`** - the RETURN block gains authoritative `SIZE:` / `RISK:` lines, shaped and worded exactly like triage's. §2.4 makes the planner the authoritative scorer and §3.1 makes it the *single writer*, but its return block emits only `PLAN:` / `DETOUR:` today. Without this, `SKILL.md` gates tests, challenge and review depth on a re-score nothing ever writes, and every post-plan gate silently falls back to triage's provisional call.
+
+**Sites outside the swap.** Two one-clause follow-ons, neither coupled tightly enough to force atomicity: `skills/forge/CHALLENGER.md:43` states the Approve / Revise / Reshape gate reaches the user unconditionally, which is false at `elevated` (§2.2 makes that loop autonomous); and `docs/spec/adapter-contract.md:338-342`'s conformance item 4 names the retiring `trivial` band, though the short-path stage set it describes survives as `minimal + routine`.
+
+**Not a site, by ruling** (#85): **`skills/crossfire/SKILL.md` keeps its unconditional standing-lens list.** Standalone `/crossfire` has no triage and therefore no bands, and inferring one from the diff it is handed is the ex-ante-from-the-request reading §1.2 explicitly rejects. The deliberate invoker has already made the proportioning decision the router makes for them inside a forge run. The two verbs' waves diverge by design - as they already do over ACCEPTANCE's stand-down and `plan.md`'s optionality - and crossfire's file carries one line saying so, to stop a later editor "resyncing" the two lens lists.
+
+**Enforcement layer: no change** (#84). Both `review-owed.py` copies settle the review debt on any `findings-*.md` newer than the change marker, and the §2.5 floor writes two in every cell, so no routing decision can starve the stop gate. No hook and no hook test encodes a lens set or count.
 
 ### 5.3 Ordering and fallback
 
-- **Atomic swap** of `TRIAGE.md` + `SKILL.md` together - they are coupled: triage cannot emit new bands while the skill still switches on `trivial | standard`. `IMPLEMENTER.md`'s one-clause edit rides the same change.
+- **Atomic swap** of `TRIAGE.md` + `SKILL.md` + `PLANNER.md` together - they are coupled: triage cannot emit new bands while the skill still switches on `trivial | standard`, and the skill cannot gate on a re-score the planner does not emit. `IMPLEMENTER.md`'s one-clause edit rides the same change.
 - **No compatibility shim.** House style bars backwards-compat scaffolding, and forge has zero external consumers.
 - **The §4 dry-run table runs as the pre-merge gate.**
 - **Safe-fallback semantics shift.** The blunt "when uncertain ⇒ `standard`" net is replaced by provisional placement + planner re-score, with a thumb on the scale for **RISK only**: doubt rounds RISK up (asymmetric rigor - a skipped challenge or gate costs the task), while SIZE rides the provisional call for the planner to re-score (an extra plan pass is cheap).

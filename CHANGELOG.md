@@ -2,6 +2,11 @@
 
 All notable changes to forge (previously alp-river). Versions match `.claude-plugin/plugin.json`.
 
+## 2.2.4 - 2026-07-25
+
+- A clean review now always settles the unreviewed-code gate, even when a check reports its findings back as text.
+- Every review check now records its findings by a route the tooling cannot block, so nothing is left to improvise its own.
+
 ## 2.2.3 - 2026-07-24
 
 - The model can now route code-modifying requests into forge on its own instead of waiting for the user to type the command.

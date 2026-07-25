@@ -62,6 +62,8 @@ Spawn every applicable lens in parallel, each reading `receipt.md` + `plan.md` +
 - **Conditional:** `UI.md` (`standard`) when the diff touches user-facing UI; `SECURITY.md` (`large`) when it touches auth, secrets, permissions, or untrusted input; `PERFORMANCE.md` (`large`) when it touches a hot path or data-volume-sensitive code.
 - **Worker:** the WORKER.md forwarder over the diff → `findings-worker.md` — one more lens, same visible-failure rule.
 
+**Backstop.** Before you read a single verdict, any lens missing its file from the run dir gets it written by you off the text that lens returned - the stop gate settles on `findings-*.md`, so a text-only return leaves the debt open.
+
 ## Fix
 
 Any lens failed → spawn FIXER.md (tier `standard`; `ultra` when the fix set is large or structural) with the findings paths. It fixes and returns a re-run set: re-spawn exactly those lenses (CORRECTNESS always rides along) over the new diff. Loop until every lens is clean. Findings the fixer can't own (plan-level, missing context) surface to the user — never silently dropped.

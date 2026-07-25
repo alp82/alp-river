@@ -30,6 +30,8 @@ Spawn every picked lens in parallel, each reading `receipt.md` plus `intent.md`/
 
 ## Collect
 
+**Backstop first.** A lens that returned its findings as text without leaving `findings-<lens>.md` on disk gets that file written by you, from the text it returned, before collection proceeds - the review debt settles on the file, never on the return.
+
 Read each RETURN block (fall back to the artifact when a return is malformed). Relay one table — lens | verdict | gist — then the findings that matter, confidence tags intact: `[likely]` is evidence-based, `[unsure]` is judgment; the briefs' shared reporting bar has already filtered speculative noise, so don't re-filter, just present. `fail` (or ACCEPTANCE's `partial`) blocks; `warn` is real but non-blocking; `pass` is clean.
 
 ## Fix or hand off

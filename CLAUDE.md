@@ -16,13 +16,14 @@ See `CONTRIBUTING.md` § "Changelog style" - one canonical home for the rules.
 
 ## Doctrine hygiene
 
-Before adding an instruction anywhere under `skills/`, `adapters/`, or `.claude/skills/`, run a three-check meta-rule:
+Before adding an instruction anywhere under `skills/`, `adapters/`, or `.claude/skills/`, run a four-check meta-rule:
 
 1. **Does an existing channel or slot already carry this?** If a map, contract, or section already owns the fact, extend it not restate - one home, not a second copy somewhere a reader will diverge from.
 2. **Is the fact defined exactly once?** A rule repeated across files drifts: one copy gets edited, the other rots. Pick the canonical home and cross-reference it from anywhere else that needs to point at it.
 3. **Does a cheap canary protect it?** A load-bearing literal earns a short pinned phrase the self-audit watches, so deleting or rewording it past recognition trips the doctrine-integrity check instead of silently rotting.
+4. **If it is conditional, does it read a token or demand a judgment?** A gate keyed on a token some stage already emits, on a marker in the run dir, or on the user's own words is cheap - the agent looks it up. A gate whose condition the agent must decide for itself is not, and **judgment-bearing gates are the budget**: line count is nowhere near any cap, and a literal if-then count has run past 30 in `skills/forge/SKILL.md` for its whole working life. Prefer the token - name a condition some stage emits, or write a marker, before writing an adjective the agent has to interpret. A change that adds routing states the judgment-bearing count before and after.
 
-This rule binds this repo's own changes - it governs how forge is authored, not anything shipped to a consumer. Its teeth are exactly two: the self-audit's doctrine-hygiene check (which flags an instruction line duplicated verbatim across skill files) plus author discipline at edit time. CLAUDE.md itself is neither shipped nor injected into any agent, so nothing enforces this for you automatically - the lens catches cross-file duplication after the fact, and the rest is the author honoring the three checks above.
+This rule binds this repo's own changes - it governs how forge is authored, not anything shipped to a consumer. Its teeth are exactly two: the self-audit's doctrine-hygiene check (which flags an instruction line duplicated verbatim across skill files) plus author discipline at edit time. CLAUDE.md itself is neither shipped nor injected into any agent, so nothing enforces this for you automatically - the lens catches cross-file duplication after the fact, and the rest is the author honoring the four checks above. Check 4 has no canary even in principle, since deciding what counts as a judgment is itself one; the worked count that set it is the resolution on [#88](https://github.com/alp82/forge/issues/88).
 
 ## Leitwort usage
 

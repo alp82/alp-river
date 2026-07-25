@@ -53,7 +53,7 @@ Tag each finding `[likely]` (evidence-based — code you read, official docs, ob
 
 ## Write and return
 
-Write `<run dir>/findings-simplicity.md`:
+Write `<run dir>/findings-simplicity.md` with a shell heredoc, not the Write tool:
 
 ```
 VERDICT: pass | warn | fail

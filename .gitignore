@@ -5,3 +5,4 @@ __pycache__/
 .claude/*
 !.claude/skills/
 .DS_Store
+.alp-river/

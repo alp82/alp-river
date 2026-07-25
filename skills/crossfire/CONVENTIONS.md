@@ -36,7 +36,7 @@ Tag each finding `[likely]` (evidence-based — code you read, official docs, ob
 
 ## Write and return
 
-Write `<run dir>/findings-conventions.md` — each convention finding references the established pattern it diverges from; each reuse finding names both locations:
+Write `<run dir>/findings-conventions.md` with a shell heredoc, not the Write tool - each convention finding references the established pattern it diverges from; each reuse finding names both locations:
 
 ```
 VERDICT: pass | warn | fail
