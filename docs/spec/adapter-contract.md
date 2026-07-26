@@ -335,10 +335,11 @@ unstable, so the check asserts artifact *presence and non-emptiness*, not conten
    `parallel-fan-out: false`: confirm an independent pair runs into separate contexts with
    the first agent's output never fed to the second. *Pass:* the second agent's prompt
    carries no trace of the first's result.
-4. **End-to-end drive.** In a throwaway fixture repo, drive one **trivial** forge task
-   (single file, no new logic — e.g. add a one-line helper) through `/forge`. The trivial
-   short path runs TRIAGE → IMPLEMENTER → the review wave without the plan/challenge/test
-   gates, so it drives end-to-end with minimal human sitting. *Pass:* the run reaches its
+4. **End-to-end drive.** In a throwaway fixture repo, drive one **minimal + routine**
+   forge task (one seam, no new logic, no sensitive surface - e.g. add a one-line helper)
+   through `/forge`. That corner's short path runs TRIAGE → IMPLEMENTER → the review wave
+   without the plan/challenge/test gates, so it drives end-to-end with minimal human
+   sitting. *Pass:* the run reaches its
    terminal summary without the orchestrator stalling.
 5. **Artifacts present.** Inspect the run dir `.forge/<slug>/` at the summary — run
    artifacts are process debris that die with the run, so read them before cleanup.

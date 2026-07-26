@@ -151,7 +151,7 @@ Only the **planner re-score** writes SIZE / RISK. Every other stage that needs t
 | Challenger | none | - | existing `revise` / `reject` kickback to planner |
 | Implementer | raises via `KICKBACK: replan` (supplies evidence; planner re-scores) | both | jump to evidence |
 | Test stages | consume | - | - |
-| Review wave | consume → **FIXER** | - | *one seam:* KICKBACK-to-planner on a suspected critical under-call (§3.4) |
+| Review wave | consume → **FIXER** | - | *one seam, spec-level only:* KICKBACK-to-planner on a suspected critical under-call - deliberately unexpressed in shipped doctrine (§3.4) |
 | FIXER | consume | - | - |
 
 ### 3.3 Forward-only
@@ -171,7 +171,7 @@ Forward-only stays the rule. A single carve-out overrides the normal implementer
 - **Not triggered** when the challenge already ran at challenger-only (`elevated → critical`): the plan already faced an adversary, and the deepened review wave + worker lens covers the increment.
 - **Read the trigger from a marker, not from memory** (amended by #85). The second conjunct - "the challenge was gated `none`" - is a state fact the orchestrator would otherwise have to carry across the whole forward loop, which is the shape a prose-following agent is most likely to never evaluate at all. The challenge stage instead writes a marker into the run dir when it fires, and the rewind check reads its absence. This is the one place §3's "no new machinery" is relaxed, and narrowly: the run dir is already the pipeline's state, so the marker is one more artifact in an artifact-passing machine, not a new mechanism.
 - **Loop guard:** once per run - the re-fired challenge is thereafter a passed gate and cannot be rewound again. Combined with never-down and the two-strike KICKBACK guard, no loop.
-- **Reachable from both** the implementer `KICKBACK: replan` and the review-wave seam; both funnel through the planner re-score, so single-writer holds.
+- **One expressed route: the implementer `KICKBACK: replan`** *(amended at the two-axis-swap build gate, user-decided)*. The design admits a second trigger - the review-wave seam of §3.2, both funneling through the planner re-score so single-writer holds - but the shipped doctrine deliberately does not express it: the Fix stage keeps its existing surface-to-the-user behavior, so a wave-suspected critical under-call still reaches the user as a finding; only the autonomous KICKBACK-to-planner route from the wave is dropped.
 
 ---
 
@@ -241,6 +241,7 @@ The spec hands off the cutover **shape**; carrying the edits is a downstream for
 
 - **"It can't skip the review"** survives intact: the wave scales, but CORRECTNESS + ACCEPTANCE are the always-on floor in every cell (§2.5), so review is never fully skipped and the enforcement promise stays literally true.
 - **"challenge - a second agent tries to break the plan"** becomes conditional (none at `minimal + routine`), but the README stage table describes behavior-when-run, not universality - nothing becomes false, so it is left as-is.
+- **"the challenge and the crossfire wave each get a different-model second opinion"** *(missed by this spec's original audit; caught and fixed at the two-axis-swap build's review wave)*: the worker fires only at `critical` in both places (§2.2, §2.5), so the unqualified sentence was falsified below that band. The README line now carries the qualifier "when the change's risk calls for one".
 - **Optional follow-up (out of this spec's scope):** advertising "process proportional to the change" as a *feature* is a separate post-implementation README edit, not a claim this spec forces.
 
 ---

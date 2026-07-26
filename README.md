@@ -10,7 +10,7 @@
 [![codex](https://shieldcn.dev/badge/codex-gated-D97757.svg?variant=outline&size=lg)](adapters/codex/README.md)
 [![opencode](https://shieldcn.dev/badge/opencode-guarded-D97757.svg?variant=outline&size=lg)](adapters/opencode/README.md)
 [![Skills](https://shieldcn.dev/badge/Skills-first-D97757.svg?logo=anthropic&variant=outline&size=lg)](skills/forge/SKILL.md)
-[![Version](https://shieldcn.dev/badge/version-2.2.4-D97757.svg?variant=outline&size=lg)](CHANGELOG.md)
+[![Version](https://shieldcn.dev/badge/version-2.3.0-D97757.svg?variant=outline&size=lg)](CHANGELOG.md)
 
 <br>
 
@@ -91,7 +91,7 @@ Per-stage micro-casts and the standalone crossfire wave play on [the site](https
 | crossfire | Independent reviewers hit the diff at once, each carrying one lens, blind to the others. Also runs standalone as `/crossfire` on any diff, branch, or file set. |
 | fix | Works the findings until the diff survives a clean re-run of the wave. |
 
-With a worker CLI on PATH (codex, gemini, opencode), the challenge and the crossfire wave each get a different-model second opinion — read-only, failure visible, never blocking.
+With a worker CLI on PATH (codex, gemini, opencode), the challenge and the crossfire wave each get a different-model second opinion when the change's risk calls for one - read-only, failure visible, never blocking.
 
 ## It can't skip the review
 

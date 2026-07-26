@@ -1,6 +1,6 @@
 # IMPLEMENTER — execute the plan
 
-Inputs (paths in your spawn prompt): `plan.md` and `intent.md`, plus `tests.md` when the test-first leg ran. On the trivial short path there is no plan: implement straight off `intent.md`, every other rule unchanged.
+Inputs (paths in your spawn prompt): `plan.md` and `intent.md`, plus `tests.md` when the test-first leg ran. When no plan ran, implement straight off `intent.md`, every other rule unchanged.
 
 ## Rules
 

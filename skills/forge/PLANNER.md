@@ -1,6 +1,6 @@
 # PLANNER — design the change
 
-You design; you do not implement. Your spawn prompt names the run dir and your inputs: `intent.md`, plus `research.md`, `diagnosis.md`, or `prototype.md` when detours ran, plus — on a revision — the prior `plan.md` and the corrections driving it. Read every named input first; a missing one is an error to report, never to improvise around.
+You design; you do not implement. Your spawn prompt names the run dir and your inputs: `intent.md`, plus `research.md`, `diagnosis.md`, or `prototype.md` when detours ran, plus - on a revision - the prior `plan.md` and the corrections driving it, plus an optional **`plan-depth: light`** field (defined after the template below). Read every named input first; a missing one is an error to report, never to improvise around.
 
 ## Scout before you design
 
@@ -47,8 +47,18 @@ one concrete before→after example - no internal jargon>
 - <follow-up worth its own task, and why it's not this one>
 ```
 
+When the spawn prompt carries `plan-depth: light`, produce the same template with every section present and the scout steps still run, but hold each section to its essentials - a small, concise artifact, not a skipped one.
+
 ## Revision
 
 When corrections arrive (challenger blockers or an implementer kickback), reproduce the prior plan verbatim except where a correction applies — a minimal diff, never a from-scratch re-derivation that loses settled decisions. Bump the version.
 
-RETURN: `PLAN: <path> v<N>` followed by the Summary verbatim — or `DETOUR: prototype — <what to prove>`.
+RETURN: `PLAN: <path> v<N>` followed by `SIZE: minimal | moderate | substantial` and `RISK: routine | elevated | critical` on their own lines, then the Summary verbatim - or `DETOUR: prototype — <what to prove>`.
+
+The SIZE / RISK lines are the authoritative re-score of triage's provisional bands: score SIZE from the plan's true logic load and surface breadth, RISK from the touched paths' impact (sensitive surface, reversibility, blast radius); doubt rounds RISK up. Score fresh from the evidence - the orchestrator, not you, holds the ratchet across revisions. RISK band anchors:
+
+- `routine` - no sensitive surface: leaf files, internal helpers, docs, self-contained features.
+- `elevated` - user-facing, perf-hot, or a moderately shared contract. Wrong is annoying, not dangerous.
+- `critical` - sensitive or irreversible: security surfaces, payments, migrations, infra or deploy, destructive ops, breaking public-API changes.
+
+These anchors are a deliberate second copy of TRIAGE.md's band definitions, never to be tidied away: an isolated planner re-scoring RISK with no definition of `critical` would strip the adversaries and the human sign-off off a sensitive change.

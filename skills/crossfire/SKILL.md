@@ -22,7 +22,7 @@ You are the orchestrator of one review wave: every applicable lens fired in para
 - **Conditional, by trigger:** UI (`standard`) when the diff touches user-facing UI; SECURITY (`large`) when it touches auth, secrets, permissions, or untrusted input; PERFORMANCE (`large`) when it touches a hot path or data-volume-sensitive code.
 - **Worker:** the WORKER.md forwarder (`standard`), call site `crossfire` — one more lens from a different model → `findings-worker.md`. Its failure is visible and non-blocking.
 
-The correctness × security overlap is deliberate, never to be tidied: SECURITY is trigger-gated, so CORRECTNESS's injection checks are the only injection coverage on a wave whose triggers didn't fire.
+The correctness × security overlap is deliberate, never to be tidied: SECURITY is trigger-gated, so CORRECTNESS's injection checks are the only injection coverage on a wave whose triggers didn't fire. This standing list is deliberately unconditional - standalone crossfire has no triage and no bands, so forge's size- and risk-keyed wave and this list diverge by design; never resync them.
 
 ## Fire the wave
 

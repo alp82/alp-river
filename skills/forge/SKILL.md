@@ -1,6 +1,6 @@
 ---
 name: forge
-description: Run a code-modifying request end to end - triage, plan, challenge, implement test-first, review wave, fix. Use for any request that changes project code or config - features, fixes, refactors, even small or mechanical ones - instead of editing inline. Skip when your own prompt names a run dir and a brief to follow: you are inside a forge run, and the pipeline never re-enters itself.
+description: Run a code-modifying request end to end, with pipeline depth proportioned to the change - triage scores its size and risk, and those two dials decide plan, challenge, tests, and how deep the review wave runs. Use for any request that changes project code or config - features, fixes, refactors, even small or mechanical ones - instead of editing inline. Skip when your own prompt names a run dir and a brief to follow: you are inside a forge run, and the pipeline never re-enters itself.
 argument-hint: the request, or a tracker ticket reference
 ---
 
@@ -10,7 +10,7 @@ You are the orchestrator of one forge run. Every stage runs as a spawned subagen
 
 **Enforcement self-check.** Once, before triage, look for any evidence of the adapter's enforcement layer — the cheapest signal the harness offers: injected session context (a forge banner or equivalent) or the adapter's hooks registered in the harness. Any single piece of evidence suffices; say nothing when one is found. Only when there is none, tell the user plainly: this run is prose-only, every rule in this brief binds regardless, and the adapter's README/setup restores the native install.
 
-**Spawn contract.** One shape for every stage: spawn a fresh isolated agent (`read-only` where marked) with the tier the step names, and the prompt: *"Read `<brief path>` and follow it. Run dir: `<run dir>`. Inputs: `<paths>`."* A tier resolves to a concrete model through the adapter's `models` manifest; absent a manifest, map the four tiers — `mini`, `standard`, `large`, `ultra` — onto the harness's available models in ascending capability. Paths, never pasted content — every artifact a later stage consumes is a file in the run dir, so a fresh respawn needs only paths. Brief paths are relative to this skill's base directory; crossfire lens briefs sit beside it at `../crossfire/`. The worker forwarder (`WORKER.md`) alone takes one extra prompt field — `host-vendor: <vendor>`, read verbatim from the session-start banner's host-vendor line — so it can exclude same-vendor second opinions; if no banner carries that line, forward nothing and the worker fails loud to single-model judgment (its brief owns that rule).
+**Spawn contract.** One shape for every stage: spawn a fresh isolated agent (`read-only` where marked) with the tier the step names, and the prompt: *"Read `<brief path>` and follow it. Run dir: `<run dir>`. Inputs: `<paths>`."* A tier resolves to a concrete model through the adapter's `models` manifest; absent a manifest, map the four tiers — `mini`, `standard`, `large`, `ultra` — onto the harness's available models in ascending capability. Paths, never pasted content — every artifact a later stage consumes is a file in the run dir, so a fresh respawn needs only paths. Brief paths are relative to this skill's base directory; crossfire lens briefs sit beside it at `../crossfire/`. The worker forwarder (`WORKER.md`) takes one extra prompt field — `host-vendor: <vendor>`, read verbatim from the session-start banner's host-vendor line — so it can exclude same-vendor second opinions; if no banner carries that line, forward nothing and the worker fails loud to single-model judgment (its brief owns that rule).
 
 ## Open the run
 
@@ -20,7 +20,7 @@ You are the orchestrator of one forge run. Every stage runs as a spawned subagen
 
 ## Triage
 
-Spawn TRIAGE.md (`read-only`, tier `mini`) → writes `intent.md`, returns size and flags. Take each detour whose flag fired — conditions, not stages; skip silently otherwise:
+Spawn TRIAGE.md (`read-only`, tier `mini`) → writes `intent.md`, returns provisional SIZE and RISK bands plus flags. The dials are separable - **SIZE gates the artifacts (plan, tests), RISK gates the adversaries (challenge, worker)** - and every gate below names the dial it reads. Take each detour whose flag fired — conditions, not stages; skip silently otherwise:
 
 - **unknowns** → follow INTERVIEW.md yourself, inline — it questions the user, and a subagent can't. Never answer its questions on the user's behalf.
 - **unproven external** → PROTOTYPE.md (build spawned, reaction with the user) → `prototype.md`.
@@ -28,45 +28,50 @@ Spawn TRIAGE.md (`read-only`, tier `mini`) → writes `intent.md`, returns size 
 - **bug** → spawn DIAGNOSE.md (`read-only`, tier `large`) → `diagnosis.md`. A bug is a code build with a diagnosis first, never its own route.
 - **multi-session** — the ask spans sessions with open decisions → recommend charting a map with a mapping skill such as `/wayfinder`; with none available, the interview carves the largest one-session slice and names the remainder.
 
-**Trivial short path.** SIZE `trivial` (single file, no new logic): skip plan, challenge, and tests — spawn IMPLEMENTER.md (tier `ultra`) straight off `intent.md`, then run the wave with CORRECTNESS plus any triggered conditional lens.
+**Short path - Gate:** SIZE `minimal` AND RISK `routine` - skip plan, challenge, and tests: spawn IMPLEMENTER.md (tier `ultra`) straight off `intent.md`, then the review wave. This corner has no re-score; triage's provisional bands stand.
 
 ## Plan
 
-Spawn PLANNER.md (tier `ultra`) → `plan.md`. A `DETOUR: prototype` return means a load-bearing external couldn't be verified from sources — take the prototype detour, then re-spawn.
+**Gate:** plan depth is the deeper of the SIZE lookup - `minimal` skip, `moderate` light, `substantial` full - and the RISK floor: `elevated` or `critical` floors it at light, because a challenge needs a plan to challenge.
+
+Spawn PLANNER.md (tier `ultra`) → `plan.md`; at light, add one prompt field - `plan-depth: light` (PLANNER.md defines it). Its RETURN re-scores SIZE and RISK authoritatively: the planner is the single writer of both bands; the re-score replaces triage's provisional call for every gate below, and across any later re-spawn a band only ratchets up - keep the higher. A `DETOUR: prototype` return means a load-bearing external couldn't be verified from sources — take the prototype detour, then re-spawn.
 
 ## Challenge
 
-Spawn in parallel, neither seeing the other's verdict before both are written:
+**Gate:** RISK `routine` skips this stage; `elevated` runs the challenger alone, autonomously; `critical` runs challenger + worker with the user's gate. When `challenge.md` lands, write the empty marker `challenge-ran` to the run dir.
 
-- CHALLENGER.md (tier `ultra`) → `challenge.md`
-- the worker forwarder WORKER.md (tier `standard`) → `challenge-worker.md` — a different-model second opinion; on failure it records `WORKER FAILED`, visible and non-blocking.
-
-Read both, then put a structured choice to the user: **Approve** (proceed; open concerns become known risks) / **Revise** (re-spawn PLANNER.md with the blockers as corrections; the revised plan re-earns approval through this gate) / **Reshape** (back to the interview — the plan answers the wrong question). The plan's Summary and both challenge verdicts are the evidence shown.
+- `elevated` - spawn CHALLENGER.md (tier `ultra`) → `challenge.md`, then act on its VERDICT: `approve` → proceed; `revise` → re-spawn PLANNER.md with the BLOCKERS as corrections, consuming one of two rounds - still blocked after two, put the standing blocker to the user as Approve / Revise / Reshape; `reject` → the plan answers the wrong question - straight to the user and the interview, no round consumed. Each revise pass re-reads the re-spawned planner's ratcheted RISK: a mid-loop re-score to `critical` runs that pass at the `critical` tier below - worker and user gate included.
+- `critical` - spawn in parallel, neither seeing the other's verdict before both are written: CHALLENGER.md (tier `ultra`) → `challenge.md`, and the worker forwarder WORKER.md (tier `standard`) → `challenge-worker.md` - a different-model second opinion; on failure it records `WORKER FAILED`, visible and non-blocking. Read both, then put a structured choice to the user: **Approve** (proceed; open concerns become known risks) / **Revise** (re-spawn PLANNER.md with the blockers as corrections; the revised plan re-earns approval through this gate) / **Reshape** (back to the interview - the plan answers the wrong question). The plan's Summary and both challenge verdicts are the evidence shown.
 
 ## Tests
 
-One stage, two hands — like the challenge, it pairs a doer with an independent check. When the change carries real logic (triage's NEEDS-TESTS, or the plan reveals it):
+**Gate:** the change carries real logic - triage's NEEDS-TESTS, or the plan reveals it.
+
+One stage, two hands — like the challenge, it pairs a doer with an independent check:
 
 1. Spawn TEST-AUTHOR.md (tier `standard`) → red tests in the repo's test tree + `tests.md`.
 2. Spawn TEST-REVIEW.md (`read-only`, tier `large`) to validate the red tests against intent and plan. `misaligned` → re-spawn TEST-AUTHOR.md with the report; loop until `ready`. Code never starts against unvalidated tests.
 
 ## Implement
 
-Spawn IMPLEMENTER.md (tier `ultra`) → the change with tests green + `receipt.md`. A KICKBACK return (its brief names the kickback levels) → re-spawn PLANNER.md with the reason as corrections, then re-run the implementer — a forward correction, no re-gate through the challenge. Two kickbacks on the same blocker → stop and surface to the user.
+Spawn IMPLEMENTER.md (tier `ultra`) → the change with tests green + `receipt.md`. A KICKBACK return (its brief names the kickback levels) → re-spawn PLANNER.md with the reason as corrections - its re-score may raise a band, never lower one - then re-run the implementer: a forward correction, no re-gate through the challenge, with one exception - when the re-score lands RISK `critical` and no `challenge-ran` marker exists in the run dir, run the Challenge stage at `critical` before the implementer. The re-fired challenge writes the marker, so the rewind cannot fire twice - once per run by construction. Two kickbacks on the same blocker → stop and surface to the user.
 
 ## Review wave
 
+**Gate:** the wave always fires; membership keys on the re-scored bands - triage's provisional bands when no plan ran.
+
 Spawn every applicable lens in parallel, each reading `receipt.md` + `plan.md` + `intent.md`, each writing `findings-<lens>.md`:
 
-- **Standing, every build:** `../crossfire/CORRECTNESS.md` (tier `large`), `ACCEPTANCE.md` (`large`), `SIMPLICITY.md` (`standard`), `SHAPE.md` (`standard`), `CONVENTIONS.md` (`standard`).
-- **Conditional:** `UI.md` (`standard`) when the diff touches user-facing UI; `SECURITY.md` (`large`) when it touches auth, secrets, permissions, or untrusted input; `PERFORMANCE.md` (`large`) when it touches a hot path or data-volume-sensitive code.
-- **Worker:** the WORKER.md forwarder over the diff → `findings-worker.md` — one more lens, same visible-failure rule.
+- **Floor, every build:** `../crossfire/CORRECTNESS.md` (tier `large`), `ACCEPTANCE.md` (`large`).
+- SIZE `moderate` and up adds `SIMPLICITY.md` (`standard`) + `CONVENTIONS.md` (`standard`); `substantial` adds `SHAPE.md` (`standard`).
+- RISK `critical` adds the WORKER.md forwarder over the diff → `findings-worker.md` - one more lens, same visible-failure rule.
+- **Conditional, surface-triggered on any band:** `UI.md` (`standard`) when the diff touches user-facing UI; `SECURITY.md` (`large`) when it touches auth, secrets, permissions, or untrusted input; `PERFORMANCE.md` (`large`) when it touches a hot path or data-volume-sensitive code.
 
 **Backstop.** Before you read a single verdict, any lens missing its file from the run dir gets it written by you off the text that lens returned - the stop gate settles on `findings-*.md`, so a text-only return leaves the debt open.
 
 ## Fix
 
-Any lens failed → spawn FIXER.md (tier `standard`; `ultra` when the fix set is large or structural) with the findings paths. It fixes and returns a re-run set: re-spawn exactly those lenses (CORRECTNESS always rides along) over the new diff. Loop until every lens is clean. Findings the fixer can't own (plan-level, missing context) surface to the user — never silently dropped.
+**Gate:** any lens failed. Spawn FIXER.md (tier `standard`; `ultra` when the fix set is large or structural) with the findings paths. It fixes and returns a re-run set: re-spawn exactly those lenses (CORRECTNESS always rides along) over the new diff. Loop until every lens is clean. Findings the fixer can't own (plan-level, missing context) surface to the user — never silently dropped.
 
 ## Close
 

@@ -2,6 +2,15 @@
 
 All notable changes to forge (previously alp-river). Versions match `.claude-plugin/plugin.json`.
 
+## 2.3.0 - 2026-07-26
+
+forge now proportions its process to each change: how big the change is and how much damage it could do if wrong are judged separately, and each judgment opens only the steps it warrants.
+
+- Small, dangerous changes get a concise plan, an independent second look, and the user's sign-off.
+- Large, safe changes get full planning and structural review with no sign-off stop.
+- Small, safe changes keep the existing fast path.
+- Every change is still reviewed for correctness and for delivering what was asked.
+
 ## 2.2.4 - 2026-07-25
 
 - A clean review now always settles the unreviewed-code gate, even when a check reports its findings back as text.

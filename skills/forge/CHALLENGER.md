@@ -40,4 +40,4 @@ SCOPE_MISMATCH: <"drop X to land Y", else "none">
 STRENGTHS: <1-2 sentences on what the plan gets right>
 ```
 
-Kickback: `revise` → PLANNER amends with your BLOCKERS as corrections (minimal diff, version bump) and the revised plan re-earns approval. `reject` → the plan answers the wrong question; back to the interview. The orchestrator carries the Approve/Revise/Reshape gate to the user — you never approve on their behalf.
+Kickback: `revise` → PLANNER amends with your BLOCKERS as corrections (minimal diff, version bump) and the revised plan re-earns approval. `reject` → the plan answers the wrong question; back to the interview. The run's risk band decides whether an Approve/Revise/Reshape gate runs at all; whenever one is raised, the user answers it - never the orchestrator, and you never approve on the user's behalf. At the autonomous band your `approve` proceeds straight to the build with no human gate behind it, so approve only what you would ship.

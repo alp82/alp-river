@@ -13,10 +13,19 @@ Your spawn prompt names the run dir and the request (or the ticket text standing
 
 **Size the change:**
 
-- `trivial` — single file AND no new logic (no new branch, loop, or computation): doc edits, config values, copy changes, version bumps, formatting, dependency-list lines.
-- `standard` — everything else. When uncertain, `standard`: the planned path is the safe fallback; a misfired short path ships unplanned, untested work.
+- `minimal` - one seam, no new logic (no new branch, loop, or computation): doc edits, config values, copy changes, version bumps, formatting, a localized edit. One seam, not one file.
+- `moderate` - new logic in a bounded area, OR a broad mechanical change across many files with flat logic.
+- `substantial` - significant new logic and/or broad new surface: multiple interacting pieces, new modules or endpoints, cross-cutting reasoning.
 
-**Needs-tests:** `yes` when the change carries real logic — anything that adds or changes a branch, loop, or computation. `trivial` implies `no`.
+**Rate the risk** - impact only, never likelihood (likelihood belongs to the detour flags). Read it primarily from the paths touched, signals in order: sensitive surface (auth, secrets, permissions, payments, data migrations, infra and deploy, public API or contracts), reversibility (destructive or irreversible ops), blast radius (a widely-consumed contract vs a leaf). The `security` / `ui` / `performance` sniffs below feed in as surface hits:
+
+- `routine` - no sensitive surface: leaf files, internal helpers, docs, self-contained features.
+- `elevated` - user-facing, perf-hot, or a moderately shared contract. Wrong is annoying, not dangerous.
+- `critical` - sensitive or irreversible: security surfaces, payments, migrations, infra or deploy, destructive ops, breaking public-API changes.
+
+Both bands are provisional - the planner re-scores them authoritatively when a plan runs. Doubt rounds RISK up (a skipped adversary costs the task); SIZE rides the honest read (an extra plan pass is cheap). A request too fuzzy to band at all stays the `unknowns` flag, never a silent bump.
+
+**Needs-tests:** `yes` when the change carries real logic — anything that adds or changes a branch, loop, or computation. `minimal` implies `no` - its definition excludes new logic.
 
 **Flags** — publish only what you are confident about, each with a one-line why; omit the rest silently. Asymmetric rigor governs the detection flags: skipping a detour needs positive confidence, adding one needs only doubt — a needless question costs mild annoyance, a wrong assumption costs the task.
 
@@ -31,7 +40,8 @@ RETURN exactly this block, nothing else — your final message is read by an orc
 
 ```
 INTENT: <one line>
-SIZE: trivial | standard
+SIZE: minimal | moderate | substantial
+RISK: routine | elevated | critical
 NEEDS-TESTS: yes | no
 FLAGS:
 - <flag> — <why>
